@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Las Misiones Residencial">
+  <rect width="64" height="64" rx="13" fill="#1d3f63"/>
+  <g fill="#d8b06a">
+    <!-- torre izquierda -->
+    <rect x="11" y="31" width="7" height="20" rx="1"/>
+    <path d="M11 31 q3.5 -6 7 0 z"/>
+    <!-- torre derecha -->
+    <rect x="46" y="31" width="7" height="20" rx="1"/>
+    <path d="M46 31 q3.5 -6 7 0 z"/>
+    <!-- cruz y linternilla -->
+    <rect x="31.1" y="7" width="1.8" height="6"/>
+    <rect x="29" y="9" width="6" height="1.6"/>
+    <rect x="28.8" y="13.4" width="6.4" height="3.4" rx="0.8"/>
+    <!-- cúpula -->
+    <path d="M19 33 q0 -16 13 -16 q13 0 13 16 z"/>
+    <rect x="17" y="33" width="30" height="3.4" rx="1"/>
+    <!-- cuerpo -->
+    <path d="M20 37.4 h24 v13.6 h-7 v-7.4 a5 5 0 0 0 -10 0 v7.4 h-7 z"/>
+  </g>
+  <rect x="9" y="51" width="46" height="3" rx="1.2" fill="#d8b06a"/>
+</svg>

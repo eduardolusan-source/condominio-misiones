@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 230" role="img" aria-label="Las Misiones Residencial">
+  <rect x="1" y="1" width="318" height="228" rx="6" fill="#faf8f3" stroke="#1d3f63" stroke-width="2"/>
+  <rect x="1" y="1" width="9" height="228" rx="4" fill="#9d2235"/>
+  <g fill="#d8b06a" transform="translate(160,14) scale(0.92)">
+    <rect x="-1" y="0" width="2" height="9"/>
+    <rect x="-4" y="3" width="8" height="2"/>
+    <rect x="-4.5" y="9.5" width="9" height="4.5" rx="1"/>
+    <path d="M-17 32 q0 -18 17 -18 q17 0 17 18 z"/>
+    <rect x="-21" y="32" width="42" height="4" rx="1.2"/>
+    <path d="M-18 36 h36 v16 h-10 v-8.6 a8 8 0 0 0 -16 0 v8.6 h-10 z"/>
+    <rect x="-33" y="30" width="9" height="22" rx="1"/>
+    <path d="M-33 30 q4.5 -7 9 0 z"/>
+    <rect x="24" y="30" width="9" height="22" rx="1"/>
+    <path d="M24 30 q4.5 -7 9 0 z"/>
+  </g>
+  <text x="98" y="122" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="42" fill="#1d3f63">Las</text>
+  <text x="160" y="168" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="52" fill="#1d3f63">Misiones</text>
+  <rect x="26" y="182" width="268" height="30" fill="#1d3f63"/>
+  <text x="160" y="203" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="16" letter-spacing="7" fill="#faf8f3">RESIDENCIAL</text>
+</svg>

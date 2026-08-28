@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Finanzas · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="assets/mark.svg">
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><img src="assets/mark.svg" alt=""><span class="logo">Las Misiones</span><span class="tag">Residencial</span></a>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="mesa-directiva.html">Mesa directiva</a>
+      <a href="finanzas.html" class="active">Finanzas</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="content">
+  <h1 class="section-title" style="margin-top:1rem">Rendición de cuentas</h1>
+  <p class="section-sub">Sección de acceso abierto: no hace falta clave. Aquí está el tablero completo de lo que se va a publicar cada mes; las cifras entran en cuanto la administración entregue su hoja de cálculo.</p>
+
+  <div class="notice">⏳ <strong>Esperando el primer informe.</strong> El 10 de agosto la mesa directiva acordó que <strong>Admin-Solutions entregue la hoja de cálculo de julio completa</strong>, para poder generar el informe financiero del mes. Mientras llega, cada métrica aparece con un guion (—) en lugar del dato: <em>ninguna cifra de esta página está inventada</em>. <a href="mesa-directiva.html#financiero">Ver el acuerdo</a>.</div>
+
+  <div class="privacy">🛡️ <strong>Privacidad de adeudos.</strong> Como esta sección es pública, la morosidad se informa siempre de forma <strong>agregada</strong>: montos y número de unidades, sin identificar ningún departamento ni a ningún condómino. La relación individual se entrega solo a la mesa directiva y se gestiona de manera confidencial.</div>
+
+  <!-- ===== Datos mensuales ===== -->
+  <h2 class="section-title" id="mensual">📅 Datos del mes</h2>
+  <p class="section-sub">Un bloque por mes, con el mismo desglose siempre.</p>
+  <div class="month-chips" id="chips" role="tablist"></div>
+
+  <div class="stat-grid" id="statCards"></div>
+
+  <div class="two-col" style="margin-top:1.25rem">
+    <div class="panel">
+      <h3>Ingresos del mes</h3>
+      <div class="table-scroll"><table class="data" id="tIngresos"></table></div>
+    </div>
+    <div class="panel">
+      <h3>Indicadores del mes</h3>
+      <div class="table-scroll"><table class="data" id="tIndicadores"></table></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Egresos del mes <span class="sub" id="egresosSub"></span></h3>
+    <div class="table-scroll"><table class="data" id="tEgresos"></table></div>
+    <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">Se publica proveedor, concepto y monto de cada gasto, agrupado en fijos, variables y obra, conforme al catálogo de gastos comunes del artículo 14 del reglamento.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Morosidad (agregada)</h3>
+    <div class="stat-grid" id="morosidadCards"></div>
+    <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">Los adeudos se gestionan de manera directa y confidencial entre la administración y cada unidad. El retraso en reintegrar el fondo común causa interés moratorio al CPP multiplicado por 1.5 (art. 17).</p>
+  </div>
+
+  <!-- ===== Panorama anual ===== -->
+  <h2 class="section-title">📈 Panorama del año</h2>
+  <p class="section-sub">Evolución de los meses publicados.</p>
+
+  <div class="panel">
+    <h3>Ingresos vs. egresos por mes</h3>
+    <div class="legend">
+      <span class="li"><span class="sw" style="background:var(--series-1)"></span>Ingresos</span>
+      <span class="li"><span class="sw" style="background:var(--series-2)"></span>Egresos</span>
+    </div>
+    <div class="chart-box" id="chartBars"></div>
+  </div>
+
+  <div class="panel">
+    <h3>Saldo en caja al cierre de cada mes</h3>
+    <div class="chart-box" id="chartLine"></div>
+  </div>
+
+  <!-- ===== Métricas fijas ===== -->
+  <h2 class="section-title" id="fijas">📌 Métricas fijas del condominio</h2>
+  <p class="section-sub">Datos estructurales que no cambian mes a mes.</p>
+
+  <div class="stat-grid" id="fixedCards"></div>
+
+  <!-- ===== Proyectos ===== -->
+  <h2 class="section-title" id="proyectos">🔧 Proyectos en curso</h2>
+  <p class="section-sub">Obras financiadas con cuota extraordinaria, aprobadas conforme al artículo 14, inciso J.</p>
+  <div class="panel" style="margin-top:0.5rem">
+    <div class="table-scroll"><table class="data" id="tProyectos"></table></div>
+    <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">De cada proyecto se publicará lo recaudado, lo que falta por recaudar y el gasto ejercido, siempre en agregado.</p>
+  </div>
+
+  <h2 class="section-title">Cómo se actualiza esta página</h2>
+  <div class="panel">
+    <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>1.</strong> Admin-Solutions entrega la hoja de cálculo mensual con ingresos, egresos por proveedor, cobranza y saldos.</p>
+    <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>2.</strong> La mesa directiva revisa las cifras contra el estado de cuenta del artículo 19, fracción XI. Cada condómino tiene cinco días para formular observaciones desde que lo recibe.</p>
+    <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>3.</strong> Se publica aquí el resumen agregado del mes; el detalle por departamento no sale de la administración.</p>
+    <p class="ref" style="margin:0.6rem 0 0">Las cifras publicadas son informativas. La aprobación formal del estado de cuenta y del presupuesto corresponde a la asamblea (art. 24, V y VI).</p>
+  </div>
+</main>
+
+<div class="viz-tip" id="vizTip"></div>
+
+<footer class="site-footer">
+  <div class="inner">
+    Las Misiones Residencial · Rendición de cuentas · Sección de acceso abierto, con información exclusivamente agregada. Fuente prevista: hoja de cálculo mensual de Admin-Solutions.
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/finanzas.js"></script>
+</body>
+</html>
