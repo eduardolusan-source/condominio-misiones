@@ -42,6 +42,12 @@ const MISIONES = {
 
   proyectos: [
     {
+      nombre: "Protocolización de la mesa directiva, cuenta bancaria y puerta peatonal",
+      estado: "En trámite · duración aproximada de tres meses y medio; al concluir se notificará la nueva cuenta bancaria del condominio",
+      financiamiento: "Cuota extraordinaria de $1,000 por departamento, aprobada por unanimidad en asamblea",
+      presupuesto: 16000
+    },
+    {
       nombre: "Reparación del elevador",
       estado: "En proceso · cita con proveedor; se explora botonera genérica para reducir costos",
       financiamiento: "Cuota extraordinaria",

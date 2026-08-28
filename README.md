@@ -13,7 +13,7 @@ Publicado con GitHub Pages: https://eduardolusan-source.github.io/condominio-mis
 | `index.html` | Portada: accesos, preguntas frecuentes del reglamento, áreas comunes, avisos, quién es quién |
 | `reglamento.html` | Resumen en lenguaje claro del reglamento protocolizado, capítulo por capítulo |
 | `areas-comunes.html` | Qué es área común, y reglas por espacio (acceso, salón, alberca, estacionamiento, elevador, jardines, agua, residuos) |
-| `mesa-directiva.html` | Minuta del 10 de agosto de 2026 y seguimiento de los 12 acuerdos |
+| `mesa-directiva.html` | Protocolización de la mesa directiva (acuerdo de asamblea), minuta del 10 de agosto de 2026 y seguimiento de los 12 acuerdos |
 | `finanzas.html` | Rendición de cuentas. **Acceso abierto, sin clave.** |
 
 ## Origen de la información
@@ -22,6 +22,8 @@ Publicado con GitHub Pages: https://eduardolusan-source.github.io/condominio-mis
   la Notaría Pública No. 7 del Estado de Querétaro. Cada regla citada en el sitio lleva su
   número de artículo.
 - **Minuta de la mesa directiva del 10 de agosto de 2026** (Ale, Naydelin y Eduardo).
+- **Acta de asamblea, asuntos generales**: protocolización de la mesa directiva y cuota
+  extraordinaria de $1,000 por departamento, aprobada por unanimidad.
 
 Todo lo que no proviene de esas dos fuentes está marcado en el sitio como **propuesta** o
 **por definir**: horarios de áreas comunes, reglas de residuos, horario de oficina y datos
