@@ -3,30 +3,36 @@
    Acceso abierto: no hay clave. Por eso aquí solo viven agregados. Nunca
    publiques en esta sección cifras por departamento ni nombres de condóminos.
 
-   Si MISIONES.meses está vacío, cada bloque se pinta en estado "pendiente":
-   se muestra la métrica que se va a publicar, con un guion en lugar del dato.
-   En cuanto se agregue un mes en js/data.js, los mismos bloques se llenan
-   solos con las cifras. */
+   Misma lógica que los sitios de Lahia y La Valetta: una vista general del
+   año (tarjetas, tabla mes por mes, gráficas) y un detalle por mes al que se
+   entra tocando una fila de la tabla o con las pestañas. Aquí, además, se
+   puede cambiar de año (2025 y 2026). */
 (function () {
   "use strict";
 
   const D = MISIONES;
-  const M = D.meses;
-  const hayDatos = M.length > 0;
+  const TODOS = D.meses;
 
   const mxn = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
   const mxn2 = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
   const fmt = v => mxn.format(v);
   const fmt2 = v => mxn2.format(v);
   const kfmt = v => "$" + Math.round(v / 1000) + " mil";
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
   const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const sum = arr => arr.reduce((a, b) => a + b, 0);
+  const prom = arr => arr.length ? sum(arr) / arr.length : 0;
 
-  const ingresosDe = m => m.ingresos.manto + m.ingresos.extraordinaria + m.ingresos.otros;
-  const egresosDe = m => m.egresos.fijos + m.egresos.variables + m.egresos.obra;
+  const ingresosDe = m => m.ingresos.manto + m.ingresos.agua + m.ingresos.elevador + m.ingresos.medidores + m.ingresos.otros;
+  const egresosDe = m => m.egresos.ordinarios + m.egresos.extraordinarios;
   const resultadoDe = m => ingresosDe(m) - egresosDe(m);
+  const mesMin = m => m.nombre.toLowerCase();
+  function setText(id, t) { const el = document.getElementById(id); if (el) el.textContent = t; }
 
-  /* Guion largo: marca visualmente el dato que todavía no existe. */
-  const NA = "—";
+  function statCard(k, v, d, clase) {
+    return '<div class="stat' + (clase ? " " + clase : "") + '"><div class="k">' + k + '</div><div class="v">' + v +
+      "</div>" + (d ? '<div class="d">' + d + "</div>" : "") + "</div>";
+  }
 
   const tip = document.getElementById("vizTip");
   function showTip(html, x, y) {
@@ -38,143 +44,85 @@
   }
   function hideTip() { tip.style.display = "none"; }
 
-  function pendingBox(el, texto) {
-    el.innerHTML = '<div class="pending-box"><span class="big">📊</span>' + texto + "</div>";
-  }
-
-  function statCard(k, v, d, clase) {
-    return '<div class="stat' + (clase || "") + '"><div class="k">' + k + '</div><div class="v">' + v +
-      "</div>" + (d ? '<div class="d">' + d + "</div>" : "") + "</div>";
-  }
-
-  /* ---------- Chips de mes ---------- */
+  /* ---------- Estado: año y mes seleccionados ---------- */
+  let anio = D.anios[D.anios.length - 1];
+  let M = TODOS.filter(m => m.anio === anio);
   let mesIdx = M.length - 1;
 
-  function renderChips() {
-    const box = document.getElementById("chips");
-    if (!hayDatos) {
-      box.innerHTML = '<span style="font-size:0.9rem; color:var(--muted)">Aún no hay meses publicados. ' +
-        'El primero será <strong>julio de 2026</strong>, en cuanto la administración entregue su hoja de cálculo.</span>';
-      return;
-    }
+  function rango() {
+    if (!M.length) return String(anio);
+    const a = M[0], b = M[M.length - 1];
+    return (a.id === b.id ? mesMin(a) : mesMin(a) + " a " + mesMin(b)) + " de " + anio;
+  }
+
+  function renderAnios() {
+    const box = document.getElementById("anios");
     box.innerHTML = "";
-    M.forEach((m, i) => {
+    D.anios.forEach(a => {
       const b = document.createElement("button");
       b.type = "button";
-      b.textContent = m.nombre;
-      b.className = i === mesIdx ? "on" : "";
-      b.addEventListener("click", () => { mesIdx = i; renderMes(); renderChips(); });
+      b.textContent = a;
+      b.className = a === anio ? "on" : "";
+      b.addEventListener("click", () => {
+        if (a === anio) return;
+        anio = a; M = TODOS.filter(m => m.anio === anio); mesIdx = M.length - 1;
+        renderAnio();
+        if (!secDetalle.hidden) { renderChips(); renderMes(); }
+      });
       box.appendChild(b);
     });
   }
 
-  function deltaTxt(actual, previo, menosEsMejor) {
-    if (previo == null) return "";
-    const d = actual - previo;
-    const mejora = menosEsMejor ? d <= 0 : d >= 0;
-    return '<div class="d"><span class="' + (mejora ? "pos" : "neg") + '" style="font-weight:600">' +
-      (d >= 0 ? "▲" : "▼") + " " + fmt(Math.abs(d)) + "</span> vs. mes anterior</div>";
+  /* Suma de los conceptos ordinarios que empiezan con un prefijo ("Agua"). */
+  function sumConcepto(m, prefijo) {
+    return sum(m.detalle.ordinarios.filter(r => r[0].indexOf(prefijo) === 0).map(r => r[1]));
   }
 
-  /* ---------- Datos del mes ---------- */
-  function renderMesPendiente() {
-    document.getElementById("statCards").innerHTML =
-      statCard("Ingresos del mes", NA, "cuotas ordinarias + extraordinarias + otros ingresos", " pend") +
-      statCard("Egresos del mes", NA, "gastos fijos + variables + obra", " pend") +
-      statCard("Resultado del mes", NA, "ingresos menos egresos", " pend") +
-      statCard("Saldo al cierre", NA, "saldo en caja al último día del mes", " pend");
+  /* ---------- Vista general del año ---------- */
+  function renderOverview() {
+    const first = M[0], last = M[M.length - 1];
+    const ingAcum = sum(M.map(ingresosDe)), egrAcum = sum(M.map(egresosDe));
+    const resAcum = ingAcum - egrAcum;
+    const ordProm = prom(M.map(m => m.egresos.ordinarios));
+    const extraAcum = sum(M.map(m => m.egresos.extraordinarios));
+    const diasReserva = ordProm > 0 ? Math.max(0, last.saldoFin) / (ordProm / 30) : 0;
+    const reservaTxt = last.saldoFin <= 0 ? "Sin reserva" : diasReserva >= 60 ? (diasReserva / 30).toFixed(1) + " meses" : Math.round(diasReserva) + " días";
+    const cobranzaProm = prom(M.map(m => m.cobranza.pct));
+    const aguaIn = sum(M.map(m => m.ingresos.agua)), aguaOut = sum(M.map(m => sumConcepto(m, "Agua")));
+    const positivos = M.filter(m => resultadoDe(m) >= 0);
+    const porUnidad = ordProm / D.unidades;
+    const brecha = D.cuota - porUnidad;
 
-    document.getElementById("tIngresos").innerHTML =
-      "<thead><tr><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>" +
-      "<tr><td>Cuotas de mantenimiento</td><td class='num pend'>" + NA + "</td></tr>" +
-      "<tr><td>Cuota extraordinaria (elevador y acceso)</td><td class='num pend'>" + NA + "</td></tr>" +
-      "<tr><td>Otros ingresos</td><td class='num pend'>" + NA + "</td></tr>" +
-      "<tr class='total'><td>Total de ingresos</td><td class='num'>" + NA + "</td></tr></tbody>";
-
-    document.getElementById("tIndicadores").innerHTML =
-      "<tbody>" +
-      "<tr><td>Unidades que pagaron mantenimiento</td><td class='num pend'>" + NA + " de " + D.unidades + "</td></tr>" +
-      "<tr><td>Cobranza de mantenimiento</td><td class='num pend'>" + NA + "</td></tr>" +
-      "<tr><td>Unidades al corriente en la cuota extraordinaria</td><td class='num pend'>" + NA + " de " + D.unidades + "</td></tr>" +
-      "<tr><td>Recaudado de la cuota extraordinaria</td><td class='num pend'>" + NA + "</td></tr>" +
-      "<tr><td>Falta por recaudar</td><td class='num pend'>" + NA + "</td></tr>" +
-      "</tbody>";
-
-    document.getElementById("tEgresos").innerHTML =
-      "<thead><tr><th>Proveedor</th><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>" +
-      ["Gastos fijos (ordinarios)", "Gastos variables", "Obra y proyectos"].map(t =>
-        "<tr><td colspan='3' style='font-weight:700; color:var(--ink); padding-top:0.9rem'>" + t + "</td></tr>" +
-        "<tr><td colspan='2' class='pend'>Desglose por proveedor pendiente de captura</td><td class='num pend'>" + NA + "</td></tr>"
-      ).join("") +
-      "<tr class='total'><td colspan='2'>TOTAL DE EGRESOS</td><td class='num'>" + NA + "</td></tr></tbody>";
-    document.getElementById("egresosSub").textContent = "pendiente";
-
-    document.getElementById("morosidadCards").innerHTML =
-      statCard("Unidades con adeudo de mantenimiento", NA + ' <span style="font-size:0.9rem; font-weight:400; color:var(--muted)">de ' + D.unidades + "</span>", "", " pend") +
-      statCard("Adeudo acumulado de mantenimiento", NA, "en el año en curso", " pend") +
-      statCard("Adeudo de la cuota extraordinaria", NA, "unidades que no la han cubierto", " pend");
+    document.getElementById("overviewCards").innerHTML =
+      statCard("Saldo en caja", fmt2(last.saldoFin), "al cierre de " + esc(mesMin(last)) + " · el año inició en " + fmt2(first.saldoIni)) +
+      statCard("Resultado acumulado " + anio, '<span class="' + (resAcum >= 0 ? "pos" : "neg") + '">' + fmt2(resAcum) + "</span>", "ingresos " + fmt(ingAcum) + " − egresos " + fmt(egrAcum)) +
+      statCard("Reserva operativa", '<span class="' + (diasReserva < 30 ? "neg" : "") + '">' + reservaTxt + "</span>", "lo que el saldo cubre del gasto ordinario mensual promedio (" + fmt(ordProm) + ")") +
+      statCard("Cobranza " + anio, cobranzaProm.toFixed(1) + "%", "de las cuotas de mantenimiento, por mes facturado · " + M.length + " meses") +
+      statCard("Gasto extraordinario", fmt(extraAcum), pct(extraAcum, egrAcum) + "% de los egresos del año · reparaciones, elevador, jardinería") +
+      statCard("El agua", pct(aguaIn, aguaOut) + "%", "del recibo del condominio se cubre con lo cobrado: " + fmt(aguaIn) + " de " + fmt(aguaOut)) +
+      statCard("Meses con resultado positivo", positivos.length + ' <span style="font-size:0.9rem; font-weight:400; color:var(--muted)">de ' + M.length + "</span>", positivos.length ? positivos.map(m => m.corto).join(", ") : "ninguno") +
+      statCard("Costo de operar por unidad", fmt(porUnidad), "al mes, frente a la cuota de " + fmt(D.cuota) + ": " + (brecha >= 0 ? "sobran " + fmt(brecha) : "faltan " + fmt(-brecha)) + " para extraordinarios y fondo");
   }
 
-  function renderMes() {
-    if (!hayDatos) { renderMesPendiente(); return; }
-
-    const m = M[mesIdx];
-    const prev = mesIdx > 0 ? M[mesIdx - 1] : null;
-    const ing = ingresosDe(m), egr = egresosDe(m), res = resultadoDe(m);
-
-    document.getElementById("statCards").innerHTML =
-      '<div class="stat"><div class="k">Ingresos · ' + m.nombre + '</div><div class="v">' + fmt(ing) + "</div>" +
-      deltaTxt(ing, prev && ingresosDe(prev)) + "</div>" +
-      '<div class="stat"><div class="k">Egresos · ' + m.nombre + '</div><div class="v">' + fmt(egr) + "</div>" +
-      deltaTxt(egr, prev && egresosDe(prev), true) + "</div>" +
-      '<div class="stat"><div class="k">Resultado del mes</div><div class="v ' + (res >= 0 ? "pos" : "neg") + '">' + fmt2(res) + '</div><div class="d">ingresos menos egresos</div></div>' +
-      '<div class="stat"><div class="k">Saldo al cierre</div><div class="v ' + (m.saldoFin >= 0 ? "pos" : "neg") + '">' + fmt2(m.saldoFin) + '</div><div class="d">inició el mes en ' + fmt2(m.saldoIni) + "</div></div>";
-
-    document.getElementById("tIngresos").innerHTML =
-      "<thead><tr><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>" +
-      "<tr><td>Cuotas de mantenimiento</td><td class='num'>" + fmt2(m.ingresos.manto) + "</td></tr>" +
-      "<tr><td>Cuota extraordinaria (elevador y acceso)</td><td class='num'>" + fmt2(m.ingresos.extraordinaria) + "</td></tr>" +
-      "<tr><td>Otros ingresos</td><td class='num'>" + fmt2(m.ingresos.otros) + "</td></tr>" +
-      "<tr class='total'><td>Total de ingresos</td><td class='num'>" + fmt2(ing) + "</td></tr></tbody>";
-
-    const mo = m.morosidad;
-    document.getElementById("tIndicadores").innerHTML =
-      "<tbody>" +
-      "<tr><td>Unidades que pagaron mantenimiento</td><td class='num'>" + m.cobranza.pagaron + " de " + D.unidades + "</td></tr>" +
-      "<tr><td>Cobranza de mantenimiento</td><td class='num'>" + m.cobranza.pct + "%</td></tr>" +
-      "<tr><td>Unidades al corriente en la cuota extraordinaria</td><td class='num'>" + (D.unidades - mo.unidadesExtra) + " de " + D.unidades + "</td></tr>" +
-      "<tr><td>Ingreso por cuota extraordinaria del mes</td><td class='num'>" + fmt2(m.ingresos.extraordinaria) + "</td></tr>" +
-      "<tr><td>Adeudo pendiente de la cuota extraordinaria</td><td class='num'>" + fmt2(mo.adeudoExtra) + "</td></tr>" +
-      "</tbody>";
-
-    const secciones = [
-      ["Gastos fijos (ordinarios)", m.detalle.fijos, m.egresos.fijos],
-      ["Gastos variables", m.detalle.variables, m.egresos.variables],
-      ["Obra y proyectos", m.detalle.obra, m.egresos.obra]
-    ];
-    let rows = "<thead><tr><th>Proveedor</th><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>";
-    secciones.forEach(([titulo, items, subtotal]) => {
-      rows += "<tr><td colspan='3' style='font-weight:700; color:var(--ink); padding-top:0.9rem'>" + titulo + "</td></tr>";
-      if (!items || !items.length) {
-        rows += "<tr><td colspan='3' class='pend'>Desglose por proveedor pendiente de captura.</td></tr>";
-      } else {
-        items.forEach(([prov, desc, monto]) => {
-          rows += "<tr><td>" + esc(prov) + "</td><td>" + esc(desc) + "</td><td class='num'>" + fmt2(monto) + "</td></tr>";
-        });
-      }
-      rows += "<tr class='total'><td colspan='2'>Subtotal</td><td class='num'>" + fmt2(subtotal) + "</td></tr>";
+  function renderAnual() {
+    const t = document.getElementById("tAnual");
+    let rows = "<thead><tr><th>Mes</th><th class='num'>Ingresos</th><th class='num'>Egresos</th><th class='num'>de ellos, extraordinarios</th><th class='num'>Resultado</th><th class='num'>Saldo al cierre</th><th class='num'>Cobranza</th><th></th></tr></thead><tbody>";
+    M.forEach((m, i) => {
+      const res = resultadoDe(m);
+      rows += "<tr class='click' data-i='" + i + "'><td style='font-weight:600; color:var(--ink)'>" + esc(m.nombre) + "</td>" +
+        "<td class='num'>" + fmt(ingresosDe(m)) + "</td><td class='num'>" + fmt(egresosDe(m)) + "</td>" +
+        "<td class='num'>" + (m.egresos.extraordinarios ? fmt(m.egresos.extraordinarios) : "—") + "</td>" +
+        "<td class='num' style='color:var(--" + (res >= 0 ? "good" : "bad") + "-text); font-weight:600'>" + fmt(res) + "</td>" +
+        "<td class='num'>" + fmt(m.saldoFin) + "</td><td class='num'>" + Number(m.cobranza.pct).toFixed(0) + "%</td>" +
+        "<td class='go'><span class='btn-mini'>Ver mes ›</span></td></tr>";
     });
-    rows += "<tr class='total'><td colspan='2' style='font-size:1.02em'>TOTAL DE EGRESOS</td><td class='num' style='font-size:1.02em'>" + fmt2(egr) + "</td></tr></tbody>";
-    document.getElementById("tEgresos").innerHTML = rows;
-    document.getElementById("egresosSub").textContent = m.nombre + " " + m.id.slice(0, 4);
-
-    document.getElementById("morosidadCards").innerHTML =
-      statCard("Unidades con adeudo de mantenimiento", mo.unidadesManto + ' <span style="font-size:0.9rem; font-weight:400; color:var(--muted)">de ' + D.unidades + "</span>") +
-      statCard("Adeudo acumulado de mantenimiento", fmt(mo.acumuladoManto), "en el año en curso") +
-      statCard("Adeudo de la cuota extraordinaria", fmt(mo.adeudoExtra), mo.unidadesExtra + " unidad(es) pendiente(s)");
+    const ing = sum(M.map(ingresosDe)), egr = sum(M.map(egresosDe)), ext = sum(M.map(m => m.egresos.extraordinarios));
+    rows += "<tr class='total'><td>Acumulado " + anio + "</td><td class='num'>" + fmt(ing) + "</td><td class='num'>" + fmt(egr) + "</td><td class='num'>" + fmt(ext) + "</td><td class='num'>" + fmt(ing - egr) + "</td><td class='num'></td><td class='num'></td><td></td></tr>";
+    t.innerHTML = rows + "</tbody>";
+    t.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => abrirMes(+tr.dataset.i)));
   }
 
-  /* ---------- Gráfica: ingresos vs egresos ---------- */
+  /* ---------- Gráficas ---------- */
   function techo(v) {
     if (v <= 0) return 1000;
     const p = Math.pow(10, Math.floor(Math.log10(v)));
@@ -183,17 +131,13 @@
 
   function chartBars() {
     const box = document.getElementById("chartBars");
-    if (!hayDatos) {
-      pendingBox(box, "Aquí aparecerá la comparación de ingresos contra egresos, mes a mes, en cuanto se publique el primer mes.");
-      return;
-    }
     const W = 760, H = 300, L = 60, R = 8, T = 14, B = 30;
     const pw = W - L - R, ph = H - T - B;
     const maxV = techo(Math.max.apply(null, M.map(m => Math.max(ingresosDe(m), egresosDe(m)))));
     const paso = maxV / 4;
     const y = v => T + ph - (v / maxV) * ph;
     let g = "";
-    for (let t = 0; t <= maxV; t += paso) {
+    for (let t = 0; t <= maxV + 0.5; t += paso) {
       g += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--grid)" stroke-width="1"/>' +
         '<text x="' + (L - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + (t === 0 ? "0" : kfmt(t)) + "</text>";
     }
@@ -209,7 +153,7 @@
       };
       bars += bar(cx - bw - 1, ingresosDe(m), "var(--series-1)") + bar(cx + 1, egresosDe(m), "var(--series-2)");
       bars += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11.5" fill="var(--ink-2)">' + m.corto + "</text>";
-      hits += '<rect data-i="' + i + '" x="' + (L + gw * i) + '" y="' + T + '" width="' + gw + '" height="' + ph + '" fill="transparent"/>';
+      hits += '<rect data-i="' + i + '" x="' + (L + gw * i) + '" y="' + T + '" width="' + gw + '" height="' + ph + '" fill="transparent" style="cursor:pointer"/>';
     });
     box.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Ingresos y egresos por mes">' + g +
       '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--baseline)" stroke-width="1.5"/>' +
@@ -217,30 +161,29 @@
     box.querySelectorAll("rect[data-i]").forEach(rect => {
       rect.addEventListener("mousemove", e => {
         const m = M[+rect.dataset.i];
-        showTip("<b>" + m.nombre + "</b><br>Ingresos: <b>" + fmt(ingresosDe(m)) + "</b><br>Egresos: <b>" +
+        showTip("<b>" + m.nombre + " " + anio + "</b><br>Ingresos: <b>" + fmt(ingresosDe(m)) + "</b><br>Egresos: <b>" +
           fmt(egresosDe(m)) + "</b><br>Resultado: <b>" + fmt(resultadoDe(m)) + "</b>", e.clientX, e.clientY);
       });
       rect.addEventListener("mouseleave", hideTip);
+      rect.addEventListener("click", () => { hideTip(); abrirMes(+rect.dataset.i); });
     });
   }
 
-  /* ---------- Gráfica: saldo al cierre ---------- */
   function chartLine() {
     const box = document.getElementById("chartLine");
     if (M.length < 2) {
-      pendingBox(box, hayDatos
-        ? "La evolución del saldo se dibuja a partir del segundo mes publicado."
-        : "Aquí aparecerá la evolución del saldo en caja al cierre de cada mes.");
+      box.innerHTML = '<div class="pending-box"><span class="big">📈</span>La evolución del saldo se dibuja a partir del segundo mes publicado.</div>';
       return;
     }
-    const W = 760, H = 260, L = 62, R = 60, T = 14, B = 30;
+    const W = 760, H = 260, L = 62, R = 66, T = 14, B = 30;
     const pw = W - L - R, ph = H - T - B;
-    const vals = M.map(m => m.saldoFin);
+    const vals = M.map(m => m.saldoFin).concat([M[0].saldoIni]);
     const maxV = techo(Math.max(0, Math.max.apply(null, vals)));
-    const minV = -techo(Math.max(0, -Math.min.apply(null, vals)));
-    const rango = (maxV - minV) || 1;
-    const paso = rango / 4;
-    const y = v => T + (maxV - v) / rango * ph;
+    const minVal = Math.min.apply(null, vals);
+    const minV = minVal < 0 ? -techo(-minVal) : 0;
+    const rangoV = (maxV - minV) || 1;
+    const paso = rangoV / 4;
+    const y = v => T + (maxV - v) / rangoV * ph;
     const x = i => L + (pw / (M.length - 1)) * i;
     let g = "";
     for (let t = minV; t <= maxV + 0.5; t += paso) {
@@ -255,7 +198,7 @@
       const px = x(i), py = y(m.saldoFin);
       path += (i === 0 ? "M" : "L") + px + " " + py + " ";
       dots += '<circle cx="' + px + '" cy="' + py + '" r="4" fill="var(--series-1)" stroke="var(--surface)" stroke-width="2"/>';
-      hits += '<circle data-i="' + i + '" cx="' + px + '" cy="' + py + '" r="14" fill="transparent"/>';
+      hits += '<circle data-i="' + i + '" cx="' + px + '" cy="' + py + '" r="14" fill="transparent" style="cursor:pointer"/>';
       labels += '<text x="' + px + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11.5" fill="var(--ink-2)">' + m.corto + "</text>";
     });
     const last = M[M.length - 1];
@@ -267,38 +210,84 @@
     box.querySelectorAll("circle[data-i]").forEach(c => {
       c.addEventListener("mousemove", e => {
         const m = M[+c.dataset.i];
-        showTip("<b>" + m.nombre + "</b><br>Saldo al cierre: <b>" + fmt2(m.saldoFin) + "</b>", e.clientX, e.clientY);
+        showTip("<b>" + m.nombre + " " + anio + "</b><br>Saldo al cierre: <b>" + fmt2(m.saldoFin) + "</b>", e.clientX, e.clientY);
       });
       c.addEventListener("mouseleave", hideTip);
+      c.addEventListener("click", () => { hideTip(); abrirMes(+c.dataset.i); });
     });
   }
 
+  /* Composición del gasto ordinario: promedio mensual por concepto en el año. */
+  function chartFijos() {
+    const acum = {};
+    M.forEach(m => m.detalle.ordinarios.forEach(([c, v]) => { acum[c] = (acum[c] || 0) + v; }));
+    const items = Object.keys(acum).map(c => [c, acum[c] / M.length]).sort((a, b) => b[1] - a[1]);
+    const total = sum(items.map(i => i[1]));
+    const W = 560, rowH = 30, T = 6, L = 200, R = 84;
+    const H = T + items.length * rowH + 26;
+    const pw = W - L - R;
+    const maxV = Math.max.apply(null, items.map(i => i[1]));
+    let rows = "";
+    items.forEach(([label, v], i) => {
+      const yy = T + i * rowH + 6;
+      const bw2 = Math.max(2, (v / maxV) * pw);
+      rows += '<text x="' + (L - 10) + '" y="' + (yy + 12) + '" text-anchor="end" font-size="11.5" fill="var(--ink-2)">' + esc(label.replace(" (recibo del condominio)", "*")) + "</text>" +
+        '<rect data-i="' + i + '" x="' + L + '" y="' + yy + '" width="' + bw2 + '" height="16" rx="4" fill="var(--series-1)"/>' +
+        '<text x="' + (L + bw2 + 8) + '" y="' + (yy + 12.5) + '" font-size="11.5" font-weight="600" fill="var(--ink)">' + fmt(v) + "</text>";
+    });
+    const note = '<text x="' + L + '" y="' + (H - 6) + '" font-size="10.5" fill="var(--muted)">*recibo de agua del condominio · luz: recibo bimestral, promedio mensual</text>';
+    const box = document.getElementById("chartFijos");
+    box.innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Composición del gasto ordinario mensual">' + rows + note + "</svg>";
+    box.querySelectorAll("rect[data-i]").forEach(r => {
+      r.addEventListener("mousemove", e => {
+        const it = items[+r.dataset.i];
+        showTip("<b>" + esc(it[0]) + "</b><br>" + fmt(it[1]) + " al mes · " + Math.round(it[1] / total * 100) + "% del gasto ordinario", e.clientX, e.clientY);
+      });
+      r.addEventListener("mouseleave", hideTip);
+    });
+  }
+
+  function renderAgua() {
+    const aguaIn = sum(M.map(m => m.ingresos.agua));
+    const aguaOut = sum(M.map(m => sumConcepto(m, "Agua")));
+    document.getElementById("tAgua").innerHTML =
+      "<tbody>" +
+      "<tr><td>Cobrado a los condóminos por agua (" + rango() + ")</td><td class='num'>" + fmt2(aguaIn) + "</td></tr>" +
+      "<tr><td>Pagado del recibo de agua del condominio</td><td class='num'>" + fmt2(aguaOut) + "</td></tr>" +
+      "<tr><td>Diferencia absorbida por la cuota de mantenimiento</td><td class='num' style='color:var(--bad-text); font-weight:600'>" + fmt2(aguaIn - aguaOut) + "</td></tr>" +
+      "<tr><td>Cobertura del recibo</td><td class='num'>" + pct(aguaIn, aguaOut) + "%</td></tr>" +
+      "<tr><td>Recibo promedio mensual</td><td class='num'>" + fmt(aguaOut / M.length) + "</td></tr>" +
+      "<tr><td>Cobro promedio por unidad al mes</td><td class='num'>" + fmt(aguaIn / M.length / D.unidades) + "</td></tr>" +
+      "</tbody>";
+  }
+
+  /* ---------- Morosidad agregada (foto al corte) ---------- */
+  function renderMorosidad() {
+    const mo = D.morosidad;
+    document.getElementById("morosidadCards").innerHTML =
+      statCard("Unidades con algún adeudo", mo.unidadesConAdeudo + ' <span style="font-size:0.9rem; font-weight:400; color:var(--muted)">de ' + D.unidades + "</span>", "al " + esc(mo.fecha)) +
+      statCard("Adeudo total", fmt(mo.total), "mantenimiento + agua + cuota del elevador") +
+      statCard("Mantenimiento", fmt(mo.manto.monto), mo.manto.unidades + " unidad(es) · " + esc(mo.manto.nota)) +
+      statCard("Agua", fmt(mo.agua.monto), mo.agua.unidades + " unidad(es) · " + esc(mo.agua.nota)) +
+      statCard("Cuota del elevador", fmt(mo.elevador.monto), mo.elevador.unidades + " unidad(es) · " + esc(mo.elevador.nota));
+    setText("morosidadFecha", "estados de cuenta del " + mo.fecha);
+  }
+
   /* ---------- Métricas fijas ---------- */
-  const prom = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
-
   function renderFijas() {
-    const cuota = D.cuota ? fmt(D.cuota) : NA;
-    const cuotaD = D.cuota
-      ? "mensual por unidad · ingreso teórico " + fmt(D.cuota * D.unidades)
-      : "la establece la asamblea en proporción al indiviso (art. 24, VII) · pendiente de confirmar";
-
-    let opProm = NA, opPromD = "fijos + variables, promedio de los meses publicados", cobranzaProm = NA, porUnidad = NA;
-    if (hayDatos) {
-      const fijos = prom(M.map(m => m.egresos.fijos));
-      const vars = prom(M.map(m => m.egresos.variables));
-      opProm = fmt(fijos + vars);
-      opPromD = "fijos " + fmt(fijos) + " + variables " + fmt(vars);
-      cobranzaProm = prom(M.map(m => m.cobranza.pct)).toFixed(1) + "%";
-      porUnidad = fmt((fijos + vars) / D.unidades);
-    }
-
+    const ordProm = prom(M.map(m => m.egresos.ordinarios));
+    const cobranzaProm = prom(M.map(m => m.cobranza.pct));
+    const fondo = ordProm * D.fondoMeses;
+    const last = M[M.length - 1];
+    const conceptos = {};
+    M.forEach(m => m.detalle.ordinarios.forEach(([c]) => { conceptos[c.replace(" (recibo del condominio)", "")] = 1; }));
     document.getElementById("fixedCards").innerHTML =
       statCard("Unidades", D.unidades, D.composicion) +
-      statCard("Cuota de mantenimiento", cuota, cuotaD, D.cuota ? "" : " pend") +
-      statCard("Gasto operativo promedio", opProm, opPromD, hayDatos ? "" : " pend") +
-      statCard("Costo por unidad", porUnidad, "lo que cuesta operar el condominio, dividido entre las 16 unidades", hayDatos ? "" : " pend") +
-      statCard("Cobranza promedio", cobranzaProm, "de las cuotas de mantenimiento", hayDatos ? "" : " pend") +
-      statCard("Fondo común revolvente", D.fondoMeses + " meses", "de gastos normales según el presupuesto aprobado (art. 17) · mora al CPP × 1.5");
+      statCard("Cuota de mantenimiento", fmt(D.cuota), "mensual por unidad · ingreso teórico " + fmt(D.cuota * D.unidades) + " al mes") +
+      statCard("Gasto ordinario promedio " + anio, fmt(ordProm), Object.keys(conceptos).map(c => c.toLowerCase()).join(", ")) +
+      statCard("Costo por unidad", fmt(ordProm / D.unidades), "lo que cuesta operar el condominio cada mes, dividido entre las " + D.unidades + " unidades") +
+      statCard("Cobranza promedio " + anio, cobranzaProm.toFixed(1) + "%", "de las cuotas de mantenimiento, por mes facturado") +
+      statCard("Fondo común revolvente", fmt(fondo), D.fondoMeses + " meses de gasto ordinario (art. 17) · el saldo de " + esc(mesMin(last)) + " cubre el " + pct(Math.max(0, last.saldoFin), fondo) + "%");
   }
 
   function renderProyectos() {
@@ -311,11 +300,133 @@
     document.getElementById("tProyectos").innerHTML = rows + "</tbody>";
   }
 
+  function renderRevision() {
+    const box = document.getElementById("revision");
+    const n = D.revision.filter(r => r.tipo === "incongruencia").length;
+    setText("revisionSub", n + " incongruencias y " + (D.revision.length - n) + " observaciones encontradas al cotejar las tablas contables de 2025 y 2026 con los estados de cuenta del " + D.fechaEstados + ". Se envían a la administración para su aclaración.");
+    box.innerHTML = D.revision.map(r =>
+      '<div class="issue"><div class="top"><span class="pill ' + r.tipo + '">' + (r.tipo === "incongruencia" ? "Incongruencia" : "Observación") +
+      "</span><span class='t'>" + esc(r.titulo) + "</span></div><p>" + esc(r.detalle) + "</p></div>").join("");
+  }
+
+  /* ---------- Detalle de un mes ---------- */
+  function renderChips() {
+    const box = document.getElementById("chips");
+    box.innerHTML = "";
+    M.forEach((m, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = m.nombre;
+      b.className = i === mesIdx ? "on" : "";
+      b.addEventListener("click", () => { mesIdx = i; renderMes(); renderChips(); marcarHash(); });
+      box.appendChild(b);
+    });
+  }
+
+  function deltaTxt(actual, previo, menosEsMejor) {
+    if (previo == null) return "";
+    const d = actual - previo;
+    const mejora = menosEsMejor ? d <= 0 : d >= 0;
+    return '<div class="d"><span class="' + (mejora ? "pos" : "neg") + '" style="font-weight:600">' +
+      (d >= 0 ? "▲" : "▼") + " " + fmt(Math.abs(d)) + "</span> vs. mes anterior</div>";
+  }
+
+  function renderMes() {
+    const m = M[mesIdx];
+    const prev = mesIdx > 0 ? M[mesIdx - 1] : null;
+    const ing = ingresosDe(m), egr = egresosDe(m), res = resultadoDe(m);
+    setText("tituloMes", "Detalle de " + mesMin(m) + " de " + anio);
+
+    document.getElementById("statCards").innerHTML =
+      '<div class="stat"><div class="k">Ingresos · ' + m.nombre + '</div><div class="v">' + fmt(ing) + "</div>" +
+      deltaTxt(ing, prev && ingresosDe(prev)) + "</div>" +
+      '<div class="stat"><div class="k">Egresos · ' + m.nombre + '</div><div class="v">' + fmt(egr) + "</div>" +
+      deltaTxt(egr, prev && egresosDe(prev), true) + "</div>" +
+      '<div class="stat"><div class="k">Resultado del mes</div><div class="v ' + (res >= 0 ? "pos" : "neg") + '">' + fmt2(res) + '</div><div class="d">ingresos menos egresos</div></div>' +
+      '<div class="stat"><div class="k">Saldo al cierre</div><div class="v ' + (m.saldoFin >= 0 ? "pos" : "neg") + '">' + fmt2(m.saldoFin) + '</div><div class="d">inició el mes en ' + fmt2(m.saldoIni) + "</div></div>";
+
+    let ingRows = "<tr><td>Cuotas de mantenimiento</td><td class='num'>" + fmt2(m.ingresos.manto) + "</td></tr>" +
+      "<tr><td>Pagos de agua de los condóminos</td><td class='num'>" + fmt2(m.ingresos.agua) + "</td></tr>";
+    if (m.ingresos.elevador) ingRows += "<tr><td>Cuota extraordinaria del elevador</td><td class='num'>" + fmt2(m.ingresos.elevador) + "</td></tr>";
+    if (m.ingresos.medidores) ingRows += "<tr><td>Medidores individuales de agua</td><td class='num'>" + fmt2(m.ingresos.medidores) + "</td></tr>";
+    if (m.ingresos.otros) ingRows += "<tr><td>Otros ingresos</td><td class='num'>" + fmt2(m.ingresos.otros) + "</td></tr>";
+    document.getElementById("tIngresos").innerHTML =
+      "<thead><tr><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>" + ingRows +
+      "<tr class='total'><td>Total de ingresos</td><td class='num'>" + fmt2(ing) + "</td></tr></tbody>";
+
+    document.getElementById("tIndicadores").innerHTML =
+      "<tbody>" +
+      "<tr><td>Unidades que pagaron la cuota del mes</td><td class='num'>" + m.cobranza.pagaron + " de " + D.unidades + "</td></tr>" +
+      "<tr><td>Cobranza del mes facturado</td><td class='num'>" + m.cobranza.pct + "%</td></tr>" +
+      "<tr><td>Ingreso teórico por cuotas</td><td class='num'>" + fmt2(D.cuota * D.unidades) + "</td></tr>" +
+      "<tr><td>Gasto ordinario</td><td class='num'>" + fmt2(m.egresos.ordinarios) + "</td></tr>" +
+      "<tr><td>Gasto extraordinario</td><td class='num'>" + fmt2(m.egresos.extraordinarios) + "</td></tr>" +
+      "<tr><td>Agua: cobrado vs. recibo</td><td class='num'>" + fmt(m.ingresos.agua) + " / " + fmt(sumConcepto(m, "Agua")) + "</td></tr>" +
+      "</tbody>";
+
+    const secciones = [
+      ["Gastos ordinarios", m.detalle.ordinarios, m.egresos.ordinarios],
+      ["Gastos extraordinarios", m.detalle.extraordinarios, m.egresos.extraordinarios]
+    ];
+    let rows = "<thead><tr><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>";
+    secciones.forEach(([titulo, items, subtotal]) => {
+      rows += "<tr><td colspan='2' style='font-weight:700; color:var(--ink); padding-top:0.9rem'>" + titulo + "</td></tr>";
+      if (!items.length) rows += "<tr><td colspan='2' class='pend'>Sin gastos de este tipo en el mes.</td></tr>";
+      items.forEach(([desc, monto]) => {
+        rows += "<tr><td>" + esc(desc) + "</td><td class='num'>" + fmt2(monto) + "</td></tr>";
+      });
+      rows += "<tr class='total'><td>Subtotal</td><td class='num'>" + fmt2(subtotal) + "</td></tr>";
+    });
+    rows += "<tr class='total'><td style='font-size:1.02em'>TOTAL DE EGRESOS</td><td class='num' style='font-size:1.02em'>" + fmt2(egr) + "</td></tr></tbody>";
+    document.getElementById("tEgresos").innerHTML = rows;
+    document.getElementById("egresosSub").textContent = m.nombre + " " + anio;
+  }
+
+  /* ---------- Navegación general ↔ detalle ---------- */
+  const secResumen = document.getElementById("resumen");
+  const secDetalle = document.getElementById("detalle");
+  function marcarHash() { if (history.replaceState) history.replaceState(null, "", "#mes-" + M[mesIdx].id); }
+  function abrirMes(i) {
+    mesIdx = i;
+    renderChips(); renderMes();
+    secResumen.hidden = true; secDetalle.hidden = false;
+    marcarHash();
+    window.scrollTo(0, 0);
+  }
+  function volver(e) {
+    if (e) e.preventDefault();
+    secDetalle.hidden = true; secResumen.hidden = false;
+    if (history.replaceState) history.replaceState(null, "", location.pathname);
+    window.scrollTo(0, 0);
+  }
+  document.getElementById("volver").addEventListener("click", volver);
+  document.getElementById("volver2").addEventListener("click", volver);
+
   /* ---------- Render ---------- */
-  renderChips();
-  renderMes();
-  chartBars();
-  chartLine();
-  renderFijas();
+  function renderAnio() {
+    setText("tituloGeneral", "Rendición de cuentas " + anio);
+    setText("rangoSub", "Vista general de " + rango() + ", con las cifras de la tabla contable de la administración · " + D.unidades + " unidades · cuota de " + fmt(D.cuota) + ".");
+    setText("rangoFijas", "Datos estructurales del condominio (promedios de " + rango() + ").");
+    renderAnios();
+    renderOverview();
+    renderAnual();
+    chartBars();
+    chartLine();
+    renderAgua();
+    chartFijos();
+    renderFijas();
+  }
+
+  renderAnio();
+  renderMorosidad();
   renderProyectos();
+  renderRevision();
+
+  const h = /^#mes-(\d{4})-(\d{2})$/.exec(location.hash);
+  if (h) {
+    const a = +h[1];
+    if (D.anios.indexOf(a) >= 0 && a !== anio) { anio = a; M = TODOS.filter(m => m.anio === anio); renderAnio(); }
+    const i = M.findIndex(m => m.id === h[1] + "-" + h[2]);
+    if (i >= 0) abrirMes(i);
+  }
 })();

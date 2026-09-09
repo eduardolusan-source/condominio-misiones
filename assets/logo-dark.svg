@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 232" role="img" aria-label="Las Misiones Residencial">
   <title>Las Misiones Residencial</title>
   <!-- Cúpula de misión, en trazo dorado -->
-  <g fill="none" stroke="#c8952c" stroke-linecap="round" stroke-linejoin="round">
+  <g fill="none" stroke="#d9ad5c" stroke-linecap="round" stroke-linejoin="round">
     <path d="M400 18 v20 M392 26 h16" stroke-width="4"/>
-    <path d="M389 40 h22 v14 h-22 z" stroke-width="3.5" fill="#f4e6c2"/>
+    <path d="M389 40 h22 v14 h-22 z" stroke-width="3.5" fill="#4a3a1c"/>
     <path d="M384 54 h32" stroke-width="4"/>
-    <path d="M352 100 C352 70 372 56 400 54 C428 56 448 70 448 100" stroke-width="6" fill="#efdca9"/>
+    <path d="M352 100 C352 70 372 56 400 54 C428 56 448 70 448 100" stroke-width="6" fill="#3d3117"/>
     <path d="M400 56 C393 70 391 86 391 100 M400 56 C407 70 409 86 409 100" stroke-width="2.4" opacity="0.75"/>
     <path d="M346 100 h108" stroke-width="6"/>
     <path d="M356 105 v18 M444 105 v18 M378 106 v16 M422 106 v16" stroke-width="3.5"/>
@@ -14,7 +14,7 @@
     <path d="M334 147 C366 141 434 141 466 147" stroke-width="3.5" opacity="0.55"/>
   </g>
   <!-- Nombre -->
-  <g font-family="Georgia, 'Times New Roman', Times, serif" fill="#111111">
+  <g font-family="Georgia, 'Times New Roman', Times, serif" fill="#f4f1ea">
     <text x="205" y="112" text-anchor="middle" font-size="86" textLength="140" lengthAdjust="spacing">Las</text>
     <text x="250" y="188" text-anchor="middle" font-size="86" textLength="370" lengthAdjust="spacing">Misiones</text>
     <text x="250" y="222" text-anchor="middle" font-family="'Segoe UI', Arial, Helvetica, sans-serif" font-size="21" font-weight="500" textLength="372" lengthAdjust="spacing">RESIDENCIAL</text>

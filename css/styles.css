@@ -282,3 +282,30 @@ table.data tr.total td { font-weight: 700; color: var(--ink); border-bottom: non
 }
 .pending-box .big { display: block; font-size: 1.6rem; margin-bottom: 0.3rem; }
 table.data td.pend { color: var(--muted); font-style: italic; }
+
+/* ---------- Logotipo (versión vectorial del logo del condominio) ---------- */
+.brand picture { display: flex; align-items: center; }
+.brand img.wordmark { width: auto; height: 56px; border-radius: 0; }
+.hero .hero-logo { display: block; width: min(420px, 86vw); height: auto; margin: 0 auto 0.5rem; }
+.hero h1.logo-h1 { margin: 0; line-height: 0; }
+
+/* ---------- Finanzas: vista general ↔ detalle ---------- */
+table.data tr.click { cursor: pointer; }
+table.data tr.click:hover td { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.btn-mini { font-size: 0.78rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.back-bar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 1rem; }
+.back-bar .hint { font-size: 0.85rem; color: var(--muted); }
+.updated {
+  border-left: 4px solid var(--good-text); background: color-mix(in srgb, var(--good-text) 8%, var(--surface));
+  border-radius: 8px; padding: 0.7rem 1rem; font-size: 0.9rem; color: var(--ink-2); margin: 1rem 0;
+}
+.updated strong { color: var(--ink); }
+
+/* ---------- Finanzas: revisión de los documentos ---------- */
+.issue { border-bottom: 1px solid var(--grid); padding: 0.8rem 0; }
+.issue:last-child { border-bottom: none; }
+.issue .top { display: flex; gap: 0.6rem; align-items: baseline; flex-wrap: wrap; }
+.issue .t { font-weight: 700; color: var(--ink); }
+.issue p { margin: 0.3rem 0 0; color: var(--ink-2); font-size: 0.92rem; }
+.pill.incongruencia { background: color-mix(in srgb, var(--bad-text) 14%, transparent); color: var(--bad-text); }
+.pill.observacion { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }

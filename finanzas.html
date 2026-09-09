@@ -11,101 +11,132 @@
 <body>
 <header class="site-header">
   <div class="inner">
-    <a class="brand" href="index.html"><img src="assets/mark.svg" alt=""><span class="logo">Las Misiones</span><span class="tag">Residencial</span></a>
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
     <nav class="main">
       <a href="index.html">Inicio</a>
       <a href="reglamento.html">Reglamento</a>
       <a href="areas-comunes.html">Áreas comunes</a>
-      <a href="mesa-directiva.html">Mesa directiva</a>
+      <a href="pendientes.html">Pendientes</a>
       <a href="finanzas.html" class="active">Finanzas</a>
     </nav>
   </div>
 </header>
 
 <main class="wrap" id="content">
-  <h1 class="section-title" style="margin-top:1rem">Rendición de cuentas</h1>
-  <p class="section-sub">Sección de acceso abierto: no hace falta clave. Aquí está el tablero completo de lo que se va a publicar cada mes; las cifras entran en cuanto la administración entregue su hoja de cálculo.</p>
+  <!-- ===== Vista general ===== -->
+  <section id="resumen">
+    <h1 class="section-title" style="margin-top:1rem" id="tituloGeneral">Rendición de cuentas</h1>
+    <p class="section-sub" id="rangoSub">Vista general del año con las cifras de la tabla contable de la administración.</p>
 
-  <div class="notice">⏳ <strong>Esperando el primer informe.</strong> El 10 de agosto la mesa directiva acordó que <strong>Admin-Solutions entregue la hoja de cálculo de julio completa</strong>, para poder generar el informe financiero del mes. Mientras llega, cada métrica aparece con un guion (—) en lugar del dato: <em>ninguna cifra de esta página está inventada</em>. <a href="mesa-directiva.html#financiero">Ver el acuerdo</a>.</div>
+    <div class="updated">📅 <strong>Información actualizada a junio de 2026.</strong> Las cifras provienen de las tablas contables de ingresos y egresos de 2025 y 2026 y de los estados de cuenta emitidos el 22 de junio de 2026 por Admin-Solutions. <strong>Falta que el administrador reporte los cambios y los datos de julio y de agosto a la fecha.</strong> <a href="pendientes.html#financiero">Ver el pendiente</a>.</div>
 
-  <div class="privacy">🛡️ <strong>Privacidad de adeudos.</strong> Como esta sección es pública, la morosidad se informa siempre de forma <strong>agregada</strong>: montos y número de unidades, sin identificar ningún departamento ni a ningún condómino. La relación individual se entrega solo a la mesa directiva y se gestiona de manera confidencial.</div>
+    <div class="privacy">🛡️ <strong>Privacidad de adeudos.</strong> Como esta sección es pública, la morosidad se informa siempre de forma <strong>agregada</strong>: montos y número de unidades, sin identificar ningún departamento ni a ningún condómino. La relación individual se entrega solo a la mesa directiva y se gestiona de manera confidencial.</div>
 
-  <!-- ===== Datos mensuales ===== -->
-  <h2 class="section-title" id="mensual">📅 Datos del mes</h2>
-  <p class="section-sub">Un bloque por mes, con el mismo desglose siempre.</p>
-  <div class="month-chips" id="chips" role="tablist"></div>
+    <div class="month-chips" id="anios" role="tablist" aria-label="Año"></div>
 
-  <div class="stat-grid" id="statCards"></div>
+    <div class="stat-grid" id="overviewCards"></div>
 
-  <div class="two-col" style="margin-top:1.25rem">
     <div class="panel">
-      <h3>Ingresos del mes</h3>
-      <div class="table-scroll"><table class="data" id="tIngresos"></table></div>
+      <h3>Mes por mes <span class="sub">toca un mes para ver su detalle</span></h3>
+      <div class="table-scroll"><table class="data" id="tAnual"></table></div>
+      <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">Ingresos y egresos según la tabla contable (por fecha de pago). La cobranza es por mes facturado, según los estados de cuenta al 22 de junio de 2026; la de junio estaba en curso en esa fecha.</p>
     </div>
-    <div class="panel">
-      <h3>Indicadores del mes</h3>
-      <div class="table-scroll"><table class="data" id="tIndicadores"></table></div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>Ingresos vs. egresos por mes</h3>
+        <div class="legend">
+          <span class="li"><span class="sw" style="background:var(--series-1)"></span>Ingresos</span>
+          <span class="li"><span class="sw" style="background:var(--series-2)"></span>Egresos</span>
+        </div>
+        <div class="chart-box" id="chartBars"></div>
+      </div>
+      <div class="panel">
+        <h3>Saldo en caja al cierre de cada mes</h3>
+        <div class="chart-box" id="chartLine"></div>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0.6rem 0 0">2025 cerró con la mitad del saldo con que empezó; en 2026 el saldo se ha movido entre $6 mil y $28 mil.</p>
+      </div>
     </div>
-  </div>
 
-  <div class="panel">
-    <h3>Egresos del mes <span class="sub" id="egresosSub"></span></h3>
-    <div class="table-scroll"><table class="data" id="tEgresos"></table></div>
-    <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">Se publica proveedor, concepto y monto de cada gasto, agrupado en fijos, variables y obra, conforme al catálogo de gastos comunes del artículo 14 del reglamento.</p>
-  </div>
+    <div class="two-col" style="margin-top:0">
+      <div class="panel">
+        <h3>En qué se va el gasto ordinario <span class="sub">promedio mensual del año</span></h3>
+        <div class="chart-box" id="chartFijos"></div>
+      </div>
+      <div class="panel">
+        <h3>El agua en cifras</h3>
+        <div class="table-scroll"><table class="data" id="tAgua"></table></div>
+        <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">Cada unidad paga su consumo según el medidor individual instalado en enero de 2025; el recibo del condominio se cubre con lo cobrado y, cuando no alcanza, con la cuota de mantenimiento.</p>
+      </div>
+    </div>
 
-  <div class="panel">
-    <h3>Morosidad (agregada)</h3>
+    <!-- ===== Morosidad ===== -->
+    <h2 class="section-title" id="morosidad">🧾 Morosidad (agregada)</h2>
+    <p class="section-sub">Foto al corte, según los <span id="morosidadFecha">estados de cuenta</span>. Sin nombres ni números de departamento.</p>
     <div class="stat-grid" id="morosidadCards"></div>
     <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">Los adeudos se gestionan de manera directa y confidencial entre la administración y cada unidad. El retraso en reintegrar el fondo común causa interés moratorio al CPP multiplicado por 1.5 (art. 17).</p>
-  </div>
 
-  <!-- ===== Panorama anual ===== -->
-  <h2 class="section-title">📈 Panorama del año</h2>
-  <p class="section-sub">Evolución de los meses publicados.</p>
+    <!-- ===== Métricas fijas ===== -->
+    <h2 class="section-title" id="fijas">📌 Métricas fijas del condominio</h2>
+    <p class="section-sub" id="rangoFijas">Datos estructurales que no cambian mes a mes.</p>
+    <div class="stat-grid" id="fixedCards"></div>
 
-  <div class="panel">
-    <h3>Ingresos vs. egresos por mes</h3>
-    <div class="legend">
-      <span class="li"><span class="sw" style="background:var(--series-1)"></span>Ingresos</span>
-      <span class="li"><span class="sw" style="background:var(--series-2)"></span>Egresos</span>
+    <!-- ===== Proyectos ===== -->
+    <h2 class="section-title" id="proyectos">🔧 Proyectos en curso</h2>
+    <p class="section-sub">Obras financiadas con cuota extraordinaria, aprobadas conforme al artículo 14, inciso J. Su seguimiento está en <a href="pendientes.html">Pendientes</a>.</p>
+    <div class="panel" style="margin-top:0.5rem">
+      <div class="table-scroll"><table class="data" id="tProyectos"></table></div>
+      <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">De cada proyecto se publica lo recaudado, lo que falta por recaudar y el gasto ejercido, siempre en agregado.</p>
     </div>
-    <div class="chart-box" id="chartBars"></div>
-  </div>
 
-  <div class="panel">
-    <h3>Saldo en caja al cierre de cada mes</h3>
-    <div class="chart-box" id="chartLine"></div>
-  </div>
+    <!-- ===== Revisión ===== -->
+    <h2 class="section-title" id="revision-titulo">🔍 Revisión de los documentos</h2>
+    <p class="section-sub" id="revisionSub">Cotejo de las tablas contables con los estados de cuenta.</p>
+    <div class="panel" style="margin-top:0.5rem" id="revision"></div>
 
-  <!-- ===== Métricas fijas ===== -->
-  <h2 class="section-title" id="fijas">📌 Métricas fijas del condominio</h2>
-  <p class="section-sub">Datos estructurales que no cambian mes a mes.</p>
+    <h2 class="section-title">Cómo se actualiza esta página</h2>
+    <div class="panel">
+      <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>1.</strong> Admin-Solutions entrega la tabla contable del mes (ingresos, egresos por concepto y saldo) y los estados de cuenta.</p>
+      <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>2.</strong> La mesa directiva coteja las cifras contra el estado de cuenta del artículo 19, fracción XI, y anota aquí lo que no cuadra. Cada condómino tiene cinco días para formular observaciones desde que lo recibe.</p>
+      <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>3.</strong> Se publica el resumen agregado del mes; el detalle por departamento no sale de la administración.</p>
+      <p class="ref" style="margin:0.6rem 0 0">Las cifras publicadas son informativas. La aprobación formal del estado de cuenta y del presupuesto corresponde a la asamblea (art. 24, V y VI).</p>
+    </div>
+  </section>
 
-  <div class="stat-grid" id="fixedCards"></div>
+  <!-- ===== Detalle de un mes ===== -->
+  <section id="detalle" hidden>
+    <div class="back-bar"><a href="#resumen" class="btn primary" id="volver">← Volver a la vista general</a><span class="hint">Estás viendo el detalle de un mes.</span></div>
+    <h2 class="section-title" id="tituloMes" style="margin-top:0.5rem">Detalle del mes</h2>
+    <p class="section-sub">Cambia de mes con las pestañas.</p>
+    <div class="month-chips" id="chips" role="tablist"></div>
 
-  <!-- ===== Proyectos ===== -->
-  <h2 class="section-title" id="proyectos">🔧 Proyectos en curso</h2>
-  <p class="section-sub">Obras financiadas con cuota extraordinaria, aprobadas conforme al artículo 14, inciso J.</p>
-  <div class="panel" style="margin-top:0.5rem">
-    <div class="table-scroll"><table class="data" id="tProyectos"></table></div>
-    <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">De cada proyecto se publicará lo recaudado, lo que falta por recaudar y el gasto ejercido, siempre en agregado.</p>
-  </div>
+    <div class="stat-grid" id="statCards"></div>
 
-  <h2 class="section-title">Cómo se actualiza esta página</h2>
-  <div class="panel">
-    <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>1.</strong> Admin-Solutions entrega la hoja de cálculo mensual con ingresos, egresos por proveedor, cobranza y saldos.</p>
-    <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>2.</strong> La mesa directiva revisa las cifras contra el estado de cuenta del artículo 19, fracción XI. Cada condómino tiene cinco días para formular observaciones desde que lo recibe.</p>
-    <p style="margin:0.2rem 0; color:var(--ink-2)"><strong>3.</strong> Se publica aquí el resumen agregado del mes; el detalle por departamento no sale de la administración.</p>
-    <p class="ref" style="margin:0.6rem 0 0">Las cifras publicadas son informativas. La aprobación formal del estado de cuenta y del presupuesto corresponde a la asamblea (art. 24, V y VI).</p>
-  </div>
+    <div class="two-col" style="margin-top:1.25rem">
+      <div class="panel">
+        <h3>Ingresos del mes</h3>
+        <div class="table-scroll"><table class="data" id="tIngresos"></table></div>
+      </div>
+      <div class="panel">
+        <h3>Indicadores del mes</h3>
+        <div class="table-scroll"><table class="data" id="tIndicadores"></table></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Egresos del mes <span class="sub" id="egresosSub"></span></h3>
+      <div class="table-scroll"><table class="data" id="tEgresos"></table></div>
+      <p style="font-size:0.85rem; color:var(--muted); margin:0.9rem 0 0">Se publica concepto y monto de cada gasto, agrupado en ordinarios y extraordinarios como en la tabla contable de la administración (catálogo de gastos comunes del artículo 14 del reglamento).</p>
+    </div>
+    <div class="back-bar" style="margin-top:1.5rem"><a href="#resumen" class="btn primary" id="volver2">← Volver a la vista general</a></div>
+  </section>
 </main>
 
 <div class="viz-tip" id="vizTip"></div>
 
 <footer class="site-footer">
   <div class="inner">
-    Las Misiones Residencial · Rendición de cuentas · Sección de acceso abierto, con información exclusivamente agregada. Fuente prevista: hoja de cálculo mensual de Admin-Solutions.
+    Las Misiones Residencial · Rendición de cuentas · Sección de acceso abierto, con información exclusivamente agregada. Fuente: tablas contables de ingresos y egresos 2025 y 2026 y estados de cuenta al 22 de junio de 2026, de Admin-Solutions. Actualizado a junio de 2026.
   </div>
 </footer>
 
