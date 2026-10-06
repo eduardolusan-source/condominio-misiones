@@ -196,13 +196,15 @@ async function cargarEstado(n) {
     estado = j;
     aplicarConfig(j);
     let html = "<h3>Depto " + n + "</h3>";
-    if (j.adeudo && j.adeudo.total > 0) {
+    if (!j.adeudo || !j.adeudo.mostrar) {
+      html += '<div class="fila"><span>Adeudo anterior</span><span class="badge">pendiente</span></div><p class="corte">Se publicará cuando la administración anterior entregue las cuentas.</p>';
+    } else if (j.adeudo.total > 0) {
       html += '<div class="fila"><span>Adeudo anterior</span><span class="tot">' + fmt(j.adeudo.total) + "</span></div>";
       [["Mantenimiento", j.adeudo.mantenimiento], ["Agua", j.adeudo.agua], ["Extraordinario", j.adeudo.extraordinario]].forEach(([k, v]) => {
         if (v > 0) html += '<div class="fila"><span>&nbsp;&nbsp;' + k + "</span><span>" + fmt(v) + "</span></div>";
       });
       html += '<p class="corte">' + (j.adeudo.corte ? "Según el corte del " + j.adeudo.corte + "; no" : "No") + " incluye los pagos de abajo.</p>";
-    } else if (j.adeudo) {
+    } else {
       html += '<div class="fila"><span>Adeudo anterior</span><span class="badge si">al corriente</span></div>' + (j.adeudo.corte ? '<p class="corte">Según el corte del ' + j.adeudo.corte + ".</p>" : "");
     }
     if (j.pagos.length) {

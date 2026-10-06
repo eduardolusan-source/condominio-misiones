@@ -83,12 +83,13 @@ function instalar() {
   let config = ss.getSheetByName(HOJA_CONFIG);
   if (!config) {
     config = ss.insertSheet(HOJA_CONFIG);
-    config.getRange("A1:C7").setValues([
+    config.getRange("A1:C8").setValues([
       ["Clave", "Valor", "Para qué sirve"],
       ["cuota_mantenimiento", 1500, "Monto que aparece precargado en Mantenimiento"],
       ["extraordinario_nombre", "Protocolización de la mesa directiva, cuenta bancaria y puerta peatonal", "Nombre de la cuota extraordinaria vigente (vacío = no se muestra)"],
       ["extraordinario_monto", 1000, "Monto de la cuota extraordinaria vigente"],
       ["casa_club_monto", 500, "Monto sugerido por uso de la casa club"],
+      ["adeudos", "pendiente", "Escribe 'mostrar' cuando la hoja de adeudos esté al día; mientras, la página dice 'pendiente'"],
       ["aviso", "", "Texto breve que se muestra arriba del formulario (opcional)"],
       ["cuenta", "Nubank · Eduardo Luna · cuenta terminación 5488", "Dónde se transfiere, se muestra en la página"]
     ]);
@@ -212,16 +213,19 @@ function estadoDepto_(depto) {
     aviso: String(cfg.aviso || ""), cuenta: String(cfg.cuenta || ""),
     adeudo: null, pagos: [], mesActual: Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM")
   };
-  // Adeudo según la hoja maestra
+  // Adeudo según la hoja maestra; solo se muestra cuando Config → adeudos = "mostrar"
   const ad = ss.getSheetByName(HOJA_ADEUDOS);
-  if (ad) {
+  const mostrar = String(cfg.adeudos || "").trim().toLowerCase() === "mostrar";
+  if (!mostrar) {
+    r.adeudo = { pendiente: true };
+  } else if (ad) {
     const fc = ad.createTextFinder("Fecha de corte").matchCase(false).findNext();
     const corte = fc ? ad.getRange(fc.getRow(), fc.getColumn() + 1).getDisplayValue() : "";
     const celda = ad.createTextFinder("^Depto " + depto + "$").useRegularExpression(true).matchEntireCell(true).findNext();
     if (celda) {
       // Depto | Propietario | Mantenimiento | Agua | Extraordinario | Adeudo total
       const v = ad.getRange(celda.getRow(), celda.getColumn() + 2, 1, 4).getValues()[0].map(x => Number(x) || 0);
-      r.adeudo = { corte: corte, mantenimiento: v[0], agua: v[1], extraordinario: v[2], total: v[3] };
+      r.adeudo = { mostrar: true, corte: corte, mantenimiento: v[0], agua: v[1], extraordinario: v[2], total: v[3] };
     }
   }
   // Últimos pagos reportados por ese depto

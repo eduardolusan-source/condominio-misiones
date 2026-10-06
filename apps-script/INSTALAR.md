@@ -41,5 +41,8 @@ Cambiar el estatus a **Confirmado**: la fecha se anota sola y en la página el p
 ## Después
 - **Confirmar un pago:** columna *Estatus* de la pestaña Pagos. Nada cuenta hasta que diga Confirmado.
 - **Cambiar la cuota, el extraordinario vigente o poner un aviso:** pestaña Config, columna Valor.
+- **Adeudos anteriores:** la página dice "pendiente" para todos hasta que en Config exista el renglón
+  `adeudos` con el valor `mostrar` (si no está el renglón, agrégalo en la columna A y escribe `mostrar` en la B).
+  Entonces muestra lo que diga "Adeudos (hoja maestra)" para cada departamento.
 - **Si cambias el script:** Implementar → Administrar implementaciones → lápiz → Versión: *Nueva* → Implementar.
   La URL no cambia.
