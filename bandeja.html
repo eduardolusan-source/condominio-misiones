@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Bandeja de pagos · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  body { font-size: 1.05rem; }
+  .bandeja { max-width: 560px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  .bandeja h1 { font-size: 1.6rem; margin: 0.5rem 0 0.2rem; }
+  .sub { color: var(--ink-2); margin: 0 0 1rem; font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  .sub a { font-size: 0.9rem; }
+  .clave { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+  .clave input { font-size: 1.2rem; margin: 0.5rem 0; }
+  .btn-l { font: inherit; font-weight: 800; font-size: 1.05rem; padding: 0.8rem 1rem; border: none; border-radius: 12px; cursor: pointer; width: 100%; }
+  .btn-l.ok { background: var(--good-text); color: #fff; }
+  .btn-l.no { background: transparent; color: var(--bad-text); border: 2px solid var(--bad-text); }
+  .btn-l.neutro { background: var(--accent); color: #fff; }
+  .btn-l:disabled { opacity: 0.5; cursor: wait; }
+  .tarjeta { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; box-shadow: var(--shadow); }
+  .tarjeta .cab { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+  .tarjeta .cab strong { font-size: 1.35rem; }
+  .tarjeta .cab .monto { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+  .tarjeta .det { color: var(--ink-2); font-size: 0.92rem; margin: 0.2rem 0 0.6rem; }
+  .tarjeta .nota { background: var(--page); border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.92rem; margin-bottom: 0.6rem; }
+  .tarjeta .img { min-height: 60px; display: grid; place-items: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 0.7rem; }
+  .tarjeta .img img { max-width: 100%; max-height: 420px; border-radius: 10px; border: 1px solid var(--border); }
+  .tarjeta .acciones { display: grid; grid-template-columns: 2fr 1fr; gap: 0.5rem; }
+  .vacio { text-align: center; padding: 2.5rem 1rem; color: var(--ink-2); }
+  .vacio .big { font-size: 2.5rem; }
+  .hecho { border-color: var(--good-text); opacity: 0.6; }
+  .hidden { display: none !important; }
+  @media (prefers-color-scheme: dark) { .btn-l.ok, .btn-l.neutro { color: #0d0d0d; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><img src="assets/mark.svg" alt=""><span class="logo">Las Misiones</span><span class="tag">Residencial</span></a>
+  </div>
+</header>
+
+<main class="bandeja">
+  <h1>Bandeja de pagos</h1>
+
+  <div id="pedirClave" class="clave hidden">
+    <p style="margin:0">Clave de la mesa directiva</p>
+    <input id="clave" type="password" inputmode="text" autocomplete="current-password" placeholder="clave">
+    <button class="btn-l neutro" id="btnEntrar">Entrar</button>
+    <p id="claveMal" class="hidden" style="color:var(--bad-text);margin:0.5rem 0 0">Clave incorrecta.</p>
+  </div>
+
+  <div id="panel" class="hidden">
+    <p class="sub"><span id="cuenta">Cargando…</span><a id="verHoja" href="#" target="_blank" rel="noopener">Abrir la hoja</a></p>
+    <div id="lista"></div>
+    <button class="btn-l neutro" id="btnActualizar" style="margin-top:0.5rem">Actualizar</button>
+    <p style="text-align:center;margin-top:1rem"><a href="#" id="salir" style="font-size:0.85rem;color:var(--muted)">Salir</a></p>
+  </div>
+</main>
+
+<script>
+/* ===== CONFIGURACIÓN ===== */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbziNb5qaiaJj2T6xnVoQorIqVJujy4Rogq64t1Yqx9nnAG8yNrJALhyS6HKnD3jd10Y/exec";
+/* ========================= */
+const $ = id => document.getElementById(id);
+const fmt = n => "$" + n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const nombreMes = id => { if (!id) return ""; const [y, m] = id.split("-"); return MES[+m - 1] + " " + y; };
+let clave = "";
+try { clave = localStorage.getItem("misiones_admin") || ""; } catch (e) {}
+
+function pedir() { $("pedirClave").classList.remove("hidden"); $("panel").classList.add("hidden"); $("clave").focus(); }
+$("btnEntrar").onclick = () => { clave = $("clave").value.trim(); if (!clave) return; cargar(); };
+$("clave").addEventListener("keydown", ev => { if (ev.key === "Enter") $("btnEntrar").click(); });
+$("salir").onclick = ev => { ev.preventDefault(); clave = ""; try { localStorage.removeItem("misiones_admin"); } catch (e) {} pedir(); };
+$("btnActualizar").onclick = cargar;
+
+async function cargar() {
+  $("claveMal").classList.add("hidden");
+  $("btnActualizar").disabled = true;
+  try {
+    const r = await fetch(SCRIPT_URL + "?accion=pendientes&clave=" + encodeURIComponent(clave) + "&t=" + Date.now());
+    const j = await r.json();
+    if (!j.ok) {
+      if (j.error === "clave") { pedir(); if ($("clave").value) $("claveMal").classList.remove("hidden"); return; }
+      throw new Error(j.error);
+    }
+    try { localStorage.setItem("misiones_admin", clave); } catch (e) {}
+    $("pedirClave").classList.add("hidden"); $("panel").classList.remove("hidden");
+    $("verHoja").href = j.hoja;
+    $("cuenta").textContent = j.total === 0 ? "Nada por confirmar" : (j.total === 1 ? "1 pago por confirmar" : j.total + " pagos por confirmar");
+    pintar(j.pendientes);
+    cargarImagenes(j.pendientes);
+  } catch (e) {
+    $("cuenta").textContent = "No se pudo consultar. Revisa tu conexión.";
+  } finally { $("btnActualizar").disabled = false; }
+}
+
+function pintar(lista) {
+  const l = $("lista"); l.innerHTML = "";
+  if (!lista.length) { l.innerHTML = '<div class="vacio"><div class="big">✅</div>Todo cotejado. No hay pagos pendientes.</div>'; return; }
+  lista.forEach(p => {
+    const partes = [p.mantenimiento && "mantenimiento " + fmt(p.mantenimiento), p.agua && "agua " + fmt(p.agua), p.extraordinario && "extraordinario " + fmt(p.extraordinario), p.casaclub && "casa club " + fmt(p.casaclub)].filter(Boolean).join(" · ");
+    const t = document.createElement("div");
+    t.className = "tarjeta"; t.id = "t_" + p.folio;
+    t.innerHTML =
+      '<div class="cab"><strong>Depto ' + p.depto + '</strong><span class="monto">' + fmt(p.total) + '</span></div>' +
+      '<div class="det">' + nombreMes(p.mes) + ' · ' + partes + '<br>Reportado el ' + p.fecha + ' · ' + p.folio + '</div>' +
+      (p.nota ? '<div class="nota">“' + p.nota.replace(/</g, "&lt;") + '”</div>' : "") +
+      '<div class="img" id="img_' + p.folio + '">' + (p.comprobante ? "Cargando captura…" : "Sin captura") + '</div>' +
+      '<div class="acciones"><button class="btn-l ok">Confirmar</button><button class="btn-l no">Rechazar</button></div>';
+    t.querySelector(".ok").onclick = () => resolver(p, "Confirmado", t);
+    t.querySelector(".no").onclick = () => { if (confirm("¿Rechazar el pago del depto " + p.depto + " por " + fmt(p.total) + "? Se retira de la pestaña del mes.")) resolver(p, "Rechazado", t); };
+    l.appendChild(t);
+  });
+}
+
+async function cargarImagenes(lista) {
+  for (const p of lista) {
+    if (!p.comprobante) continue;
+    const caja = $("img_" + p.folio); if (!caja) continue;
+    try {
+      const r = await fetch(SCRIPT_URL + "?accion=imagen&clave=" + encodeURIComponent(clave) + "&folio=" + encodeURIComponent(p.folio));
+      const j = await r.json();
+      if (j.ok && j.imagen) caja.innerHTML = '<a href="' + p.comprobante + '" target="_blank" rel="noopener"><img src="' + j.imagen + '" alt="Comprobante"></a>';
+      else caja.innerHTML = '<a href="' + p.comprobante + '" target="_blank" rel="noopener">Abrir la captura en Drive</a>';
+    } catch (e) { caja.innerHTML = '<a href="' + p.comprobante + '" target="_blank" rel="noopener">Abrir la captura en Drive</a>'; }
+  }
+}
+
+async function resolver(p, estatus, t) {
+  t.querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "resolver", claveAdmin: clave, folio: p.folio, estatus: estatus }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    const j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
+    t.classList.add("hecho");
+    t.querySelector(".acciones").innerHTML = '<div style="grid-column:1/-1;text-align:center;font-weight:700;color:' + (estatus === "Confirmado" ? "var(--good-text)" : "var(--bad-text)") + '">' + (estatus === "Confirmado" ? "Confirmado ✓" : "Rechazado") + "</div>";
+    setTimeout(() => { t.remove(); const n = document.querySelectorAll(".tarjeta").length; $("cuenta").textContent = n === 0 ? "Nada por confirmar" : (n === 1 ? "1 pago por confirmar" : n + " pagos por confirmar"); if (!n) pintar([]); }, 900);
+  } catch (e) {
+    alert("No se pudo guardar. Intenta de nuevo.");
+    t.querySelectorAll("button").forEach(b => b.disabled = false);
+  }
+}
+
+if (clave) cargar(); else pedir();
+</script>
+</body>
+</html>

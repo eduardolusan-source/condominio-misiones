@@ -14,6 +14,7 @@
 */
 
 const CLAVE        = "misiones";            // la misma que en pago.html; solo frena envíos ajenos
+const CLAVE_ADMIN  = "cambia-esta-clave";    // la de bandeja.html: con ella se confirman y rechazan pagos. CÁMBIALA.
 const CARPETA      = "Misiones · Comprobantes";
 const HOJA_PAGOS   = "Pagos";
 const HOJA_CONFIG  = "Config";
@@ -23,8 +24,8 @@ const ANIO         = 2026;
 const UNIDADES     = 16;
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const ESTATUS = ["Pendiente","Confirmado","Rechazado"];
-const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa club","Total","Nota","Comprobante","Estatus","Mes","Confirmado el","Celdas del mes"];
-//                  A       B       C               D      E               F           G       H      I             J         K     L               M (uso interno)
+const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa club","Total","Nota","Comprobante","Estatus","Mes","Confirmado el","Celdas del mes","Folio"];
+//                  A       B       C               D      E               F           G       H      I             J         K     L               M (uso interno)  N
 const AMARILLO = "#ffe599";                 // color de lo reportado y aún no confirmado
 
 /* ============================ INSTALACIÓN ============================ */
@@ -82,6 +83,7 @@ function instalar() {
     pagos.getRange(1, 1, 1, ENC_PAGOS.length).setValues([ENC_PAGOS]).setFontWeight("bold").setBackground("#1d3f63").setFontColor("#ffffff");
   }
   pagos.hideColumns(13);
+  if (!pagos.getFilter()) pagos.getRange(1, 1, pagos.getMaxRows(), ENC_PAGOS.length).createFilter();
 
   // 4. Pestaña Config
   let config = ss.getSheetByName(HOJA_CONFIG);
@@ -157,6 +159,8 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   try {
     if (p.accion === "estado") return json_(estadoDepto_(parseInt(p.depto, 10)));
+    if (p.accion === "pendientes") return json_(pendientes_(p.clave));
+    if (p.accion === "imagen") return json_(imagen_(p.clave, p.folio));
     return json_({ ok: true, servicio: "misiones-pagos" });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -167,6 +171,7 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     const d = JSON.parse(e.postData.contents || "{}");
+    if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     const depto = parseInt(d.depto, 10);
     if (!(depto >= 1 && depto <= UNIDADES)) return json_({ ok: false, error: "departamento" });
@@ -195,11 +200,14 @@ function doPost(e) {
     const pagos = ss.getSheetByName(HOJA_PAGOS);
     if (!pagos) throw new Error("Falta la pestaña Pagos; corre instalar().");
     const celdas = anotarEnMes_(ss, mes, depto, { manto: manto, agua: agua, extra: extra, casa: casa }, ahora);
-    pagos.appendRow([ahora, depto, manto || "", agua || "", extra || "", casa || "", total, nota, url, "Pendiente", mes, "", celdas]);
-    const fila = pagos.getLastRow();
+    const folio = "P-" + String(siguienteFolio_()).padStart(4, "0");
+    pagos.insertRowBefore(2);                               // lo más nuevo arriba
+    const fila = 2;
+    pagos.getRange(fila, 1, 1, ENC_PAGOS.length).setValues([[ahora, depto, manto || "", agua || "", extra || "", casa || "", total, nota, url, "Pendiente", mes, "", celdas, folio]]);
     pagos.getRange(fila, 1).setNumberFormat("dd/mm/yyyy hh:mm");
     pagos.getRange(fila, 3, 1, 5).setNumberFormat("$#,##0.00");
-    return json_({ ok: true, folio: "P-" + String(fila - 1).padStart(4, "0"), total: total });
+    pagos.getRange(fila, 10).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(ESTATUS, true).setAllowInvalid(false).build());
+    return json_({ ok: true, folio: folio, total: total });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
   } finally {
@@ -242,12 +250,14 @@ function estadoDepto_(depto) {
     vals.forEach(f => {
       if (Number(f[1]) !== depto) return;
       r.pagos.push({
+        t: new Date(f[0]).getTime(),
         fecha: Utilities.formatDate(new Date(f[0]), "America/Mexico_City", "d/MM/yyyy"),
         mantenimiento: Number(f[2]) || 0, agua: Number(f[3]) || 0, extraordinario: Number(f[4]) || 0, casaclub: Number(f[5]) || 0,
         total: Number(f[6]) || 0, estatus: String(f[9] || "Pendiente"), mes: String(f[10] || "")
       });
     });
-    r.pagos = r.pagos.slice(-8).reverse();
+    r.pagos.sort((a, b) => b.t - a.t);
+    r.pagos = r.pagos.slice(0, 8).map(x => { delete x.t; return x; });
   }
   return r;
 }
@@ -257,21 +267,85 @@ function onEdit(e) {
   try {
     const rg = e.range, h = rg.getSheet();
     if (h.getName() !== HOJA_PAGOS || rg.getColumn() !== 10 || rg.getRow() < 2) return;
-    const fila = rg.getRow();
-    const ss = SpreadsheetApp.getActive();
-    const celdas = String(h.getRange(fila, 13).getValue() || "");
-    if (e.value === "Confirmado") {
-      h.getRange(fila, 12).setValue(new Date());
-      aplicarCeldas_(ss, celdas, "confirmar");
-    } else if (e.value === "Rechazado") {
-      h.getRange(fila, 12).clearContent();
-      aplicarCeldas_(ss, celdas, "retirar");
-      h.getRange(fila, 13).clearContent();                 // ya no hay nada que recolorear
-    } else {
-      h.getRange(fila, 12).clearContent();
-      aplicarCeldas_(ss, celdas, "pendiente");
-    }
+    resolver_(h, rg.getRow(), e.value);
   } catch (err) {}
+}
+
+/* Aplica un estatus a un renglón de Pagos: fecha de confirmación y color/monto en el mes. */
+function resolver_(h, fila, estatus) {
+  const ss = SpreadsheetApp.getActive();
+  const celdas = String(h.getRange(fila, 13).getValue() || "");
+  if (estatus === "Confirmado") {
+    h.getRange(fila, 12).setValue(new Date());
+    aplicarCeldas_(ss, celdas, "confirmar");
+  } else if (estatus === "Rechazado") {
+    h.getRange(fila, 12).clearContent();
+    aplicarCeldas_(ss, celdas, "retirar");
+    h.getRange(fila, 13).clearContent();                   // ya no hay nada que recolorear
+  } else {
+    h.getRange(fila, 12).clearContent();
+    aplicarCeldas_(ss, celdas, "pendiente");
+  }
+}
+
+/* ============================ BANDEJA (privada) ============================ */
+
+function filaPorFolio_(pagos, folio) {
+  if (!folio || pagos.getLastRow() < 2) return 0;
+  const vals = pagos.getRange(2, 14, pagos.getLastRow() - 1, 1).getValues();
+  for (let i = 0; i < vals.length; i++) if (String(vals[i][0]) === String(folio)) return i + 2;
+  return 0;
+}
+
+function pendientes_(clave) {
+  if (clave !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const ss = SpreadsheetApp.getActive();
+  const pagos = ss.getSheetByName(HOJA_PAGOS);
+  const r = { ok: true, pendientes: [], hoja: ss.getUrl() + "#gid=" + pagos.getSheetId(), total: 0 };
+  if (pagos.getLastRow() < 2) return r;
+  const vals = pagos.getRange(2, 1, pagos.getLastRow() - 1, ENC_PAGOS.length).getValues();
+  vals.forEach((f, i) => {
+    if (String(f[9]) !== "Pendiente") return;
+    r.pendientes.push({
+      folio: String(f[13] || ""), fila: i + 2,
+      fecha: Utilities.formatDate(new Date(f[0]), "America/Mexico_City", "d/MM/yyyy HH:mm"),
+      depto: Number(f[1]), mes: String(f[10] || ""),
+      mantenimiento: Number(f[2]) || 0, agua: Number(f[3]) || 0, extraordinario: Number(f[4]) || 0, casaclub: Number(f[5]) || 0,
+      total: Number(f[6]) || 0, nota: String(f[7] || ""), comprobante: String(f[8] || "")
+    });
+  });
+  r.total = r.pendientes.length;
+  return r;
+}
+
+/* Devuelve la captura de un pago en base64 (los archivos de Drive son privados). */
+function imagen_(clave, folio) {
+  if (clave !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const pagos = SpreadsheetApp.getActive().getSheetByName(HOJA_PAGOS);
+  const fila = filaPorFolio_(pagos, folio);
+  if (!fila) return { ok: false, error: "folio" };
+  const url = String(pagos.getRange(fila, 9).getValue() || "");
+  const m = url.match(/\/d\/([-\w]+)/);
+  if (!m) return { ok: true, imagen: "" };
+  const blob = DriveApp.getFileById(m[1]).getBlob();
+  return { ok: true, imagen: "data:" + blob.getContentType() + ";base64," + Utilities.base64Encode(blob.getBytes()) };
+}
+
+function resolverDesdeBandeja_(d) {
+  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (ESTATUS.indexOf(d.estatus) < 0) return { ok: false, error: "estatus" };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const pagos = SpreadsheetApp.getActive().getSheetByName(HOJA_PAGOS);
+    const fila = filaPorFolio_(pagos, d.folio);
+    if (!fila) return { ok: false, error: "folio" };
+    pagos.getRange(fila, 10).setValue(d.estatus);
+    resolver_(pagos, fila, d.estatus);
+    return { ok: true, folio: d.folio, estatus: d.estatus };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /* ====================== ESCRITURA EN LA PESTAÑA DEL MES ====================== */
@@ -350,6 +424,22 @@ function aplicarCeldas_(ss, celdas, modo) {
 
 /* ============================ AUXILIARES ============================ */
 
+function siguienteFolio_() {
+  const props = PropertiesService.getScriptProperties();
+  let n = parseInt(props.getProperty("folio"), 10);
+  if (!(n >= 1)) {                                          // arranca después del último folio que haya en la hoja
+    n = 1;
+    const pagos = SpreadsheetApp.getActive().getSheetByName(HOJA_PAGOS);
+    if (pagos && pagos.getLastRow() > 1) {
+      pagos.getRange(2, 14, pagos.getLastRow() - 1, 1).getValues().forEach(f => {
+        const k = parseInt(String(f[0]).replace(/\D/g, ""), 10); if (k >= n) n = k + 1;
+      });
+      n = Math.max(n, pagos.getLastRow());                  // no repetir folios viejos que iban por renglón
+    }
+  }
+  props.setProperty("folio", String(n + 1));
+  return n;
+}
 function config_() {
   const h = SpreadsheetApp.getActive().getSheetByName(HOJA_CONFIG);
   const out = {};

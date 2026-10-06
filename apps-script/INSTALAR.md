@@ -38,7 +38,15 @@ Abrir `pago.html`, tocar **Depto 14**, poner $1,500 en mantenimiento, agregar cu
 Debe aparecer un renglón en **Pagos** con estatus *Pendiente* y la captura en la carpeta del mes.
 Cambiar el estatus a **Confirmado**: la fecha se anota sola y en la página el pago cambia de color.
 
+## Bandeja de confirmación (privada)
+`bandeja.html` no aparece en el menú. Pide la clave que está en `CLAVE_ADMIN` dentro de `Code.gs`
+(**cámbiala antes de publicar**; la que viene es de ejemplo). Muestra solo los pagos pendientes, cada uno con
+su captura, y dos botones: Confirmar y Rechazar. Hacen exactamente lo mismo que cambiar el estatus en Pagos.
+La clave se guarda en el celular para no pedirla cada vez; "Salir" la borra.
+
 ## Después
+- **Los reportes nuevos entran arriba** de la pestaña Pagos, y el encabezado tiene filtro: con el embudo de
+  la columna Estatus puedes ver solo los Pendiente. Cada pago tiene un folio fijo (columna Folio).
 - **Qué pasa con cada reporte:** el vecino elige el mes. El script suma el monto en la pestaña de ese mes
   (Cobros por departamento, o el registro de casa club) y pinta la celda de **amarillo**. En Pagos queda el
   renglón con la captura y estatus *Pendiente*.
