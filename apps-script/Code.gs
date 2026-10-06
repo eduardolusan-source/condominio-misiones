@@ -73,6 +73,7 @@ function instalar() {
     pagos.getRange("A2:A").setNumberFormat("dd/mm/yyyy hh:mm");
     pagos.getRange("C2:G").setNumberFormat("$#,##0.00");
     pagos.getRange("L2:L").setNumberFormat("dd/mm/yyyy");
+    pagos.getRange("K2:K").setNumberFormat("@");
     const regla = SpreadsheetApp.newDataValidation().requireValueInList(ESTATUS, true).setAllowInvalid(false).build();
     pagos.getRange("J2:J").setDataValidation(regla);
     const cf = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Pendiente").setBackground("#fff3cd").setRanges([pagos.getRange("J2:J")]).build();
@@ -83,6 +84,7 @@ function instalar() {
     pagos.getRange(1, 1, 1, ENC_PAGOS.length).setValues([ENC_PAGOS]).setFontWeight("bold").setBackground("#1d3f63").setFontColor("#ffffff");
   }
   pagos.hideColumns(13);
+  pagos.getRange("K2:K").setNumberFormat("@");
   if (!pagos.getFilter()) pagos.getRange(1, 1, pagos.getMaxRows(), ENC_PAGOS.length).createFilter();
 
   // 4. Pestaña Config
@@ -206,6 +208,7 @@ function doPost(e) {
     pagos.getRange(fila, 1, 1, ENC_PAGOS.length).setValues([[ahora, depto, manto || "", agua || "", extra || "", casa || "", total, nota, url, "Pendiente", mes, "", celdas, folio]]);
     pagos.getRange(fila, 1).setNumberFormat("dd/mm/yyyy hh:mm");
     pagos.getRange(fila, 3, 1, 5).setNumberFormat("$#,##0.00");
+    pagos.getRange(fila, 11).setNumberFormat("@").setValue(mes);   // como texto, para que "2026-10" no se vuelva fecha
     pagos.getRange(fila, 10).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(ESTATUS, true).setAllowInvalid(false).build());
     return json_({ ok: true, folio: folio, total: total });
   } catch (err) {
@@ -253,7 +256,7 @@ function estadoDepto_(depto) {
         t: new Date(f[0]).getTime(),
         fecha: Utilities.formatDate(new Date(f[0]), "America/Mexico_City", "d/MM/yyyy"),
         mantenimiento: Number(f[2]) || 0, agua: Number(f[3]) || 0, extraordinario: Number(f[4]) || 0, casaclub: Number(f[5]) || 0,
-        total: Number(f[6]) || 0, estatus: String(f[9] || "Pendiente"), mes: String(f[10] || "")
+        total: Number(f[6]) || 0, estatus: String(f[9] || "Pendiente"), mes: mesTexto_(f[10])
       });
     });
     r.pagos.sort((a, b) => b.t - a.t);
@@ -309,7 +312,7 @@ function pendientes_(clave) {
     r.pendientes.push({
       folio: String(f[13] || ""), fila: i + 2,
       fecha: Utilities.formatDate(new Date(f[0]), "America/Mexico_City", "d/MM/yyyy HH:mm"),
-      depto: Number(f[1]), mes: String(f[10] || ""),
+      depto: Number(f[1]), mes: mesTexto_(f[10]),
       mantenimiento: Number(f[2]) || 0, agua: Number(f[3]) || 0, extraordinario: Number(f[4]) || 0, casaclub: Number(f[5]) || 0,
       total: Number(f[6]) || 0, nota: String(f[7] || ""), comprobante: String(f[8] || "")
     });
@@ -466,6 +469,11 @@ function esHojaMes_(h) {
 }
 function buscarHojaMes_(ss, nombre) {
   return ss.getSheets().find(h => h.getName().trim().toLowerCase() === nombre.toLowerCase()) || null;
+}
+/* El mes guardado puede venir como texto "2026-10" o, si la hoja lo convirtió, como fecha. */
+function mesTexto_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, "America/Mexico_City", "yyyy-MM");
+  return String(v || "");
 }
 function capitalizar_(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 function limpiar_(s, n) { return String(s || "").replace(/^[=+\-@\t\r]+/, "").replace(/\s+/g, " ").trim().slice(0, n); }
