@@ -201,9 +201,9 @@ async function cargarEstado(n) {
       [["Mantenimiento", j.adeudo.mantenimiento], ["Agua", j.adeudo.agua], ["Extraordinario", j.adeudo.extraordinario]].forEach(([k, v]) => {
         if (v > 0) html += '<div class="fila"><span>&nbsp;&nbsp;' + k + "</span><span>" + fmt(v) + "</span></div>";
       });
-      html += '<p class="corte">Según el corte del ' + j.adeudo.corte + "; no incluye los pagos de abajo.</p>";
+      html += '<p class="corte">' + (j.adeudo.corte ? "Según el corte del " + j.adeudo.corte + "; no" : "No") + " incluye los pagos de abajo.</p>";
     } else if (j.adeudo) {
-      html += '<div class="fila"><span>Adeudo anterior</span><span class="badge si">al corriente</span></div><p class="corte">Según el corte del ' + j.adeudo.corte + ".</p>";
+      html += '<div class="fila"><span>Adeudo anterior</span><span class="badge si">al corriente</span></div>' + (j.adeudo.corte ? '<p class="corte">Según el corte del ' + j.adeudo.corte + ".</p>" : "");
     }
     if (j.pagos.length) {
       html += '<h3 style="margin-top:0.7rem">Pagos reportados</h3>';
