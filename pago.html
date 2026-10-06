@@ -27,6 +27,9 @@
   .badge { font-size: 0.78rem; font-weight: 700; padding: 0.1rem 0.55rem; border-radius: 999px; background: #fff3cd; color: #7a5a00; white-space: nowrap; }
   .badge.si { background: #d4edda; color: #1d5a2a; }
   .badge.no { background: #f8d7da; color: #7a1c24; }
+  .meses { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .meses button { font: inherit; font-weight: 700; font-size: 1rem; min-height: 48px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .meses button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
   .concepto { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.6rem; background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 0.6rem 0.8rem; margin-bottom: 0.55rem; cursor: pointer; }
   .concepto.on { border-color: var(--accent); }
   .concepto .nom { font-weight: 700; }
@@ -52,7 +55,7 @@
   .error { background: var(--surface); border: 3px solid var(--bad-text); border-radius: var(--radius); padding: 1.1rem; font-size: 0.95rem; }
   .error textarea { min-height: 100px; margin-top: 0.6rem; font-size: 0.95rem; }
   .hidden { display: none !important; }
-  @media (prefers-color-scheme: dark) { .deptos button.sel, .enviar { color: #0d0d0d; } .badge { background: #5a4300; color: #ffe08a; } .badge.si { background: #1d4a2a; color: #b8f0c6; } .badge.no { background: #5a1d22; color: #ffb3b9; } }
+  @media (prefers-color-scheme: dark) { .deptos button.sel, .meses button.sel, .enviar { color: #0d0d0d; } .badge { background: #5a4300; color: #ffe08a; } .badge.si { background: #1d4a2a; color: #b8f0c6; } .badge.no { background: #5a1d22; color: #ffb3b9; } }
 </style>
 </head>
 <body>
@@ -85,7 +88,9 @@
 
     <section class="paso">
       <h2><span>2</span>¿Qué pagaste?</h2>
-      <p class="pista" style="text-align:left;margin:0 0 0.6rem">Toca lo que aplique. Puedes cambiar la cantidad.</p>
+      <p class="pista" style="text-align:left;margin:0 0 0.4rem">¿De qué mes es el pago?</p>
+      <div class="meses" id="meses"></div>
+      <p class="pista" style="text-align:left;margin:0.9rem 0 0.6rem">Toca lo que aplique. Puedes cambiar la cantidad.</p>
       <div id="conceptos"></div>
       <div class="total"><small>Total que debe coincidir con tu transferencia</small><strong id="total">$0.00</strong></div>
       <div class="nota"><input id="nota" type="text" maxlength="200" placeholder="Algo que quieras aclarar (opcional)"></div>
@@ -133,7 +138,26 @@ const CONCEPTOS = [
   { id: "extraordinario", nom: "Extraordinario", sub: "", sug: 0 },
   { id: "casaclub", nom: "Casa club", sub: "uso del salón", sug: 500 }
 ];
-let depto = null, imagen = null, estado = null;
+let depto = null, imagen = null, estado = null, mes = null;
+const NOMBRES_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+/* --- Mes del pago: dos anteriores, el actual (preseleccionado) y el siguiente --- */
+const meses = $("meses");
+(function () {
+  const hoy = new Date();
+  for (let k = -2; k <= 1; k++) {
+    const f = new Date(hoy.getFullYear(), hoy.getMonth() + k, 1);
+    const id = f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0");
+    const b = document.createElement("button");
+    b.type = "button"; b.dataset.id = id;
+    b.textContent = NOMBRES_MES[f.getMonth()].charAt(0).toUpperCase() + NOMBRES_MES[f.getMonth()].slice(1) + (f.getFullYear() !== hoy.getFullYear() ? " " + f.getFullYear() : "");
+    b.onclick = () => elegirMes(id);
+    meses.appendChild(b);
+    if (k === 0) elegirMes(id);
+  }
+})();
+function elegirMes(id) { mes = id; [...meses.children].forEach(x => x.classList.toggle("sel", x.dataset.id === id)); }
+function nombreMes(id) { const [y, m] = id.split("-"); return NOMBRES_MES[+m - 1] + " " + y; }
 
 /* --- Paso 1: departamentos --- */
 const deptos = $("deptos");
@@ -213,7 +237,7 @@ async function cargarEstado(n) {
         const partes = [p.mantenimiento && "mantenimiento", p.agua && "agua", p.extraordinario && "extraordinario", p.casaclub && "casa club"].filter(Boolean).join(", ");
         const cls = p.estatus === "Confirmado" ? "si" : (p.estatus === "Rechazado" ? "no" : "");
         const txt = p.estatus === "Confirmado" ? "confirmado" : (p.estatus === "Rechazado" ? "revisar" : "en espera");
-        html += '<div class="fila"><span>' + p.fecha + " · " + fmt(p.total) + '<br><small style="color:var(--muted)">' + partes + '</small></span><span class="badge ' + cls + '">' + txt + "</span></div>";
+        html += '<div class="fila"><span>' + (p.mes ? nombreMes(p.mes) : p.fecha) + " · " + fmt(p.total) + '<br><small style="color:var(--muted)">' + partes + " · reportado el " + p.fecha + '</small></span><span class="badge ' + cls + '">' + txt + "</span></div>";
       });
     }
     caja.innerHTML = html;
@@ -250,12 +274,12 @@ $("btnQuitar").onclick = () => { imagen = null; $("archivo").value = ""; $("vist
 /* --- Enviar --- */
 function textoResumen(d) {
   const partes = CONCEPTOS.filter(c => d[c.id] > 0).map(c => c.nom.toLowerCase() + " " + fmt(d[c.id]));
-  return "Depto " + depto + ": " + partes.join(", ") + ". Total " + fmt(d.total) + ".";
+  return "Depto " + depto + ", " + nombreMes(mes) + ": " + partes.join(", ") + ". Total " + fmt(d.total) + ".";
 }
 async function enviar() {
   const d = leer();
   $("btnEnviar").disabled = true; $("btnEnviar").textContent = "Enviando…";
-  const cuerpo = { clave: CLAVE, depto: depto, ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: "image/jpeg" };
+  const cuerpo = { clave: CLAVE, depto: depto, mes: mes, ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: "image/jpeg" };
   try {
     if (!SCRIPT_URL) throw new Error("sin servicio");
     const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });

@@ -23,8 +23,9 @@ const ANIO         = 2026;
 const UNIDADES     = 16;
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 const ESTATUS = ["Pendiente","Confirmado","Rechazado"];
-const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa club","Total","Nota","Comprobante","Estatus","Mes","Confirmado el"];
-//                  A       B       C               D      E               F           G       H      I             J         K     L
+const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa club","Total","Nota","Comprobante","Estatus","Mes","Confirmado el","Celdas del mes"];
+//                  A       B       C               D      E               F           G       H      I             J         K     L               M (uso interno)
+const AMARILLO = "#ffe599";                 // color de lo reportado y aún no confirmado
 
 /* ============================ INSTALACIÓN ============================ */
 
@@ -77,14 +78,14 @@ function instalar() {
     const cf2 = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Confirmado").setBackground("#d4edda").setRanges([pagos.getRange("J2:J")]).build();
     pagos.setConditionalFormatRules([cf, cf2]);
     avisos.push("Pestaña creada: Pagos");
+  } else {
+    pagos.getRange(1, 1, 1, ENC_PAGOS.length).setValues([ENC_PAGOS]).setFontWeight("bold").setBackground("#1d3f63").setFontColor("#ffffff");
   }
+  pagos.hideColumns(13);
 
   // 4. Pestaña Config
   let config = ss.getSheetByName(HOJA_CONFIG);
-  if (!config) {
-    config = ss.insertSheet(HOJA_CONFIG);
-    config.getRange("A1:C8").setValues([
-      ["Clave", "Valor", "Para qué sirve"],
+  const semilla = [
       ["cuota_mantenimiento", 1500, "Monto que aparece precargado en Mantenimiento"],
       ["extraordinario_nombre", "Protocolización de la mesa directiva, cuenta bancaria y puerta peatonal", "Nombre de la cuota extraordinaria vigente (vacío = no se muestra)"],
       ["extraordinario_monto", 1000, "Monto de la cuota extraordinaria vigente"],
@@ -92,11 +93,15 @@ function instalar() {
       ["adeudos", "pendiente", "Escribe 'mostrar' cuando la hoja de adeudos esté al día; mientras, la página dice 'pendiente'"],
       ["aviso", "", "Texto breve que se muestra arriba del formulario (opcional)"],
       ["cuenta", "Nubank · Eduardo Luna · cuenta terminación 5488", "Dónde se transfiere, se muestra en la página"]
-    ]);
-    config.getRange("A1:C1").setFontWeight("bold");
+  ];
+  if (!config) {
+    config = ss.insertSheet(HOJA_CONFIG);
+    config.getRange("A1:C1").setValues([["Clave", "Valor", "Para qué sirve"]]).setFontWeight("bold");
     config.setColumnWidth(1, 180); config.setColumnWidth(2, 360); config.setColumnWidth(3, 420);
     avisos.push("Pestaña creada: Config");
   }
+  const claves = config.getRange(1, 1, Math.max(config.getLastRow(), 1), 1).getValues().map(f => String(f[0]).trim());
+  semilla.forEach(f => { if (claves.indexOf(f[0]) < 0) { config.appendRow(f); avisos.push("Config: agregado '" + f[0] + "'"); } });
 
   // 5. Carpeta de comprobantes
   carpetaRaiz_();
@@ -171,7 +176,8 @@ function doPost(e) {
     if (total <= 0) return json_({ ok: false, error: "monto" });
     const nota = limpiar_(d.nota, 200);
     const ahora = new Date();
-    const mes = Utilities.formatDate(ahora, "America/Mexico_City", "yyyy-MM");
+    let mes = String(d.mes || "");
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) mes = Utilities.formatDate(ahora, "America/Mexico_City", "yyyy-MM");
 
     // Comprobante (opcional)
     let url = "";
@@ -188,7 +194,8 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActive();
     const pagos = ss.getSheetByName(HOJA_PAGOS);
     if (!pagos) throw new Error("Falta la pestaña Pagos; corre instalar().");
-    pagos.appendRow([ahora, depto, manto || "", agua || "", extra || "", casa || "", total, nota, url, "Pendiente", mes, ""]);
+    const celdas = anotarEnMes_(ss, mes, depto, { manto: manto, agua: agua, extra: extra, casa: casa }, ahora);
+    pagos.appendRow([ahora, depto, manto || "", agua || "", extra || "", casa || "", total, nota, url, "Pendiente", mes, "", celdas]);
     const fila = pagos.getLastRow();
     pagos.getRange(fila, 1).setNumberFormat("dd/mm/yyyy hh:mm");
     pagos.getRange(fila, 3, 1, 5).setNumberFormat("$#,##0.00");
@@ -237,7 +244,7 @@ function estadoDepto_(depto) {
       r.pagos.push({
         fecha: Utilities.formatDate(new Date(f[0]), "America/Mexico_City", "d/MM/yyyy"),
         mantenimiento: Number(f[2]) || 0, agua: Number(f[3]) || 0, extraordinario: Number(f[4]) || 0, casaclub: Number(f[5]) || 0,
-        total: Number(f[6]) || 0, estatus: String(f[9] || "Pendiente")
+        total: Number(f[6]) || 0, estatus: String(f[9] || "Pendiente"), mes: String(f[10] || "")
       });
     });
     r.pagos = r.pagos.slice(-8).reverse();
@@ -251,9 +258,94 @@ function onEdit(e) {
     const rg = e.range, h = rg.getSheet();
     if (h.getName() !== HOJA_PAGOS || rg.getColumn() !== 10 || rg.getRow() < 2) return;
     const fila = rg.getRow();
-    if (e.value === "Confirmado") h.getRange(fila, 12).setValue(new Date());
-    else h.getRange(fila, 12).clearContent();
+    const ss = SpreadsheetApp.getActive();
+    const celdas = String(h.getRange(fila, 13).getValue() || "");
+    if (e.value === "Confirmado") {
+      h.getRange(fila, 12).setValue(new Date());
+      aplicarCeldas_(ss, celdas, "confirmar");
+    } else if (e.value === "Rechazado") {
+      h.getRange(fila, 12).clearContent();
+      aplicarCeldas_(ss, celdas, "retirar");
+      h.getRange(fila, 13).clearContent();                 // ya no hay nada que recolorear
+    } else {
+      h.getRange(fila, 12).clearContent();
+      aplicarCeldas_(ss, celdas, "pendiente");
+    }
   } catch (err) {}
+}
+
+/* ====================== ESCRITURA EN LA PESTAÑA DEL MES ====================== */
+
+/* Suma lo reportado en la pestaña del mes y lo pinta de amarillo. Devuelve la lista
+   de celdas tocadas ("Octubre!C44=#d6e2ee=1500;...") para poder confirmarlas o retirarlas. */
+function anotarEnMes_(ss, mes, depto, m, fecha) {
+  const idx = parseInt(mes.split("-")[1], 10) - 1;
+  const anio = mes.split("-")[0];
+  let hoja = buscarHojaMes_(ss, MESES[idx]);
+  if (!hoja) {
+    hoja = ss.getSheetByName(PLANTILLA).copyTo(ss).setName(capitalizar_(MESES[idx]));
+    hoja.getRange("C5").setValue(capitalizar_(MESES[idx]) + " " + anio);
+    hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
+    ajustarCasaClub_(hoja);
+  }
+  const refs = [];
+  const pinta = (rg, monto) => {
+    const previo = Number(rg.getValue()) || 0;
+    refs.push(hoja.getName() + "!" + rg.getA1Notation() + "=" + (rg.getBackground() || "#ffffff") + "=" + monto);
+    rg.setValue(previo + monto).setBackground(AMARILLO);
+  };
+  // Cobros por departamento: C mantenimiento · D agua · E extraordinario
+  const celda = hoja.createTextFinder("^Depto " + depto + "$").useRegularExpression(true).matchEntireCell(true).findNext();
+  if (celda) {
+    const fila = celda.getRow();
+    if (m.manto) pinta(hoja.getRange(fila, 3), m.manto);
+    if (m.agua)  pinta(hoja.getRange(fila, 4), m.agua);
+    if (m.extra) pinta(hoja.getRange(fila, 5), m.extra);
+  }
+  // Renta de casa club: B depto · C fecha · D monto · E observaciones
+  if (m.casa) {
+    const t = hoja.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+    if (t) {
+      const rEnc = t.getRow() + 1, filas = 5;
+      let libre = 0;
+      for (let r = rEnc + 1; r <= rEnc + filas; r++) {
+        const v = hoja.getRange(r, 2, 1, 3).getValues()[0];
+        if (!v[0] && !v[2]) { libre = r; break; }
+      }
+      if (!libre) { hoja.insertRowBefore(rEnc + filas); libre = rEnc + filas; }   // dentro del rango de la suma
+      hoja.getRange(libre, 2).setValue(depto);
+      hoja.getRange(libre, 3).setValue(fecha).setNumberFormat("dd/mm/yyyy");
+      pinta(hoja.getRange(libre, 4), m.casa);
+      hoja.getRange(libre, 4).setNumberFormat("$#,##0.00");
+    }
+  }
+  return refs.join(";");
+}
+
+/* modo "confirmar": color original · "pendiente": amarillo · "retirar": resta el monto y color original */
+function aplicarCeldas_(ss, celdas, modo) {
+  if (!celdas) return;
+  celdas.split(";").forEach(ref => {
+    const partes = ref.split("=");
+    if (partes.length < 3) return;
+    const [hojaNombre, a1] = partes[0].split("!");
+    const color = partes[1], monto = Number(partes[2]) || 0;
+    const hoja = ss.getSheetByName(hojaNombre);
+    if (!hoja) return;
+    const rg = hoja.getRange(a1);
+    if (modo === "pendiente") { rg.setBackground(AMARILLO); return; }
+    rg.setBackground(color === "#ffffff" ? null : color);
+    if (modo === "retirar") {
+      const resto = Math.round(((Number(rg.getValue()) || 0) - monto) * 100) / 100;
+      if (resto > 0) rg.setValue(resto);
+      else {
+        rg.clearContent();
+        // en el registro de casa club, limpia también depto y fecha del renglón
+        const enc = hoja.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+        if (enc && rg.getColumn() === 4 && rg.getRow() > enc.getRow() + 1 && rg.getRow() <= enc.getRow() + 1 + 6) hoja.getRange(rg.getRow(), 2, 1, 2).clearContent();
+      }
+    }
+  });
 }
 
 /* ============================ AUXILIARES ============================ */

@@ -39,7 +39,14 @@ Debe aparecer un renglón en **Pagos** con estatus *Pendiente* y la captura en l
 Cambiar el estatus a **Confirmado**: la fecha se anota sola y en la página el pago cambia de color.
 
 ## Después
-- **Confirmar un pago:** columna *Estatus* de la pestaña Pagos. Nada cuenta hasta que diga Confirmado.
+- **Qué pasa con cada reporte:** el vecino elige el mes. El script suma el monto en la pestaña de ese mes
+  (Cobros por departamento, o el registro de casa club) y pinta la celda de **amarillo**. En Pagos queda el
+  renglón con la captura y estatus *Pendiente*.
+- **Confirmar un pago:** en Pagos, columna *Estatus* → **Confirmado**. La celda del mes recupera su color y
+  se anota la fecha. **Rechazado** retira el monto de la celda del mes. Si lo regresas a *Pendiente*, vuelve
+  a amarillo. Las celdas en amarillo son lo que aún no has cotejado en el banco.
+- **Si cambias algo a mano en la pestaña del mes**, el script no se entera; lo que gobierna el amarillo es el
+  estatus en Pagos.
 - **Cambiar la cuota, el extraordinario vigente o poner un aviso:** pestaña Config, columna Valor.
 - **Adeudos anteriores:** la página dice "pendiente" para todos hasta que en Config exista el renglón
   `adeudos` con el valor `mostrar` (si no está el renglón, agrégalo en la columna A y escribe `mostrar` en la B).
