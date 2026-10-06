@@ -1,0 +1,10 @@
+{
+  // Sitio estático: Cloudflare sirve los archivos tal cual, sin build.
+  // El nombre del worker es la primera parte de la dirección: lasmisiones.<cuenta>.workers.dev
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lasmisiones",
+  "compatibility_date": "2026-10-06",
+  "assets": {
+    "directory": "./"
+  }
+}

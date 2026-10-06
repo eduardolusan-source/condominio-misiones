@@ -1,0 +1,5 @@
+apps-script/
+README.md
+.git/
+.gitignore
+wrangler.jsonc
