@@ -30,6 +30,10 @@
   .meses { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
   .meses button { font: inherit; font-weight: 700; font-size: 1rem; min-height: 48px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
   .meses button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .meses.todos { grid-template-columns: repeat(3, 1fr); }
+  .meses.todos button { font-size: 0.9rem; min-height: 44px; }
+  .otro { display: block; width: 100%; margin-top: 0.5rem; font: inherit; font-size: 0.95rem; padding: 0.5rem; background: none; border: 1px dashed var(--baseline); border-radius: 10px; color: var(--ink-2); cursor: pointer; }
+  .concepto .veces { color: var(--accent); font-weight: 700; }
   .concepto { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.6rem; background: var(--surface); border: 2px solid var(--border); border-radius: 12px; padding: 0.6rem 0.8rem; margin-bottom: 0.55rem; cursor: pointer; }
   .concepto.on { border-color: var(--accent); }
   .concepto .nom { font-weight: 700; }
@@ -88,8 +92,9 @@
 
     <section class="paso">
       <h2><span>2</span>¿Qué pagaste?</h2>
-      <p class="pista" style="text-align:left;margin:0 0 0.4rem">¿De qué mes es el pago?</p>
+      <p class="pista" style="text-align:left;margin:0 0 0.4rem">¿De qué mes es el pago? <small>Si pagas varios meses, toca cada uno.</small></p>
       <div class="meses" id="meses"></div>
+      <button type="button" class="otro" id="btnOtroMes">Otro mes…</button>
       <p class="pista" style="text-align:left;margin:0.9rem 0 0.6rem">Toca lo que aplique. Puedes cambiar la cantidad.</p>
       <div id="conceptos"></div>
       <div class="total"><small>Total que debe coincidir con tu transferencia</small><strong id="total">$0.00</strong></div>
@@ -138,26 +143,43 @@ const CONCEPTOS = [
   { id: "extraordinario", nom: "Extraordinario", sub: "", sug: 0 },
   { id: "casaclub", nom: "Casa club", sub: "uso del salón", sug: 500 }
 ];
-let depto = null, imagen = null, estado = null, mes = null;
+let depto = null, imagen = null, estado = null;
 const NOMBRES_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const INICIO = "2026-07";                 // primer mes con pestaña en la hoja
+const mesesSel = new Set();
 
-/* --- Mes del pago: dos anteriores, el actual (preseleccionado) y el siguiente --- */
+/* --- Mes del pago: dos anteriores, el actual (preseleccionado) y el siguiente.
+       "Otro mes…" despliega todos desde INICIO hasta el mes siguiente. Se pueden marcar varios. --- */
 const meses = $("meses");
-(function () {
-  const hoy = new Date();
-  for (let k = -2; k <= 1; k++) {
-    const f = new Date(hoy.getFullYear(), hoy.getMonth() + k, 1);
-    const id = f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0");
+const idMes = f => f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0");
+const hoy = new Date();
+function etiqueta(id) { const [y, m] = id.split("-"); const n = NOMBRES_MES[+m - 1]; return n.charAt(0).toUpperCase() + n.slice(1) + (+y !== hoy.getFullYear() ? " " + y : ""); }
+function pintarMeses(lista) {
+  meses.innerHTML = "";
+  lista.forEach(id => {
     const b = document.createElement("button");
-    b.type = "button"; b.dataset.id = id;
-    b.textContent = NOMBRES_MES[f.getMonth()].charAt(0).toUpperCase() + NOMBRES_MES[f.getMonth()].slice(1) + (f.getFullYear() !== hoy.getFullYear() ? " " + f.getFullYear() : "");
-    b.onclick = () => elegirMes(id);
+    b.type = "button"; b.dataset.id = id; b.textContent = etiqueta(id);
+    b.classList.toggle("sel", mesesSel.has(id));
+    b.onclick = () => { if (mesesSel.has(id)) mesesSel.delete(id); else mesesSel.add(id); b.classList.toggle("sel", mesesSel.has(id)); validar(); };
     meses.appendChild(b);
-    if (k === 0) elegirMes(id);
-  }
-})();
-function elegirMes(id) { mes = id; [...meses.children].forEach(x => x.classList.toggle("sel", x.dataset.id === id)); }
+  });
+}
+const cortos = []; for (let k = -2; k <= 1; k++) cortos.push(idMes(new Date(hoy.getFullYear(), hoy.getMonth() + k, 1)));
+mesesSel.add(cortos[2]);
+pintarMeses(cortos);
+$("btnOtroMes").onclick = () => {
+  const todos = []; let f = new Date(+INICIO.split("-")[0], +INICIO.split("-")[1] - 1, 1);
+  const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+  while (f <= fin) { todos.push(idMes(f)); f = new Date(f.getFullYear(), f.getMonth() + 1, 1); }
+  meses.classList.add("todos"); pintarMeses(todos); $("btnOtroMes").classList.add("hidden");
+};
+function mesesElegidos() { return [...mesesSel].sort(); }
 function nombreMes(id) { const [y, m] = id.split("-"); return NOMBRES_MES[+m - 1] + " " + y; }
+function nombresMeses(ids) {
+  const n = ids.map(id => NOMBRES_MES[+id.split("-")[1] - 1]);
+  const anio = ids[ids.length - 1].split("-")[0];
+  return (n.length > 1 ? n.slice(0, -1).join(", ") + " y " + n[n.length - 1] : n[0]) + " " + anio;
+}
 
 /* --- Paso 1: departamentos --- */
 const deptos = $("deptos");
@@ -194,17 +216,21 @@ CONCEPTOS.forEach(c => {
 });
 function leer() {
   const d = {}; let total = 0;
-  CONCEPTOS.forEach(c => { d[c.id] = num($("i_" + c.id).value); total += d[c.id]; });
+  const n = Math.max(1, mesesSel.size);
+  CONCEPTOS.forEach(c => { d[c.id] = num($("i_" + c.id).value); total += c.id === "mantenimiento" ? d[c.id] * n : d[c.id]; });
   d.total = Math.round(total * 100) / 100;
   return d;
 }
 function validar() {
   const d = leer();
+  const n = mesesSel.size;
   CONCEPTOS.forEach(c => $("c_" + c.id).classList.toggle("on", d[c.id] > 0));
+  const sub = $("s_mantenimiento");
+  sub.innerHTML = n > 1 ? 'cuota del mes <span class="veces">× ' + n + ' meses = ' + fmt(d.mantenimiento * n) + '</span>' : "cuota del mes";
   $("total").textContent = fmt(d.total);
-  const ok = depto && d.total > 0;
+  const ok = depto && n > 0 && d.total > 0;
   $("btnEnviar").disabled = !ok;
-  $("pista").textContent = !depto ? "Primero toca tu departamento." : (d.total > 0 ? "" : "Toca lo que pagaste.");
+  $("pista").textContent = !depto ? "Primero toca tu departamento." : (!n ? "Toca al menos un mes." : (d.total > 0 ? "" : "Toca lo que pagaste."));
 }
 
 /* --- Estado del departamento (lo que debe y lo que ha reportado) --- */
@@ -274,12 +300,14 @@ $("btnQuitar").onclick = () => { imagen = null; $("archivo").value = ""; $("vist
 /* --- Enviar --- */
 function textoResumen(d) {
   const partes = CONCEPTOS.filter(c => d[c.id] > 0).map(c => c.nom.toLowerCase() + " " + fmt(d[c.id]));
-  return "Depto " + depto + ", " + nombreMes(mes) + ": " + partes.join(", ") + ". Total " + fmt(d.total) + ".";
+  const ids = mesesElegidos();
+  if (ids.length > 1 && d.mantenimiento > 0) partes[0] = "mantenimiento " + fmt(d.mantenimiento) + " × " + ids.length + " meses";
+  return "Depto " + depto + ", " + nombresMeses(ids) + ": " + partes.join(", ") + ". Total " + fmt(d.total) + ".";
 }
 async function enviar() {
   const d = leer();
   $("btnEnviar").disabled = true; $("btnEnviar").textContent = "Enviando…";
-  const cuerpo = { clave: CLAVE, depto: depto, mes: mes, ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: "image/jpeg" };
+  const cuerpo = { clave: CLAVE, depto: depto, meses: mesesElegidos(), ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: "image/jpeg" };
   try {
     if (!SCRIPT_URL) throw new Error("sin servicio");
     const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
@@ -297,6 +325,7 @@ $("btnEnviar").onclick = enviar;
 $("btnReintentar").onclick = () => { $("fallo").classList.add("hidden"); enviar(); };
 $("btnOtro").onclick = () => {
   CONCEPTOS.forEach(c => $("i_" + c.id).value = ""); $("nota").value = ""; $("btnQuitar").onclick();
+  mesesSel.clear(); mesesSel.add(cortos[2]); meses.classList.remove("todos"); pintarMeses(cortos); $("btnOtroMes").classList.remove("hidden");
   $("listo").classList.add("hidden"); $("formulario").classList.remove("hidden"); $("btnEnviar").textContent = "Enviar";
   if (depto) cargarEstado(depto); validar(); window.scrollTo(0, 0);
 };

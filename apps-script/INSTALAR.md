@@ -47,6 +47,11 @@ La clave se guarda en el celular para no pedirla cada vez; "Salir" la borra.
 ## Después
 - **Los reportes nuevos entran arriba** de la pestaña Pagos, y el encabezado tiene filtro: con el embudo de
   la columna Estatus puedes ver solo los Pendiente. Cada pago tiene un folio fijo (columna Folio).
+- **Varios meses de un jalón:** el vecino puede marcar varios meses ("Otro mes…" muestra todos desde julio
+  de 2026). El mantenimiento se repite por mes; agua, extraordinario y casa club van al mes más reciente.
+  Entra un renglón en Pagos por cada mes, con la misma captura, y cada uno se confirma por separado.
+- **Años siguientes:** las pestañas de 2026 se llaman "Octubre"; desde 2027 el script las crea como
+  "Enero 2027", así alguien puede pagar diciembre de 2026 en enero sin confundir años.
 - **Qué pasa con cada reporte:** el vecino elige el mes. El script suma el monto en la pestaña de ese mes
   (Cobros por departamento, o el registro de casa club) y pinta la celda de **amarillo**. En Pagos queda el
   renglón con la captura y estatus *Pendiente*.

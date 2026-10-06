@@ -40,12 +40,14 @@ function instalar() {
   const hoy = new Date();
   const mesActual = hoy.getMonth();                       // 0 = enero
   for (let m = mesActual; m < 12; m++) {
-    const nombre = MESES[m];
+    const nombre = nombreHojaMes_(m, hoy.getFullYear());
     if (!buscarHojaMes_(ss, nombre)) {
-      const nueva = plantilla.copyTo(ss).setName(capitalizar_(nombre));
+      const nueva = plantilla.copyTo(ss).setName(nombre);
+      nueva.getRange("C5").setValue(nombre.indexOf(" ") > 0 ? nombre : nombre + " " + hoy.getFullYear());
+      nueva.getRange("B1").setValue("MISIONES · " + (nombre.indexOf(" ") > 0 ? nombre : nombre + " " + hoy.getFullYear()));
       ss.setActiveSheet(nueva);
       ss.moveActiveSheet(ss.getSheets().length);          // al final
-      avisos.push("Pestaña creada: " + capitalizar_(nombre));
+      avisos.push("Pestaña creada: " + nombre);
     }
   }
   // Adeudos, Pagos y Config se van al final para que los meses queden juntos
@@ -179,12 +181,17 @@ function doPost(e) {
     if (!(depto >= 1 && depto <= UNIDADES)) return json_({ ok: false, error: "departamento" });
     const monto = k => Math.max(0, Math.round((parseFloat(d[k]) || 0) * 100) / 100);
     const manto = monto("mantenimiento"), agua = monto("agua"), extra = monto("extraordinario"), casa = monto("casaclub");
-    const total = Math.round((manto + agua + extra + casa) * 100) / 100;
-    if (total <= 0) return json_({ ok: false, error: "monto" });
     const nota = limpiar_(d.nota, 200);
     const ahora = new Date();
-    let mes = String(d.mes || "");
-    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) mes = Utilities.formatDate(ahora, "America/Mexico_City", "yyyy-MM");
+    // Meses: lista (varios meses de un jalón) o uno solo; el mantenimiento se repite por mes,
+    // agua, extraordinario y casa club van al mes más reciente de los elegidos.
+    let meses = Array.isArray(d.meses) ? d.meses : [d.mes];
+    meses = meses.map(x => String(x || "")).filter(x => /^\d{4}-(0[1-9]|1[0-2])$/.test(x));
+    meses = meses.filter((x, i) => meses.indexOf(x) === i).sort();
+    if (!meses.length) meses = [Utilities.formatDate(ahora, "America/Mexico_City", "yyyy-MM")];
+    const total = Math.round((manto * meses.length + agua + extra + casa) * 100) / 100;
+    if (total <= 0) return json_({ ok: false, error: "monto" });
+    const mes = meses[meses.length - 1];
 
     // Comprobante (opcional)
     let url = "";
@@ -201,16 +208,25 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActive();
     const pagos = ss.getSheetByName(HOJA_PAGOS);
     if (!pagos) throw new Error("Falta la pestaña Pagos; corre instalar().");
-    const celdas = anotarEnMes_(ss, mes, depto, { manto: manto, agua: agua, extra: extra, casa: casa }, ahora);
-    const folio = "P-" + String(siguienteFolio_()).padStart(4, "0");
-    pagos.insertRowBefore(2);                               // lo más nuevo arriba
-    const fila = 2;
-    pagos.getRange(fila, 1, 1, ENC_PAGOS.length).setValues([[ahora, depto, manto || "", agua || "", extra || "", casa || "", total, nota, url, "Pendiente", mes, "", celdas, folio]]);
-    pagos.getRange(fila, 1).setNumberFormat("dd/mm/yyyy hh:mm");
-    pagos.getRange(fila, 3, 1, 5).setNumberFormat("$#,##0.00");
-    pagos.getRange(fila, 11).setNumberFormat("@").setValue(mes);   // como texto, para que "2026-10" no se vuelva fecha
-    pagos.getRange(fila, 10).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(ESTATUS, true).setAllowInvalid(false).build());
-    return json_({ ok: true, folio: folio, total: total });
+    const folios = [];
+    const notaMulti = meses.length > 1 ? (nota ? nota + " · " : "") + "Pago de " + meses.length + " meses en una transferencia" : nota;
+    meses.forEach((m, i) => {
+      const ultimo = i === meses.length - 1;
+      const parte = { manto: manto, agua: ultimo ? agua : 0, extra: ultimo ? extra : 0, casa: ultimo ? casa : 0 };
+      const subtotal = Math.round((parte.manto + parte.agua + parte.extra + parte.casa) * 100) / 100;
+      if (subtotal <= 0) return;
+      const celdas = anotarEnMes_(ss, m, depto, parte, ahora);
+      const folio = "P-" + String(siguienteFolio_()).padStart(4, "0");
+      pagos.insertRowBefore(2);                             // lo más nuevo arriba
+      const fila = 2;
+      pagos.getRange(fila, 1, 1, ENC_PAGOS.length).setValues([[ahora, depto, parte.manto || "", parte.agua || "", parte.extra || "", parte.casa || "", subtotal, notaMulti, url, "Pendiente", m, "", celdas, folio]]);
+      pagos.getRange(fila, 1).setNumberFormat("dd/mm/yyyy hh:mm");
+      pagos.getRange(fila, 3, 1, 5).setNumberFormat("$#,##0.00");
+      pagos.getRange(fila, 11).setNumberFormat("@").setValue(m);   // como texto, para que "2026-10" no se vuelva fecha
+      pagos.getRange(fila, 10).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(ESTATUS, true).setAllowInvalid(false).build());
+      folios.push(folio);
+    });
+    return json_({ ok: true, folio: folios.join(", "), folios: folios, total: total });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
   } finally {
@@ -357,10 +373,11 @@ function resolverDesdeBandeja_(d) {
    de celdas tocadas ("Octubre!C44=#d6e2ee=1500;...") para poder confirmarlas o retirarlas. */
 function anotarEnMes_(ss, mes, depto, m, fecha) {
   const idx = parseInt(mes.split("-")[1], 10) - 1;
-  const anio = mes.split("-")[0];
-  let hoja = buscarHojaMes_(ss, MESES[idx]);
+  const anio = parseInt(mes.split("-")[0], 10);
+  const nombre = nombreHojaMes_(idx, anio);
+  let hoja = buscarHojaMes_(ss, nombre);
   if (!hoja) {
-    hoja = ss.getSheetByName(PLANTILLA).copyTo(ss).setName(capitalizar_(MESES[idx]));
+    hoja = ss.getSheetByName(PLANTILLA).copyTo(ss).setName(nombre);
     hoja.getRange("C5").setValue(capitalizar_(MESES[idx]) + " " + anio);
     hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
     ajustarCasaClub_(hoja);
@@ -466,6 +483,10 @@ function subcarpeta_(mes) {
 }
 function esHojaMes_(h) {
   return !!h.createTextFinder("COBROS POR DEPARTAMENTO").matchCase(false).findNext();
+}
+/* Las pestañas de 2026 se llaman "Octubre"; desde 2027, "Enero 2027", para no confundir años. */
+function nombreHojaMes_(idx, anio) {
+  return capitalizar_(MESES[idx]) + (anio === ANIO ? "" : " " + anio);
 }
 function buscarHojaMes_(ss, nombre) {
   return ss.getSheets().find(h => h.getName().trim().toLowerCase() === nombre.toLowerCase()) || null;
