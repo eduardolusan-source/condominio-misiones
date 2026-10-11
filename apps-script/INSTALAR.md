@@ -106,5 +106,8 @@ votación por departamento y los acuerdos.
   depto y pregunta). Todos ven el conteo, refrescado cada 8 segundos.
 - **Acuerdos**: el botón "Llenar acuerdos" guarda sin clave en la pestaña **Acuerdos** (tema, acuerdo, responsable, fecha). `acuerdos.html` arma el documento con
   los resultados y los acuerdos, listo para guardar como PDF.
+- **Reparto de responsabilidades**: en la misma pestaña, un campo "Quién" por tarea que se guarda
+  al momento (pestaña **Tareas**) y un formulario para sumar tareas extra. Lo anotado se refleja en
+  la tabla del tema 2 y en `acuerdos.html`.
 - Las preguntas están en el código de `asamblea.html` y `acuerdos.html` (lista `PREGUNTAS`); para
   otra asamblea se cambian ahí.

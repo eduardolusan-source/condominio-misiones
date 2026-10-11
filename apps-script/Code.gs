@@ -34,6 +34,7 @@ const AMARILLO = "#ffe599";                 // color de lo reportado y aún no c
 const HOJA_VALID = "Validaciones";
 const HOJA_VOTOS = "Votos";                 // asamblea: un voto por depto y pregunta (el último cuenta)
 const HOJA_ACUERDOS = "Acuerdos";           // asamblea: acuerdo, responsable y fecha por tema
+const HOJA_TAREAS = "Tareas";               // reparto de responsabilidades: tarea, qué implica, cada cuánto, quién
 const HOJA_AGUA = "Agua";                   // una fila por depto y mes: lecturas, consumo, cargo, pagado
 const HOJA_RECIBOS = "Recibos agua";        // una fila por mes: recibo CEA, m³ del general, precio por m³
 const ENC_AGUA = ["Mes","Depto","Lectura anterior","Lectura actual","Consumo m³","Estimado","Foto","Capturado el","Cargo $","Pagado el","Nota"];
@@ -192,6 +193,7 @@ function doGet(e) {
     if (p.accion === "agua") return json_(aguaDepto_(parseInt(p.depto, 10)));
     if (p.accion === "votos") return json_(votos_());
     if (p.accion === "acuerdos") return json_(acuerdos_());
+    if (p.accion === "tareas") return json_(tareas_());
     return json_({ ok: true, servicio: "misiones-pagos" });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -207,6 +209,7 @@ function doPost(e) {
     if (d.accion === "recibo") { lock.waitLock(10000); return json_(guardarRecibo_(d)); }
     if (d.accion === "voto") { lock.waitLock(10000); return json_(votar_(d)); }
     if (d.accion === "acuerdo") { lock.waitLock(10000); return json_(guardarAcuerdo_(d)); }
+    if (d.accion === "tarea") { lock.waitLock(10000); return json_(guardarTarea_(d)); }
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);
@@ -462,6 +465,34 @@ function acuerdos_() {
     if (!f[0]) return;
     r.acuerdos[String(f[0])] = { acuerdo: String(f[1] || ""), responsable: String(f[2] || ""), fecha: String(f[3] || ""),
       actualizado: f[4] instanceof Date ? Utilities.formatDate(f[4], "America/Mexico_City", "d/MM/yyyy HH:mm") : "" };
+  });
+  return r;
+}
+
+/* Reparto de responsabilidades: una fila por tarea; la página manda las doce de base y las extra. */
+function guardarTarea_(d) {
+  const id = limpiar_(d.id, 40);
+  if (!id) return { ok: false, error: "tarea" };
+  const h = hojaSimple_(HOJA_TAREAS, ["Id", "Tarea", "Qué implica", "Cada cuánto", "Quién", "Actualizado"]);
+  const n = h.getLastRow();
+  let fila = 0;
+  if (n > 1) {
+    const vals = h.getRange(2, 1, n - 1, 1).getValues();
+    for (let i = 0; i < vals.length; i++) if (String(vals[i][0]) === id) { fila = i + 2; break; }
+  }
+  if (!fila) fila = n + 1;
+  if (d.borrar) { if (fila <= n) h.deleteRow(fila); return { ok: true, id: id, borrada: true }; }
+  h.getRange(fila, 1, 1, 6).setValues([[id, limpiar_(d.tarea, 80), limpiar_(d.implica, 300), limpiar_(d.frecuencia, 60), limpiar_(d.quien, 120), new Date()]]);
+  h.getRange(fila, 6).setNumberFormat("dd/mm/yyyy hh:mm");
+  return { ok: true, id: id };
+}
+function tareas_() {
+  const h = SpreadsheetApp.getActive().getSheetByName(HOJA_TAREAS);
+  const r = { ok: true, tareas: [] };
+  if (!h || h.getLastRow() < 2) return r;
+  h.getRange(2, 1, h.getLastRow() - 1, 5).getValues().forEach(f => {
+    if (!f[0]) return;
+    r.tareas.push({ id: String(f[0]), tarea: String(f[1] || ""), implica: String(f[2] || ""), frecuencia: String(f[3] || ""), quien: String(f[4] || "") });
   });
   return r;
 }

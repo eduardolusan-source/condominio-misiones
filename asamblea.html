@@ -122,6 +122,15 @@
   .conteo .barra .lleno { height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s; }
   .conteo .barra b { min-width: 2.2rem; text-align: right; }
   .conteo .quien { font-size: .82rem; color: var(--muted); margin-top: .3rem; }
+  .tarea-v { display: grid; grid-template-columns: 1fr; gap: .3rem; border: 1px solid var(--border); border-radius: 12px; padding: .7rem .9rem; margin-bottom: .6rem; background: var(--surface); }
+  .tarea-v .nom { font-weight: 700; }
+  .tarea-v .nom small { display: block; font-weight: 400; color: var(--ink-2); font-size: .85rem; }
+  .tarea-v .fila-q { display: grid; grid-template-columns: 1fr auto; gap: .5rem; align-items: center; }
+  .tarea-v .fila-q input { font-size: 1rem; }
+  .tarea-v .fila-q button { font: inherit; font-weight: 700; padding: .5rem .9rem; border-radius: 10px; border: none; background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap; }
+  .tarea-v .fila-q button.ok { background: var(--good-text); }
+  .tarea-v .quitar { font: inherit; font-size: .8rem; color: var(--muted); background: none; border: none; cursor: pointer; text-align: left; padding: 0; }
+  @media (prefers-color-scheme: dark) { .tarea-v .fila-q button { color: #0d0d0d; } }
   .acuerdo-v { border-left: 4px solid var(--accent); padding: .4rem .9rem; margin-bottom: .8rem; }
   .acuerdo-v .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); font-weight: 700; }
   .acuerdo-v p { margin: .2rem 0; }
@@ -259,18 +268,18 @@
     <p style="margin:0 0 .6rem;color:var(--ink-2);font-size:.92rem">Sin administrador, lo que antes costaba $7,000 al mes se reparte en tareas chicas. Ninguna toma más de una o dos horas al mes. La columna "Quién" se llena en la asamblea.</p>
     <div class="table-scroll"><table class="data">
       <tr><th>Tarea</th><th>Qué implica</th><th>Cada cuánto</th><th>Quién</th></tr>
-      <tr><td>Cuentas y registro de pagos</td><td>Recibir pagos, llevar la hoja, publicar en el sitio</td><td>Continuo</td><td>Eduardo (14)</td></tr>
-      <tr><td>Lectura de medidores de agua</td><td>Foto de los 16 medidores y del general, y mandarla a Eduardo para calcular el agua de cada depto</td><td>Mensual, el mismo día</td><td class="pend">por asignar</td></tr>
-      <tr><td>Pago de recibos (CEA y CFE)</td><td>Vigilar fechas de vencimiento y pagar desde la cuenta de la mesa</td><td>Mensual / bimestral</td><td class="pend">por asignar</td></tr>
-      <tr><td>Supervisión del conserje</td><td>Acordar la lista de tareas de la semana, revisarla y avisar a la mesa para el pago</td><td>Semanal</td><td class="pend">por asignar</td></tr>
-      <tr><td>Alberca</td><td>Revisar limpieza, químicos y bomba; llamar al técnico cuando haga falta</td><td>Quincenal</td><td class="pend">por asignar</td></tr>
-      <tr><td>Puerta y control de acceso</td><td>Seguir el proyecto del nuevo control de acceso y resolver fallas de la puerta</td><td>Mientras dure el proyecto</td><td class="pend">por asignar</td></tr>
-      <tr><td>Elevador</td><td>Ser el contacto con el técnico, juntar cotizaciones por escrito y preparar la sesión del elevador</td><td>Mientras dure</td><td class="pend">por asignar</td></tr>
-      <tr><td>Protocolización y cuenta bancaria</td><td>Llevar el trámite con la notaría y el banco</td><td>Hasta terminar</td><td class="pend">por asignar</td></tr>
-      <tr><td>Seguimiento a Víctor</td><td>Entregar el requerimiento, llevar la comunicación y guardar las pruebas</td><td>Hasta cerrar</td><td class="pend">por asignar</td></tr>
-      <tr><td>Salón de eventos</td><td>Reservas, llaves, revisar cómo se entrega y pendientes del recorrido (vidrio roto)</td><td>Cuando se use</td><td class="pend">por asignar</td></tr>
-      <tr><td>Jardines</td><td>Contratar y supervisar la jardinería; riego y plantas de la entrada</td><td>Mensual</td><td class="pend">por asignar</td></tr>
-      <tr><td>Comunicación</td><td>Grupo de WhatsApp, avisos, minutas y convocatorias</td><td>Continuo</td><td class="pend">mesa directiva</td></tr>
+      <tr data-tarea="cuentas"><td>Cuentas y registro de pagos</td><td>Recibir pagos, llevar la hoja, publicar en el sitio</td><td>Continuo</td><td>Eduardo (14)</td></tr>
+      <tr data-tarea="medidores"><td>Lectura de medidores de agua</td><td>Foto de los 16 medidores y del general, y mandarla a Eduardo para calcular el agua de cada depto</td><td>Mensual, el mismo día</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="recibos"><td>Pago de recibos (CEA y CFE)</td><td>Vigilar fechas de vencimiento y pagar desde la cuenta de la mesa</td><td>Mensual / bimestral</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="conserje"><td>Supervisión del conserje</td><td>Acordar la lista de tareas de la semana, revisarla y avisar a la mesa para el pago</td><td>Semanal</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="alberca"><td>Alberca</td><td>Revisar limpieza, químicos y bomba; llamar al técnico cuando haga falta</td><td>Quincenal</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="puerta"><td>Puerta y control de acceso</td><td>Seguir el proyecto del nuevo control de acceso y resolver fallas de la puerta</td><td>Mientras dure el proyecto</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="elevador"><td>Elevador</td><td>Ser el contacto con el técnico, juntar cotizaciones por escrito y preparar la sesión del elevador</td><td>Mientras dure</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="protocolizacion"><td>Protocolización y cuenta bancaria</td><td>Llevar el trámite con la notaría y el banco</td><td>Hasta terminar</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="victor"><td>Seguimiento a Víctor</td><td>Entregar el requerimiento, llevar la comunicación y guardar las pruebas</td><td>Hasta cerrar</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="salon"><td>Salón de eventos</td><td>Reservas, llaves, revisar cómo se entrega y pendientes del recorrido (vidrio roto)</td><td>Cuando se use</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="jardines"><td>Jardines</td><td>Contratar y supervisar la jardinería; riego y plantas de la entrada</td><td>Mensual</td><td class="pend">por asignar</td></tr>
+      <tr data-tarea="comunicacion"><td>Comunicación</td><td>Grupo de WhatsApp, avisos, minutas y convocatorias</td><td>Continuo</td><td class="pend">mesa directiva</td></tr>
     </table></div>
     <div class="pregunta"><strong>Lo que se vota</strong><p>1) ¿Ratificamos que la mesa directiva administre, sin contratar otra administradora? 2) Conserje: ¿cuánto se le paga, cada cuánto, qué tareas y quién lo supervisa? 3) ¿Quién toma cada tarea de la tabla?</p></div>
   </section>
@@ -449,6 +458,19 @@
     <div class="cta-row" style="margin:0 0 .8rem"><button type="button" class="btn ghost" id="btnRegistrar">Abrir el tablero de votos</button></div>
     <div id="vPreguntas"></div>
     <p class="fuente" id="vEstado">Conectando con el conteo…</p>
+  </div>
+
+  <h2 class="section-title" id="reparto">Reparto de responsabilidades</h2>
+  <p class="section-sub">Las tareas que deja el administrador, repartidas entre propietarios. En la junta se escribe quién toma cada una y se guarda al momento; se pueden sumar tareas que salgan en la conversación. Lo que se anote aquí se refleja en la tabla del tema 2 y en el documento de acuerdos.</p>
+  <div class="rule-block">
+    <div id="tLista"><p class="fuente">Cargando tareas…</p></div>
+    <div class="editor" style="margin-top:1rem;border-top:2px solid var(--grid);padding-top:.6rem">
+      <p style="margin:0;font-weight:700">Sumar una tarea</p>
+      <label>Tarea</label><input type="text" id="tNombre" maxlength="80" placeholder="p. ej. Extintores y botiquín">
+      <label>Qué implica</label><input type="text" id="tImplica" maxlength="300" placeholder="opcional">
+      <div class="dos"><div><label>Cada cuánto</label><input type="text" id="tFrec" maxlength="60" placeholder="p. ej. mensual"></div><div><label>Quién</label><input type="text" id="tQuien" maxlength="120" placeholder="nombre o depto"></div></div>
+      <button type="button" class="guardar" id="tAgregar">Agregar tarea</button>
+    </div>
   </div>
 
   <h2 class="section-title" id="acuerdos">Acuerdos de la asamblea</h2>
@@ -647,6 +669,84 @@
   }
   setInterval(function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion" && !document.hidden) cargarVotos(); }, 8000);
 
+  /* --- Reparto de responsabilidades --- */
+  var TAREAS_BASE = [
+    { id: "cuentas", tarea: "Cuentas y registro de pagos", implica: "Recibir pagos, llevar la hoja, publicar en el sitio", frecuencia: "Continuo", quien: "Eduardo (14)" },
+    { id: "medidores", tarea: "Lectura de medidores de agua", implica: "Foto de los 16 medidores y captura en la página de lecturas", frecuencia: "Mensual, el mismo día", quien: "" },
+    { id: "recibos", tarea: "Pago de recibos (CEA y CFE)", implica: "Vigilar vencimientos y pagar desde la cuenta de la mesa", frecuencia: "Mensual / bimestral", quien: "" },
+    { id: "conserje", tarea: "Supervisión del conserje", implica: "Lista de tareas de la semana, revisarla y avisar para el pago", frecuencia: "Semanal", quien: "" },
+    { id: "alberca", tarea: "Alberca", implica: "Limpieza, químicos y bomba; llamar al técnico", frecuencia: "Quincenal", quien: "" },
+    { id: "puerta", tarea: "Puerta y control de acceso", implica: "Seguir el proyecto del nuevo control y resolver fallas", frecuencia: "Mientras dure", quien: "" },
+    { id: "elevador", tarea: "Elevador", implica: "Contacto con el técnico, cotizaciones por escrito, sesión del elevador", frecuencia: "Mientras dure", quien: "" },
+    { id: "protocolizacion", tarea: "Protocolización y cuenta bancaria", implica: "Trámite con la notaría y el banco", frecuencia: "Hasta terminar", quien: "" },
+    { id: "victor", tarea: "Seguimiento a Víctor", implica: "Entregar el requerimiento, llevar la comunicación y guardar pruebas", frecuencia: "Hasta cerrar", quien: "" },
+    { id: "salon", tarea: "Salón de eventos", implica: "Reservas, llaves, entrega y pendientes (vidrio roto)", frecuencia: "Cuando se use", quien: "" },
+    { id: "jardines", tarea: "Jardines", implica: "Contratar y supervisar la jardinería; riego y plantas", frecuencia: "Mensual", quien: "" },
+    { id: "comunicacion", tarea: "Comunicación", implica: "Grupo de WhatsApp, avisos, minutas y convocatorias", frecuencia: "Continuo", quien: "mesa directiva" }
+  ];
+  var tareas = TAREAS_BASE.map(function (t) { return Object.assign({}, t); });
+  function mezclarTareas(lista) {
+    var porId = {}; tareas.forEach(function (t) { porId[t.id] = t; });
+    lista.forEach(function (t) { if (porId[t.id]) { porId[t.id].quien = t.quien; if (t.tarea) porId[t.id].tarea = t.tarea; } else { tareas.push(t); } });
+  }
+  function reflejarTabla() {
+    tareas.forEach(function (t) {
+      var tr = document.querySelector('tr[data-tarea="' + t.id + '"]'); if (!tr) return;
+      var td = tr.querySelectorAll("td")[3]; if (!td) return;
+      if (t.quien) { td.textContent = t.quien; td.classList.remove("pend"); } 
+    });
+  }
+  function pintarTareas() {
+    var cont = $("tLista"); var foco = document.activeElement && document.activeElement.id;
+    cont.innerHTML = "";
+    tareas.forEach(function (t) {
+      var div = document.createElement("div"); div.className = "tarea-v";
+      div.innerHTML = '<div class="nom">' + t.tarea + '<small>' + (t.implica || "") + (t.frecuencia ? " · " + t.frecuencia : "") + '</small></div>' +
+        '<div class="fila-q"><input type="text" id="tq_' + t.id + '" maxlength="120" placeholder="Quién la toma (nombre o depto)" value="' + (t.quien || "").replace(/"/g, "&quot;") + '"><button type="button" data-id="' + t.id + '">Guardar</button></div>' +
+        (TAREAS_BASE.some(function (b) { return b.id === t.id; }) ? "" : '<button type="button" class="quitar" data-id="' + t.id + '">Quitar esta tarea</button>');
+      cont.appendChild(div);
+    });
+    cont.querySelectorAll(".fila-q button").forEach(function (b) { b.onclick = function () { guardarTarea(b.dataset.id, b); }; });
+    cont.querySelectorAll(".quitar").forEach(function (b) { b.onclick = function () { if (confirm("¿Quitar esta tarea?")) quitarTarea(b.dataset.id); }; });
+    if (foco && $(foco)) $(foco).focus();
+    reflejarTabla();
+  }
+  async function guardarTarea(id, b) {
+    var t = tareas.filter(function (x) { return x.id === id; })[0]; if (!t) return;
+    t.quien = $("tq_" + id).value.trim();
+    b.disabled = true; b.textContent = "Guardando…";
+    try {
+      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "tarea", id: id, tarea: t.tarea, implica: t.implica, frecuencia: t.frecuencia, quien: t.quien }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+      var j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
+      b.textContent = "✓ Guardado"; b.classList.add("ok"); reflejarTabla();
+    } catch (e) { alert("No se guardó: " + (e.message || e)); b.textContent = "Guardar"; }
+    b.disabled = false;
+  }
+  async function quitarTarea(id) {
+    try {
+      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "tarea", id: id, borrar: true }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+      var j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
+      tareas = tareas.filter(function (x) { return x.id !== id; }); pintarTareas();
+    } catch (e) { alert("No se quitó: " + (e.message || e)); }
+  }
+  $("tAgregar").onclick = async function () {
+    var nombre = $("tNombre").value.trim(); if (!nombre) { alert("Escribe el nombre de la tarea."); return; }
+    var t = { id: "extra-" + Date.now().toString(36), tarea: nombre, implica: $("tImplica").value.trim(), frecuencia: $("tFrec").value.trim(), quien: $("tQuien").value.trim() };
+    var b = this; b.disabled = true; b.textContent = "Agregando…";
+    try {
+      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(Object.assign({ accion: "tarea" }, t)), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+      var j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
+      tareas.push(t); pintarTareas(); ["tNombre", "tImplica", "tFrec", "tQuien"].forEach(function (k) { $(k).value = ""; });
+    } catch (e) { alert("No se agregó: " + (e.message || e)); }
+    b.disabled = false; b.textContent = "Agregar tarea";
+  };
+  async function cargarTareas() {
+    try { var r = await fetch(SCRIPT_URL + "?accion=tareas&t=" + Date.now()); var j = await r.json(); if (j.ok && j.tareas) mezclarTareas(j.tareas); } catch (e) {}
+    var editando = document.activeElement && /^tq_|^t(Nombre|Implica|Frec|Quien)$/.test(document.activeElement.id || "");
+    if (!editando) pintarTareas(); else reflejarTabla();
+  }
+  setInterval(function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion" && !document.hidden) cargarTareas(); }, 8000);
+
   /* --- Acuerdos --- */
   var acuerdos = {};
   function pintarAcuerdos() {
@@ -683,7 +783,8 @@
 
   /* Arranque perezoso: solo cuando se abre la pestaña */
   var iniciado = false;
-  function iniciar() { if (iniciado) return; iniciado = true; mostrar(0); pintarPreguntas(); cargarVotos(); cargarAcuerdos(); }
+  function iniciar() { if (iniciado) return; iniciado = true; mostrar(0); pintarPreguntas(); cargarVotos(); cargarAcuerdos(); pintarTareas(); cargarTareas(); }
+  cargarTareas();   // la tabla del tema 2 refleja el reparto aunque no se abra la sesión
   window.addEventListener("hashchange", function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion") iniciar(); });
   setTimeout(function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion") iniciar(); }, 50);
 })();

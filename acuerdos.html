@@ -54,6 +54,8 @@
     <p class="sub">Martes 13 de octubre de 2026 · videollamada · documento generado el <span id="hoy"></span></p>
     <h2>Resultados de las votaciones</h2>
     <div id="resultados"><p class="fuente">Cargando…</p></div>
+    <h2>Reparto de responsabilidades</h2>
+    <div id="tareas"><p class="fuente">Cargando…</p></div>
     <h2>Acuerdos, responsables y fechas</h2>
     <div id="acuerdos"><p class="fuente">Cargando…</p></div>
     <p class="firma">Los votos se registraron por departamento desde la página de la asamblea; cada departamento cuenta una vez y vale el último voto emitido. Los acuerdos los llenó la mesa directiva durante la sesión. La minuta formal se publica en Pendientes.</p>
@@ -74,6 +76,9 @@ document.getElementById("hoy").textContent = new Date().toLocaleDateString("es-M
   let votos = { preguntas: {} }, acuerdos = {};
   try { const r = await fetch(SCRIPT_URL + "?accion=votos&t=" + Date.now()); const j = await r.json(); if (j.ok && j.preguntas) votos = j; } catch (e) {}
   try { const r = await fetch(SCRIPT_URL + "?accion=acuerdos&t=" + Date.now()); const j = await r.json(); if (j.ok && j.acuerdos) acuerdos = j.acuerdos; } catch (e) {}
+  let tareas = [];
+  try { const r = await fetch(SCRIPT_URL + "?accion=tareas&t=" + Date.now()); const j = await r.json(); if (j.ok && j.tareas) tareas = j.tareas; } catch (e) {}
+  document.getElementById("tareas").innerHTML = tareas.length ? tareas.map(t => '<div class="res"><span>' + t.tarea + (t.frecuencia ? ' <small style="color:var(--muted)">· ' + t.frecuencia + '</small>' : '') + '</span><b>' + (t.quien || "por asignar") + '</b></div>').join("") : '<p class="fuente">Sin reparto registrado.</p>';
   document.getElementById("resultados").innerHTML = PREGUNTAS.map(q => {
     const r = votos.preguntas[q.id] || { conteo: {}, deptos: {} };
     const total = Object.keys(r.deptos).length;
