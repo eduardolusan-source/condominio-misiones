@@ -67,6 +67,24 @@
   .pager { display: flex; justify-content: space-between; gap: .6rem; margin-top: 1.5rem; }
   .pager .btn { font-size: .9rem; }
   .step { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 1rem 0 -.6rem; }
+  /* En celular, cada renglón de tabla se vuelve una tarjeta: nada que deslizar */
+  @media (max-width: 640px) {
+    .table-scroll { overflow: visible; }
+    table.data, table.data tbody { display: block; width: 100%; }
+    table.data tr { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: .55rem .8rem; margin-bottom: .55rem; }
+    table.data tr.cabecera { display: none; }
+    table.data td { display: flex; justify-content: space-between; gap: .8rem; align-items: baseline; padding: .28rem 0; border-bottom: 1px dashed var(--grid); text-align: left !important; }
+    table.data td:last-child { border-bottom: none; }
+    table.data td::before { content: attr(data-label); color: var(--muted); font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; flex: 0 0 auto; }
+    table.data td.titulo { display: block; font-weight: 800; color: var(--ink); font-size: 1.02rem; padding-bottom: .4rem; border-bottom: 2px solid var(--grid); margin-bottom: .2rem; }
+    table.data td.titulo::before { content: attr(data-label) " · "; text-transform: none; letter-spacing: 0; font-size: .85rem; }
+    table.data td.titulo.solo::before { content: ""; }
+    table.data td.pend { display: none; }
+    table.data td.largo { display: block; }
+    table.data td.largo::before { display: block; margin-bottom: .15rem; }
+    table.data tr.total { background: var(--accent-soft); border-color: var(--accent); }
+    table.data tr.total td { font-weight: 800; }
+  }
   @media print { .tabs, .pager { display: none; } .panel { display: block !important; } }
 </style>
 </head>
@@ -260,6 +278,7 @@
         <ul><li class="pro">Reunión en persona para cerrar la entrega-recepción y un plan de devolución.</li><li class="con">Depende de que quiera sentarse; hasta ahora no ha respondido.</li></ul></div>
     </div>
     <p class="fuente">Las opciones no se excluyen: lo normal es A primero y, según responda, C o B.</p>
+    <div class="cta-row" style="margin-top:.8rem"><a class="btn primary" href="carta-victor.html">Leer el borrador del requerimiento (ruta A)</a></div>
     <div class="pregunta"><strong>Lo que se vota</strong><p>¿Mandamos el requerimiento por escrito esta semana? ¿Quién lo firma y lo entrega? Si no responde en el plazo, ¿autorizamos a la mesa a buscar asesoría legal y con qué tope de gasto?</p></div>
   </section>
 
@@ -420,6 +439,23 @@
     var id = (location.hash || '#inicio').slice(1);
     show(id, scroll);
   }
+  // Tablas como tarjetas en celular: cada celda aprende el nombre de su columna
+  document.querySelectorAll('table.data').forEach(function (t) {
+    var filas = t.querySelectorAll('tr');
+    if (!filas.length) return;
+    var cab = Array.prototype.map.call(filas[0].querySelectorAll('th'), function (th) { return th.textContent.trim(); });
+    filas[0].classList.add('cabecera');
+    Array.prototype.slice.call(filas, 1).forEach(function (tr) {
+      var tds = tr.querySelectorAll('td');
+      Array.prototype.forEach.call(tds, function (td, i) {
+        var span = td.colSpan || 1;
+        var idx = 0; for (var k = 0; k < i; k++) idx += (tds[k].colSpan || 1);
+        td.setAttribute('data-label', cab[idx] || '');
+        if (i === 0) { td.classList.add('titulo'); if (tr.classList.contains('total') || !cab[0]) td.classList.add('solo'); }
+        if (td.textContent.trim().length > 60) td.classList.add('largo');
+      });
+    });
+  });
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
   window.addEventListener('hashchange', function () { fromHash(true); });
   fromHash(false);
