@@ -32,6 +32,8 @@ const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa
 //                  A       B       C               D      E               F           G       H      I             J         K     L               M (uso interno)  N
 const AMARILLO = "#ffe599";                 // color de lo reportado y aún no confirmado
 const HOJA_VALID = "Validaciones";
+const HOJA_VOTOS = "Votos";                 // asamblea: un voto por depto y pregunta (el último cuenta)
+const HOJA_ACUERDOS = "Acuerdos";           // asamblea: acuerdo, responsable y fecha por tema
 const HOJA_AGUA = "Agua";                   // una fila por depto y mes: lecturas, consumo, cargo, pagado
 const HOJA_RECIBOS = "Recibos agua";        // una fila por mes: recibo CEA, m³ del general, precio por m³
 const ENC_AGUA = ["Mes","Depto","Lectura anterior","Lectura actual","Consumo m³","Estimado","Foto","Capturado el","Cargo $","Pagado el","Nota"];
@@ -188,6 +190,8 @@ function doGet(e) {
     if (p.accion === "cuentas") return json_(cuentasDepto_(parseInt(p.depto, 10)));
     if (p.accion === "lecturas") return json_(lecturasMes_(p.mes, p.clave));
     if (p.accion === "agua") return json_(aguaDepto_(parseInt(p.depto, 10)));
+    if (p.accion === "votos") return json_(votos_());
+    if (p.accion === "acuerdos") return json_(acuerdos_());
     return json_({ ok: true, servicio: "misiones-pagos" });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -201,6 +205,8 @@ function doPost(e) {
     if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
     if (d.accion === "lectura") { lock.waitLock(10000); return json_(guardarLectura_(d)); }
     if (d.accion === "recibo") { lock.waitLock(10000); return json_(guardarRecibo_(d)); }
+    if (d.accion === "voto") { lock.waitLock(10000); return json_(votar_(d)); }
+    if (d.accion === "acuerdo") { lock.waitLock(10000); return json_(guardarAcuerdo_(d)); }
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);
@@ -385,6 +391,77 @@ function siguienteFolioValid_() {
   if (!(n >= 1)) n = 1;
   props.setProperty("folioValid", String(n + 1));
   return n;
+}
+
+/* ============================ ASAMBLEA: votos y acuerdos ============================ */
+
+function hojaSimple_(nombre, enc) {
+  const ss = SpreadsheetApp.getActive();
+  let h = ss.getSheetByName(nombre);
+  if (h) return h;
+  h = ss.insertSheet(nombre);
+  h.getRange(1, 1, 1, enc.length).setValues([enc]).setFontWeight("bold").setBackground("#d9e2ec");
+  h.setFrozenRows(1);
+  return h;
+}
+/* Un voto por depto y pregunta; si vuelve a votar, se sustituye. */
+function votar_(d) {
+  const depto = parseInt(d.depto, 10);
+  if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
+  const pregunta = limpiar_(d.pregunta, 40), opcion = limpiar_(d.opcion, 40);
+  if (!pregunta || !opcion) return { ok: false, error: "voto" };
+  const h = hojaSimple_(HOJA_VOTOS, ["Pregunta", "Depto", "Opción", "Fecha"]);
+  const n = h.getLastRow();
+  let fila = 0;
+  if (n > 1) {
+    const vals = h.getRange(2, 1, n - 1, 2).getValues();
+    for (let i = 0; i < vals.length; i++) if (String(vals[i][0]) === pregunta && Number(vals[i][1]) === depto) { fila = i + 2; break; }
+  }
+  if (!fila) fila = n + 1;
+  h.getRange(fila, 1, 1, 4).setValues([[pregunta, depto, opcion, new Date()]]);
+  h.getRange(fila, 4).setNumberFormat("dd/mm/yyyy hh:mm");
+  return { ok: true, pregunta: pregunta, depto: depto, opcion: opcion };
+}
+/* Conteo por pregunta y opción, con los deptos que ya votaron (sin nombres). */
+function votos_() {
+  const h = SpreadsheetApp.getActive().getSheetByName(HOJA_VOTOS);
+  const r = { ok: true, preguntas: {} };
+  if (!h || h.getLastRow() < 2) return r;
+  h.getRange(2, 1, h.getLastRow() - 1, 3).getValues().forEach(f => {
+    const p = String(f[0]), o = String(f[2]), dep = Number(f[1]);
+    if (!p || !o) return;
+    const q = r.preguntas[p] = r.preguntas[p] || { conteo: {}, deptos: {} };
+    q.conteo[o] = (q.conteo[o] || 0) + 1;
+    q.deptos[dep] = o;
+  });
+  return r;
+}
+function guardarAcuerdo_(d) {
+  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const tema = limpiar_(d.tema, 40);
+  if (!tema) return { ok: false, error: "tema" };
+  const h = hojaSimple_(HOJA_ACUERDOS, ["Tema", "Acuerdo", "Responsable", "Fecha compromiso", "Actualizado"]);
+  const n = h.getLastRow();
+  let fila = 0;
+  if (n > 1) {
+    const vals = h.getRange(2, 1, n - 1, 1).getValues();
+    for (let i = 0; i < vals.length; i++) if (String(vals[i][0]) === tema) { fila = i + 2; break; }
+  }
+  if (!fila) fila = n + 1;
+  h.getRange(fila, 1, 1, 5).setValues([[tema, limpiar_(d.acuerdo, 600), limpiar_(d.responsable, 120), limpiar_(d.fecha, 60), new Date()]]);
+  h.getRange(fila, 5).setNumberFormat("dd/mm/yyyy hh:mm");
+  return { ok: true, tema: tema };
+}
+function acuerdos_() {
+  const h = SpreadsheetApp.getActive().getSheetByName(HOJA_ACUERDOS);
+  const r = { ok: true, acuerdos: {} };
+  if (!h || h.getLastRow() < 2) return r;
+  h.getRange(2, 1, h.getLastRow() - 1, 5).getValues().forEach(f => {
+    if (!f[0]) return;
+    r.acuerdos[String(f[0])] = { acuerdo: String(f[1] || ""), responsable: String(f[2] || ""), fecha: String(f[3] || ""),
+      actualizado: f[4] instanceof Date ? Utilities.formatDate(f[4], "America/Mexico_City", "d/MM/yyyy HH:mm") : "" };
+  });
+  return r;
 }
 
 /* ============================ AGUA: lecturas, recibo y cargos ============================ */

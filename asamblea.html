@@ -85,7 +85,47 @@
     table.data tr.total { background: var(--accent-soft); border-color: var(--accent); }
     table.data tr.total td { font-weight: 800; }
   }
-  @media print { .tabs, .pager { display: none; } .panel { display: block !important; } }
+  /* Sesión: presentación, votación y acuerdos */
+  .visor { background: #12293f; border-radius: 12px; overflow: hidden; aspect-ratio: 16 / 9; display: grid; place-items: center; }
+  .visor img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .visor-ctl { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-top: .7rem; }
+  .visor-ctl button.nav { font: inherit; font-weight: 800; min-width: 48px; min-height: 42px; border: 2px solid var(--baseline); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .visor-ctl .n { font-weight: 700; min-width: 4.5rem; text-align: center; }
+  .visor-ctl .btn { font-size: .9rem; }
+  #overlay { position: fixed; inset: 0; background: #000; z-index: 100; display: none; }
+  #overlay.on { display: block; }
+  #overlay img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  #overlay .zona { position: absolute; top: 0; bottom: 0; width: 50%; cursor: pointer; }
+  #overlay .zona.izq { left: 0; } #overlay .zona.der { right: 0; }
+  #overlay .cerrar { position: absolute; top: 12px; right: 12px; font: inherit; font-weight: 700; padding: .4rem .8rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.4); background: rgba(0,0,0,.5); color: #fff; cursor: pointer; opacity: .6; }
+  #overlay .cuenta { position: absolute; bottom: 12px; left: 16px; color: rgba(255,255,255,.5); font-size: .85rem; }
+  .vdeptos { display: grid; grid-template-columns: repeat(8, 1fr); gap: .4rem; margin: .4rem 0 1rem; }
+  @media (max-width: 640px) { .vdeptos { grid-template-columns: repeat(4, 1fr); } }
+  .vdeptos button { font: inherit; font-weight: 700; min-height: 46px; border: 2px solid var(--baseline); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .vdeptos button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pregunta-v { border: 1px solid var(--border); border-radius: 12px; padding: .9rem 1rem; margin-bottom: .9rem; background: var(--surface); }
+  .pregunta-v .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--series-2); font-weight: 700; }
+  .pregunta-v h3 { margin: .15rem 0 .6rem; font-size: 1.05rem; }
+  .opciones-v { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .5rem; }
+  .opciones-v button { font: inherit; font-weight: 700; font-size: 1rem; min-height: 54px; padding: .4rem .6rem; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .opciones-v button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .opciones-v button:disabled { opacity: .55; cursor: not-allowed; }
+  @media (prefers-color-scheme: dark) { .vdeptos button.sel, .opciones-v button.sel { color: #0d0d0d; } }
+  .conteo { margin-top: .7rem; }
+  .conteo .barra { display: grid; grid-template-columns: 1fr auto; gap: .5rem; align-items: center; font-size: .92rem; margin-bottom: .35rem; }
+  .conteo .barra .fondo { height: 14px; background: var(--grid); border-radius: 999px; overflow: hidden; }
+  .conteo .barra .lleno { height: 100%; background: var(--accent); border-radius: 999px; transition: width .4s; }
+  .conteo .barra b { min-width: 2.2rem; text-align: right; }
+  .conteo .quien { font-size: .82rem; color: var(--muted); margin-top: .3rem; }
+  .acuerdo-v { border-left: 4px solid var(--accent); padding: .4rem .9rem; margin-bottom: .8rem; }
+  .acuerdo-v .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); font-weight: 700; }
+  .acuerdo-v p { margin: .2rem 0; }
+  .acuerdo-v .meta { font-size: .85rem; color: var(--ink-2); }
+  .editor label { display: block; font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: .6rem 0 .15rem; }
+  .editor textarea { min-height: 70px; font-size: .95rem; }
+  .editor .dos { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .editor .guardar { font: inherit; font-weight: 700; margin-top: .5rem; padding: .55rem 1rem; border-radius: 10px; border: none; background: var(--accent); color: #fff; cursor: pointer; }
+  @media print { .tabs, .pager, .visor-ctl, .editor, #overlay { display: none; } .panel { display: block !important; } }
 </style>
 </head>
 <body>
@@ -123,6 +163,7 @@
     <a href="#p-t4" data-tab="p-t4">4 · Víctor</a>
     <a href="#p-elevador" data-tab="p-elevador">Elevador</a>
     <a href="#dinero" data-tab="dinero">Caja</a>
+    <a href="#sesion" data-tab="sesion">Sesión</a>
   </nav>
 
   <section class="panel" id="inicio" data-title="En dos minutos y orden del día">
@@ -380,7 +421,43 @@
     <p style="margin:0;color:var(--ink-2);font-size:.95rem">La minuta con los acuerdos, responsables y fechas se publica en <a href="pendientes.html">Pendientes</a> dentro de la semana siguiente, y el formulario de cuentas ya está en <a href="cuentas.html">Mis cuentas</a>. Si ya pagaste octubre y no apareces en la <a href="#caja">caja</a>, regístralo en <a href="pago.html">Registrar pago</a>.</p>
   </div>
 
-    <div class="pager"><a class="btn ghost" href="#p-elevador">← Elevador</a><a class="btn primary" href="#inicio">Volver al inicio</a></div>
+    <div class="pager"><a class="btn ghost" href="#p-elevador">← Elevador</a><a class="btn primary" href="#sesion">Sesión →</a></div>
+  </section>
+
+  <section class="panel" id="sesion" data-title="Presentación, votación y acuerdos">
+  <h2 class="section-title" id="presentacion">Presentación</h2>
+  <p class="section-sub">Veinticuatro láminas para guiar la sesión, una idea por lámina. En la videollamada se comparte esta pantalla; con las flechas del teclado o tocando los lados se avanza.</p>
+  <div class="rule-block">
+    <div class="visor" id="visor"><img id="lamina" src="presentacion/lamina_01_portada.png" alt="Lámina 1"></div>
+    <div class="visor-ctl">
+      <button type="button" class="nav" id="lamPrev" aria-label="Anterior">◀</button>
+      <span class="n" id="lamNum">1 / 24</span>
+      <button type="button" class="nav" id="lamNext" aria-label="Siguiente">▶</button>
+      <button type="button" class="btn primary" id="btnPresentar">Presentar en pantalla completa</button>
+      <a class="btn ghost" href="documentos/presentacion-asamblea-13-octubre.zip" download>Descargar láminas y guion</a>
+    </div>
+  </div>
+
+  <h2 class="section-title" id="votacion">Votación</h2>
+  <p class="section-sub">Cada departamento vota desde su celular cuando el tema llegue a votación. Se puede cambiar el voto; cuenta el último. Los conteos se actualizan solos en todas las pantallas.</p>
+  <div class="rule-block">
+    <p style="margin:0 0 .3rem;font-weight:700">¿Qué departamento eres?</p>
+    <div class="vdeptos" id="vDeptos"></div>
+    <div id="vPreguntas"></div>
+    <p class="fuente" id="vEstado">Conectando con el conteo…</p>
+  </div>
+
+  <h2 class="section-title" id="acuerdos">Acuerdos de la asamblea</h2>
+  <p class="section-sub">Se llenan en vivo al cierre, con responsable y fecha, y quedan aquí para consultarlos. El botón de descarga arma el documento con los resultados de las votaciones y los acuerdos.</p>
+  <div class="rule-block">
+    <div id="aLista"><p class="fuente">Cargando acuerdos…</p></div>
+    <div class="cta-row" style="margin-top:.8rem">
+      <a class="btn primary" href="acuerdos.html" target="_blank" rel="noopener">Descargar acuerdos</a>
+      <button type="button" class="btn ghost" id="btnEditar">Llenar acuerdos (mesa directiva)</button>
+    </div>
+    <div class="editor hidden" id="aEditor"></div>
+  </div>
+    <div class="pager"><a class="btn ghost" href="#dinero">← Caja</a><a class="btn primary" href="#inicio">Volver al inicio</a></div>
   </section>
 
   <div class="cta-row" style="margin-top:1.5rem">
@@ -396,6 +473,7 @@
     Las Misiones Residencial · Senda Eterna 444, Fraccionamiento Milenio III, Santiago de Querétaro, Qro. · Página temporal de la mesa directiva para la asamblea del 13 de octubre de 2026. Fuentes: cuenta de la mesa directiva al 11 de octubre; portal de la CEA (referencia 604884) al 9 de octubre; tablas contables y estados de cuenta entregados por Admin-Solutions con corte al 30 de junio; minuta del 18 de septiembre; reportes del elevador del 25 de agosto. Los nombres de los propietarios no se publican.
   </div>
 </footer>
+<div id="overlay" aria-hidden="true"><img id="ovImg" alt=""><div class="zona izq"></div><div class="zona der"></div><button type="button" class="cerrar" id="ovCerrar">Salir (Esc)</button><div class="cuenta" id="ovNum"></div></div>
 <script>
 (function () {
   var header = document.querySelector('.site-header');
@@ -463,6 +541,139 @@
   fromHash(false);
   window.addEventListener('load', function () { if (location.hash) setTimeout(function () { fromHash(true); }, 0); });
   // el índice del orden del día y los pagers ya navegan por hash; nada más que hacer
+})();
+
+/* ===================== SESIÓN: presentación, votación y acuerdos ===================== */
+(function () {
+  var SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+  var UNIDADES = 16;
+  var LAMINAS = ["01_portada","02_reglas","03_cifras","04_orden","05_frase-cea","06_deuda-cea","07_opciones-cea","08_votacion-cea","09_frase-admin","10_victor-hacia","11_reparto-1","12_reparto-2","13_votacion-admin","14_cifras-cuentas","15_formulario","16_acuerdo-cuentas","17_frase-victor","18_entregar","19_caminos","20_votacion-victor","21_elevador","22_rutas","23_acuerdos","24_cierre"];
+  var PREGUNTAS = [
+    { id: "cea", k: "1 · Deuda con la CEA", t: "¿Cómo pagamos los $30,472 que debemos a la CEA?", op: ["A · Cuota única de $1,905", "B · Margen mensual"] },
+    { id: "autogestion", k: "2 · Administración", t: "¿Ratificamos que la mesa directiva administre, sin contratar otra administradora?", op: ["Sí", "No"] },
+    { id: "formulario", k: "3 · Cuentas", t: "¿Aceptamos el formulario Mis cuentas con fecha límite el viernes 23 de octubre?", op: ["Sí", "No"] },
+    { id: "requerimiento", k: "4 · Víctor", t: "¿Mandamos el requerimiento por escrito esta semana?", op: ["Sí", "No"] },
+    { id: "legal", k: "4 · Víctor", t: "Si no responde en el plazo, ¿autorizamos a la mesa a buscar asesoría legal?", op: ["Sí", "No"] }
+  ];
+  var TEMAS = [["cea", "1 · Deuda con la CEA"], ["administracion", "2 · Administración y conserje"], ["cuentas", "3 · Cuentas de cada depto"], ["victor", "4 · Víctor"], ["elevador", "Elevador (siguiente paso)"]];
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* --- Presentación --- */
+  var idx = 0;
+  function src(i) { return "presentacion/lamina_" + LAMINAS[i] + ".png"; }
+  function mostrar(i) {
+    idx = Math.max(0, Math.min(LAMINAS.length - 1, i));
+    $("lamina").src = src(idx); $("lamNum").textContent = (idx + 1) + " / " + LAMINAS.length;
+    $("ovImg").src = src(idx); $("ovNum").textContent = (idx + 1) + " / " + LAMINAS.length;
+    var pre = new Image(); if (idx + 1 < LAMINAS.length) pre.src = src(idx + 1);
+  }
+  $("lamPrev").onclick = function () { mostrar(idx - 1); };
+  $("lamNext").onclick = function () { mostrar(idx + 1); };
+  $("visor").onclick = function (e) { var r = this.getBoundingClientRect(); mostrar(e.clientX - r.left < r.width / 2 ? idx - 1 : idx + 1); };
+  var ov = $("overlay");
+  function abrir() { ov.classList.add("on"); ov.setAttribute("aria-hidden", "false"); mostrar(idx); try { if (ov.requestFullscreen) ov.requestFullscreen(); } catch (e) {} }
+  function cerrar() { ov.classList.remove("on"); ov.setAttribute("aria-hidden", "true"); try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) {} }
+  $("btnPresentar").onclick = abrir; $("ovCerrar").onclick = cerrar;
+  ov.querySelector(".zona.izq").onclick = function () { mostrar(idx - 1); };
+  ov.querySelector(".zona.der").onclick = function () { mostrar(idx + 1); };
+  document.addEventListener("fullscreenchange", function () { if (!document.fullscreenElement && ov.classList.contains("on")) cerrar(); });
+  document.addEventListener("keydown", function (e) {
+    var activo = document.querySelector(".panel.active"); if (!activo || activo.id !== "sesion") return;
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") { mostrar(idx + 1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { mostrar(idx - 1); e.preventDefault(); }
+    else if (e.key === "Escape" && ov.classList.contains("on")) cerrar();
+  });
+  var tx = null;
+  ov.addEventListener("touchstart", function (e) { tx = e.touches[0].clientX; }, { passive: true });
+  ov.addEventListener("touchend", function (e) { if (tx === null) return; var dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 40) mostrar(dx < 0 ? idx + 1 : idx - 1); tx = null; }, { passive: true });
+
+  /* --- Votación --- */
+  var depto = null, votos = null, enviando = false;
+  var vd = $("vDeptos");
+  for (var i = 1; i <= UNIDADES; i++) (function (n) { var b = document.createElement("button"); b.type = "button"; b.textContent = n; b.onclick = function () { depto = n; try { localStorage.setItem("misiones_depto", n); } catch (e) {} pintarDeptos(); pintarPreguntas(); }; vd.appendChild(b); })(i);
+  function pintarDeptos() { Array.prototype.forEach.call(vd.children, function (b) { b.classList.toggle("sel", +b.textContent === depto); }); }
+  try { var g = parseInt(localStorage.getItem("misiones_depto"), 10); if (g >= 1 && g <= UNIDADES) depto = g; } catch (e) {}
+  pintarDeptos();
+  function pintarPreguntas() {
+    var cont = $("vPreguntas"); cont.innerHTML = "";
+    PREGUNTAS.forEach(function (q) {
+      var r = votos && votos.preguntas && votos.preguntas[q.id] ? votos.preguntas[q.id] : { conteo: {}, deptos: {} };
+      var mio = depto ? r.deptos[depto] : null;
+      var total = Object.keys(r.deptos).length;
+      var div = document.createElement("div"); div.className = "pregunta-v"; div.id = "q_" + q.id;
+      var ops = q.op.map(function (o) { return '<button type="button" data-q="' + q.id + '" data-o="' + o + '" class="' + (mio === o ? "sel" : "") + '"' + (depto ? "" : " disabled") + '>' + o + '</button>'; }).join("");
+      var barras = q.op.map(function (o) { var c = r.conteo[o] || 0; var pct = total ? Math.round(c * 100 / total) : 0; return '<div class="barra"><div><div style="display:flex;justify-content:space-between;font-size:.88rem"><span>' + o + '</span><span>' + pct + '%</span></div><div class="fondo"><div class="lleno" style="width:' + pct + '%"></div></div></div><b>' + c + '</b></div>'; }).join("");
+      var quien = total ? "Han votado " + total + " de 16: deptos " + Object.keys(r.deptos).map(Number).sort(function (a, b) { return a - b; }).join(", ") + "." : "Nadie ha votado todavía.";
+      div.innerHTML = '<div class="k">' + q.k + '</div><h3>' + q.t + '</h3><div class="opciones-v">' + ops + '</div><div class="conteo">' + barras + '<div class="quien">' + quien + (mio ? " Tu voto: <b>" + mio + "</b>." : "") + '</div></div>';
+      cont.appendChild(div);
+    });
+    cont.querySelectorAll(".opciones-v button").forEach(function (b) { b.onclick = function () { votar(b.dataset.q, b.dataset.o, b); }; });
+    if (!depto) $("vEstado").textContent = "Toca tu departamento para poder votar.";
+  }
+  async function votar(q, o, b) {
+    if (!depto || enviando) return;
+    enviando = true; b.textContent = "Enviando…";
+    try {
+      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "voto", clave: "misiones", depto: depto, pregunta: q, opcion: o }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+      var j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
+      votos = votos || { preguntas: {} }; votos.preguntas[q] = votos.preguntas[q] || { conteo: {}, deptos: {} };
+      var reg = votos.preguntas[q]; if (reg.deptos[depto]) reg.conteo[reg.deptos[depto]]--; reg.deptos[depto] = o; reg.conteo[o] = (reg.conteo[o] || 0) + 1;
+      pintarPreguntas();
+    } catch (e) { alert("No se registró el voto: " + (e.message || e)); pintarPreguntas(); }
+    enviando = false;
+  }
+  async function cargarVotos() {
+    try {
+      var r = await fetch(SCRIPT_URL + "?accion=votos&t=" + Date.now()); var j = await r.json();
+      if (!j.ok || !j.preguntas) throw new Error(j.error || "sin servicio");
+      votos = j; pintarPreguntas();
+      $("vEstado").textContent = depto ? "Conteo en vivo · se actualiza cada 8 segundos." : "Toca tu departamento para poder votar.";
+    } catch (e) { $("vEstado").textContent = "El conteo en vivo no está disponible todavía (" + (e.message || e) + ")."; if (!votos) pintarPreguntas(); }
+  }
+  setInterval(function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion" && !document.hidden) cargarVotos(); }, 8000);
+
+  /* --- Acuerdos --- */
+  var acuerdos = {};
+  function pintarAcuerdos() {
+    var h = "";
+    TEMAS.forEach(function (t) {
+      var a = acuerdos[t[0]] || {};
+      h += '<div class="acuerdo-v"><div class="k">' + t[1] + '</div><p>' + (a.acuerdo ? a.acuerdo : '<span style="color:var(--muted)">Pendiente de llenar en la sesión.</span>') + '</p>' + (a.responsable || a.fecha ? '<p class="meta">Responsable: <b>' + (a.responsable || "—") + '</b> · Fecha: <b>' + (a.fecha || "—") + '</b></p>' : "") + '</div>';
+    });
+    $("aLista").innerHTML = h;
+  }
+  async function cargarAcuerdos() {
+    try { var r = await fetch(SCRIPT_URL + "?accion=acuerdos&t=" + Date.now()); var j = await r.json(); if (j.ok && j.acuerdos) acuerdos = j.acuerdos; } catch (e) {}
+    pintarAcuerdos();
+  }
+  $("btnEditar").onclick = function () {
+    var ed = $("aEditor"); ed.classList.toggle("hidden");
+    if (!ed.innerHTML) {
+      var h = '<label>Clave de la mesa directiva</label><input type="password" id="aClave" autocomplete="off">';
+      TEMAS.forEach(function (t) { var a = acuerdos[t[0]] || {}; h += '<label>' + t[1] + ' · acuerdo</label><textarea id="ac_' + t[0] + '">' + (a.acuerdo || "") + '</textarea><div class="dos"><div><label>Responsable</label><input type="text" id="ar_' + t[0] + '" value="' + (a.responsable || "") + '"></div><div><label>Fecha compromiso</label><input type="text" id="af_' + t[0] + '" value="' + (a.fecha || "") + '" placeholder="p. ej. 20 de octubre"></div></div><button type="button" class="guardar" data-t="' + t[0] + '">Guardar ' + t[1].split(" · ")[0] + '</button>'; });
+      ed.innerHTML = h;
+      try { $("aClave").value = localStorage.getItem("misiones_clave_admin") || ""; } catch (e) {}
+      ed.querySelectorAll(".guardar").forEach(function (b) { b.onclick = async function () {
+        var t = b.dataset.t, clave = $("aClave").value.trim(); if (!clave) { alert("Falta la clave."); return; }
+        try { localStorage.setItem("misiones_clave_admin", clave); } catch (e) {}
+        b.disabled = true; b.textContent = "Guardando…";
+        try {
+          var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "acuerdo", claveAdmin: clave, tema: t, acuerdo: $("ac_" + t).value, responsable: $("ar_" + t).value, fecha: $("af_" + t).value }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+          var j = await r.json(); if (!j.ok) throw new Error(j.error === "clave" ? "clave incorrecta" : (j.error || "error"));
+          acuerdos[t] = { acuerdo: $("ac_" + t).value, responsable: $("ar_" + t).value, fecha: $("af_" + t).value }; pintarAcuerdos();
+          b.textContent = "✓ Guardado";
+        } catch (e) { alert("No se guardó: " + (e.message || e)); b.textContent = "Guardar"; }
+        b.disabled = false;
+      }; });
+    }
+  };
+
+  /* Arranque perezoso: solo cuando se abre la pestaña */
+  var iniciado = false;
+  function iniciar() { if (iniciado) return; iniciado = true; mostrar(0); pintarPreguntas(); cargarVotos(); cargarAcuerdos(); }
+  window.addEventListener("hashchange", function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion") iniciar(); });
+  setTimeout(function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion") iniciar(); }, 50);
 })();
 </script>
 </body>

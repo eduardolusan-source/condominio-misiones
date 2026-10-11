@@ -97,3 +97,15 @@ Tras pegar el `Code.gs` nuevo y publicar nueva versión (paso 6):
 - **Pagado**: se marca solo cuando se confirma en Pagos (bandeja o columna J) un pago de ese
   depto con agua y ese mes; o a mano escribiendo la fecha en Agua → columna J.
 - `dia_lectura` en Config: día del mes en que se leen los medidores (por definir).
+
+## 8. Asamblea: votación en vivo y acuerdos
+La pestaña **Sesión** de `asamblea.html` tiene la presentación (botón de pantalla completa), la
+votación por departamento y los acuerdos.
+- **Votos**: cada depto toca su número y vota; cae en la pestaña **Votos** (una fila por depto y
+  pregunta; si vuelve a votar, se sustituye). Los conteos se refrescan solos cada 8 segundos en
+  todas las pantallas.
+- **Acuerdos**: el botón "Llenar acuerdos (mesa directiva)" pide `CLAVE_ADMIN` y guarda en la
+  pestaña **Acuerdos** (tema, acuerdo, responsable, fecha). `acuerdos.html` arma el documento con
+  los resultados y los acuerdos, listo para guardar como PDF.
+- Las preguntas están en el código de `asamblea.html` y `acuerdos.html` (lista `PREGUNTAS`); para
+  otra asamblea se cambian ahí.
