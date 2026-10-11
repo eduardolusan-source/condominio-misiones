@@ -80,3 +80,20 @@ La dirección `/exec` no cambia si editas la implementación existente:
 depto de su adeudo (lo debe, lo pagó a la administración anterior, no es correcto), cuánto
 dice haber pagado y sus comprobantes. Con eso se arma la hoja de cuentas y se calcula lo
 que debe la administración anterior.
+
+## 7. Agua: lecturas, recibo y cargos
+Tras pegar el `Code.gs` nuevo y publicar nueva versión (paso 6):
+- **`lecturas.html`** es para quien lee los medidores. Pide la clave `clave_lector` de Config
+  (nace sola con el valor `agua` la primera vez que se abre la página; cámbiala). Un depto a la
+  vez: foto, número negro del medidor y Guardar. La primera vez pide también la lectura anterior.
+  Las fotos caen en "Misiones · Comprobantes / Agua AAAA-MM".
+- La pestaña **Agua** se crea sola: una fila por depto y mes con lectura anterior, actual,
+  consumo, foto, cargo (fórmula) y **Pagado el**.
+- La pestaña **Recibos agua** se crea sola con una fila por mes. Eduardo captura solo las
+  celdas azules: **B** monto del recibo CEA, **C** m³ del medidor general (viene impreso en el
+  recibo) y, si quiere, **D** fecha límite. Las demás columnas se calculan: precio por m³,
+  suma de lecturas, m³ comunes y comunes por depto. Con eso el cargo de cada depto aparece
+  en Agua y en `agua.html`.
+- **Pagado**: se marca solo cuando se confirma en Pagos (bandeja o columna J) un pago de ese
+  depto con agua y ese mes; o a mano escribiendo la fecha en Agua → columna J.
+- `dia_lectura` en Config: día del mes en que se leen los medidores (por definir).

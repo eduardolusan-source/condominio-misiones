@@ -32,6 +32,12 @@ const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa
 //                  A       B       C               D      E               F           G       H      I             J         K     L               M (uso interno)  N
 const AMARILLO = "#ffe599";                 // color de lo reportado y aún no confirmado
 const HOJA_VALID = "Validaciones";
+const HOJA_AGUA = "Agua";                   // una fila por depto y mes: lecturas, consumo, cargo, pagado
+const HOJA_RECIBOS = "Recibos agua";        // una fila por mes: recibo CEA, m³ del general, precio por m³
+const ENC_AGUA = ["Mes","Depto","Lectura anterior","Lectura actual","Consumo m³","Estimado","Foto","Capturado el","Cargo $","Pagado el","Nota"];
+//                 A     B       C                  D                E           F          G      H              I         J           K
+const ENC_RECIBOS = ["Mes","Monto del recibo CEA","m³ del medidor general (viene en el recibo)","Fecha límite de pago","Precio por m³","Suma de lecturas m³","m³ de áreas comunes","Comunes por depto $","Notas"];
+//                    A     B                      C                                            D                      E               F                     G                     H                     I
 const ENC_VALID = ["Fecha","Depto","Concepto","Respuesta","Monto pagado a la admin. anterior","Nota","Comprobantes","Folio","Nota general"];
 /* Lo que tocaba pagar de julio a septiembre de 2026, cobrado por la administración anterior. */
 const CONCEPTOS_PREVIOS = [
@@ -180,6 +186,8 @@ function doGet(e) {
     if (p.accion === "pendientes") return json_(pendientes_(p.clave));
     if (p.accion === "imagen") return json_(imagen_(p.clave, p.folio));
     if (p.accion === "cuentas") return json_(cuentasDepto_(parseInt(p.depto, 10)));
+    if (p.accion === "lecturas") return json_(lecturasMes_(p.mes, p.clave));
+    if (p.accion === "agua") return json_(aguaDepto_(parseInt(p.depto, 10)));
     return json_({ ok: true, servicio: "misiones-pagos" });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -191,6 +199,7 @@ function doPost(e) {
   try {
     const d = JSON.parse(e.postData.contents || "{}");
     if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
+    if (d.accion === "lectura") { lock.waitLock(10000); return json_(guardarLectura_(d)); }
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);
@@ -377,6 +386,157 @@ function siguienteFolioValid_() {
   return n;
 }
 
+/* ============================ AGUA: lecturas, recibo y cargos ============================ */
+
+function hojaAgua_() {
+  const ss = SpreadsheetApp.getActive();
+  let h = ss.getSheetByName(HOJA_AGUA);
+  if (h) return h;
+  h = ss.insertSheet(HOJA_AGUA);
+  h.getRange(1, 1, 1, ENC_AGUA.length).setValues([ENC_AGUA]).setFontWeight("bold").setBackground("#d9e2ec");
+  h.setFrozenRows(1);
+  h.setColumnWidth(7, 220); h.setColumnWidth(11, 260);
+  return h;
+}
+function hojaRecibos_() {
+  const ss = SpreadsheetApp.getActive();
+  let h = ss.getSheetByName(HOJA_RECIBOS);
+  if (h) return h;
+  h = ss.insertSheet(HOJA_RECIBOS);
+  h.getRange(1, 1, 1, ENC_RECIBOS.length).setValues([ENC_RECIBOS]).setFontWeight("bold").setBackground("#d9e2ec").setWrap(true);
+  h.setFrozenRows(1);
+  h.setColumnWidths(2, 3, 160); h.setColumnWidth(9, 300);
+  h.getRange("A2:A200").setNumberFormat("@");
+  h.getRange("B2:B200").setBackground("#dbe9ff"); h.getRange("C2:C200").setBackground("#dbe9ff"); h.getRange("D2:D200").setBackground("#dbe9ff");
+  return h;
+}
+/* Fila del mes en Recibos agua; si no existe, la crea con sus fórmulas y deja en azul lo que captura Eduardo. */
+function filaRecibo_(mes, crear) {
+  const h = hojaRecibos_();
+  const n = h.getLastRow();
+  if (n > 1) {
+    const vals = h.getRange(2, 1, n - 1, 1).getValues();
+    for (let i = 0; i < vals.length; i++) if (mesTexto_(vals[i][0]) === mes) return i + 2;
+  }
+  if (!crear) return 0;
+  const r = n + 1;
+  h.getRange(r, 1).setNumberFormat("@").setValue(mes);
+  h.getRange(r, 2).setNumberFormat("$#,##0.00");
+  h.getRange(r, 4).setNumberFormat("dd/mm/yyyy");
+  h.getRange(r, 5).setFormula('=IF(AND(B' + r + '>0,C' + r + '>0),B' + r + '/C' + r + ',"")').setNumberFormat("$#,##0.00");
+  h.getRange(r, 6).setFormula("=SUMIF('" + HOJA_AGUA + "'!$A:$A,A" + r + ",'" + HOJA_AGUA + "'!$E:$E)");
+  h.getRange(r, 7).setFormula('=IF(C' + r + '>0,C' + r + '-F' + r + ',"")');
+  h.getRange(r, 8).setFormula('=IF(AND(ISNUMBER(E' + r + '),ISNUMBER(G' + r + ')),E' + r + '*MAX(G' + r + ',0)/' + UNIDADES + ',"")').setNumberFormat("$#,##0.00");
+  return r;
+}
+function filaAgua_(h, mes, depto) {
+  const n = h.getLastRow();
+  if (n < 2) return 0;
+  const vals = h.getRange(2, 1, n - 1, 2).getValues();
+  for (let i = 0; i < vals.length; i++) if (mesTexto_(vals[i][0]) === mes && Number(vals[i][1]) === depto) return i + 2;
+  return 0;
+}
+function claveLector_() {
+  const cfg = config_();
+  const v = String(cfg.clave_lector || "").trim();
+  if (v) return v;
+  const h = SpreadsheetApp.getActive().getSheetByName(HOJA_CONFIG);   // primera vez: se agrega la clave por defecto y el día de lectura
+  if (h) h.getRange(h.getLastRow() + 1, 1, 2, 3).setValues([["clave_lector", "agua", "Clave de lecturas.html para quien lee los medidores. CÁMBIALA."], ["dia_lectura", "", "Día del mes en que se leen los medidores (por definir)"]]);
+  return "agua";
+}
+/* Todo lo que la página de lecturas necesita para un mes: por depto, la lectura anterior,
+   lo ya capturado este mes y el promedio de consumo de los últimos tres meses. */
+function lecturasMes_(mes, clave) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(mes || ""))) throw new Error("mes");
+  if (String(clave || "") !== claveLector_() && String(clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const h = hojaAgua_();
+  const filas = h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues() : [];
+  const r = { ok: true, mes: mes, deptos: [], capturados: 0, recibo: null, diaLectura: String(config_().dia_lectura || "") };
+  for (let d = 1; d <= UNIDADES; d++) {
+    const mias = filas.filter(f => Number(f[1]) === d).map(f => ({ mes: mesTexto_(f[0]), ant: f[2], act: f[3], cons: f[4], est: f[5], foto: f[6] }));
+    const previas = mias.filter(x => x.mes < mes && x.act !== "" && x.act !== null).sort((a, b) => a.mes < b.mes ? 1 : -1);
+    const actual = mias.find(x => x.mes === mes) || null;
+    const ult = previas.slice(0, 3).map(x => Number(x.cons)).filter(x => !isNaN(x) && x >= 0);
+    r.deptos.push({
+      depto: d,
+      anterior: previas.length ? Number(previas[0].act) : (actual && actual.ant !== "" ? Number(actual.ant) : null),
+      actual: actual && actual.act !== "" ? Number(actual.act) : null,
+      estimado: actual ? String(actual.est) === "sí" : false,
+      foto: actual ? String(actual.foto || "") : "",
+      promedio: ult.length ? Math.round(ult.reduce((a, b) => a + b, 0) / ult.length * 10) / 10 : null
+    });
+    if (actual && actual.act !== "") r.capturados++;
+  }
+  const fr = filaRecibo_(mes, false);
+  if (fr) { const v = hojaRecibos_().getRange(fr, 2, 1, 2).getValues()[0]; r.recibo = { monto: Number(v[0]) || 0, m3: Number(v[1]) || 0 }; }
+  return r;
+}
+/* Guarda la lectura de un depto (número y foto). La fila del mes en Recibos agua se crea sola. */
+function guardarLectura_(d) {
+  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const mes = String(d.mes || "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
+  const depto = parseInt(d.depto, 10);
+  if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
+  const actual = Math.round(parseFloat(d.actual) * 10) / 10;
+  if (!(actual >= 0)) return { ok: false, error: "lectura" };
+  const h = hojaAgua_();
+  const info = lecturasMes_(mes, d.clave).deptos[depto - 1];
+  let anterior = info.anterior;
+  if (anterior === null && d.anterior !== undefined && d.anterior !== "") anterior = Math.round(parseFloat(d.anterior) * 10) / 10;
+  if (anterior === null || isNaN(anterior)) return { ok: false, error: "falta la lectura anterior" };
+  let consumo = Math.round((actual - anterior) * 10) / 10;
+  if (consumo < 0 && actual < 1000) consumo = Math.round((actual + 10000 - anterior) * 10) / 10;   // el medidor dio la vuelta
+  if (consumo < 0) return { ok: false, error: "la lectura es menor que la anterior" };
+  const ahora = new Date();
+  let foto = "";
+  if (d.imagen && String(d.imagen).length > 100) {
+    const nombre = mes + " · Depto " + (depto < 10 ? "0" : "") + depto + " · lectura " + actual + ".jpg";
+    const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), d.tipo || "image/jpeg", nombre);
+    foto = subcarpeta_("Agua " + mes).createFile(blob).getUrl();
+  }
+  filaRecibo_(mes, true);
+  let fila = filaAgua_(h, mes, depto);
+  if (!fila) { fila = h.getLastRow() + 1; h.getRange(fila, 1).setNumberFormat("@").setValue(mes); h.getRange(fila, 2).setValue(depto); }
+  h.getRange(fila, 3, 1, 4).setValues([[anterior, actual, consumo, d.estimado ? "sí" : "no"]]);
+  if (foto) h.getRange(fila, 7).setValue(foto);
+  h.getRange(fila, 8).setValue(ahora).setNumberFormat("dd/mm/yyyy hh:mm");
+  h.getRange(fila, 9).setFormula("=IF(AND(ISNUMBER(E" + fila + "),ISNUMBER(VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE))),VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE)*E" + fila + "+VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$H,8,FALSE),\"\")").setNumberFormat("$#,##0.00");
+  if (d.nota) h.getRange(fila, 11).setValue(limpiar_(d.nota, 200));
+  return { ok: true, depto: depto, anterior: anterior, actual: actual, consumo: consumo, foto: foto };
+}
+/* Recibo de agua de un depto, mes por mes, con el reparto del edificio para que se vea cómo se calculó. */
+function aguaDepto_(depto) {
+  if (!(depto >= 1 && depto <= UNIDADES)) throw new Error("departamento");
+  const ss = SpreadsheetApp.getActive();
+  const h = ss.getSheetByName(HOJA_AGUA), hr = ss.getSheetByName(HOJA_RECIBOS);
+  const r = { ok: true, depto: depto, meses: [], diaLectura: String(config_().dia_lectura || "") };
+  if (!h || h.getLastRow() < 2) return r;
+  const recibos = {};
+  if (hr && hr.getLastRow() > 1) hr.getRange(2, 1, hr.getLastRow() - 1, 8).getValues().forEach(f => {
+    recibos[mesTexto_(f[0])] = { monto: Number(f[1]) || 0, m3: Number(f[2]) || 0, limite: f[3] instanceof Date ? Utilities.formatDate(f[3], "America/Mexico_City", "d/MM/yyyy") : String(f[3] || ""),
+      precio: Number(f[4]) || 0, suma: Number(f[5]) || 0, comunes: Number(f[6]) || 0, comunesDepto: Number(f[7]) || 0 };
+  });
+  h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues().forEach(f => {
+    if (Number(f[1]) !== depto) return;
+    const mes = mesTexto_(f[0]);
+    const rec = recibos[mes] || null;
+    r.meses.push({ mes: mes, anterior: Number(f[2]), actual: Number(f[3]), consumo: Number(f[4]) || 0, estimado: String(f[5]) === "sí",
+      cargo: f[8] === "" ? null : Number(f[8]), pagado: f[9] instanceof Date ? Utilities.formatDate(f[9], "America/Mexico_City", "d/MM/yyyy") : (f[9] ? String(f[9]) : ""),
+      nota: String(f[10] || ""), recibo: rec });
+  });
+  r.meses.sort((a, b) => a.mes < b.mes ? 1 : -1);
+  return r;
+}
+function marcarAguaPagada_(mes, depto, fecha, folio) {
+  const h = SpreadsheetApp.getActive().getSheetByName(HOJA_AGUA);
+  if (!h || !mes) return;
+  const fila = filaAgua_(h, mes, depto);
+  if (!fila) return;
+  h.getRange(fila, 10).setValue(fecha).setNumberFormat("dd/mm/yyyy");
+  if (folio) h.getRange(fila, 11).setValue(("Pago " + folio + " · " + String(h.getRange(fila, 11).getValue() || "")).replace(/ · $/, ""));
+}
+
 /* Al poner "Confirmado" en la columna J de Pagos, anota la fecha en L. */
 function onEdit(e) {
   try {
@@ -393,6 +553,10 @@ function resolver_(h, fila, estatus) {
   if (estatus === "Confirmado") {
     h.getRange(fila, 12).setValue(new Date());
     aplicarCeldas_(ss, celdas, "confirmar");
+    try {                                                   // si el pago trae agua, el recibo de ese mes queda pagado
+      const f = h.getRange(fila, 1, 1, ENC_PAGOS.length).getValues()[0];
+      if (Number(f[3]) > 0) marcarAguaPagada_(mesTexto_(f[10]), Number(f[1]), new Date(), String(f[13] || ""));
+    } catch (e) {}
   } else if (estatus === "Rechazado") {
     h.getRange(fila, 12).clearContent();
     aplicarCeldas_(ss, celdas, "retirar");

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mi recibo de agua · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  body { font-size: 1.1rem; }
+  .agua { max-width: 560px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  .agua h1 { font-size: 1.7rem; margin: 0.5rem 0 0.2rem; }
+  .agua .lead { color: var(--ink-2); margin: 0 0 1rem; font-size: 1rem; }
+  .deptos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1rem; }
+  .deptos button { font: inherit; font-weight: 700; font-size: 1.15rem; min-height: 56px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .deptos button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .recibo { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
+  .recibo h2 { margin: 0; font-size: 1.15rem; display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+  .recibo .fila { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.3rem 0; border-bottom: 1px dashed var(--grid); font-size: 0.97rem; }
+  .recibo .fila:last-child { border-bottom: none; }
+  .recibo .fila span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .recibo .total { background: var(--accent-soft); border-radius: 12px; padding: 0.7rem 1rem; text-align: center; margin: 0.7rem 0 0.4rem; }
+  .recibo .total small { display: block; color: var(--ink-2); font-size: 0.85rem; }
+  .recibo .total strong { display: block; font-size: 2.1rem; font-weight: 900; color: var(--accent); line-height: 1.15; }
+  .badge { font-size: 0.78rem; font-weight: 700; padding: 0.15rem 0.6rem; border-radius: 999px; background: #fff3cd; color: #7a5a00; white-space: nowrap; }
+  .badge.si { background: #d4edda; color: #1d5a2a; }
+  .badge.gris { background: color-mix(in srgb, var(--muted) 20%, transparent); color: var(--muted); }
+  @media (prefers-color-scheme: dark) { .deptos button.sel, .btn.primary { color: #0d0d0d; } .badge { background: #5a4300; color: #ffe08a; } .badge.si { background: #1d4a2a; color: #b8f0c6; } }
+  .reparto { margin-top: 0.8rem; border-top: 2px solid var(--grid); padding-top: 0.6rem; }
+  .reparto h3 { margin: 0 0 0.3rem; font-size: 0.95rem; color: var(--ink-2); }
+  .reparto .fila { font-size: 0.9rem; color: var(--ink-2); }
+  .hist .recibo { padding: 0.75rem 1rem; }
+  .hist h2 { font-size: 1.02rem; }
+  .pista { color: var(--ink-2); font-size: 0.92rem; text-align: center; margin: 0.6rem 0 0; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="asamblea.html">Asamblea 13 oct</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html" class="active">Agua</a>
+    </nav>
+  </div>
+</header>
+
+<main class="agua">
+  <h1>Mi recibo de agua</h1>
+  <p class="lead">El recibo de la CEA se reparte entre los m³ que marcó el medidor general: cada depto paga sus m³ y una dieciseisava parte de los m³ de áreas comunes. Toca tu departamento.</p>
+  <div class="deptos" id="deptos"></div>
+  <div id="contenido"></div>
+</main>
+
+<script>
+/* ===== CONFIGURACIÓN ===== */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+const UNIDADES = 16;
+/* ========================= */
+const $ = id => document.getElementById(id);
+const fmt = n => "$" + Number(n || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const NOMBRES_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function nombreMes(id) { const [y, m] = id.split("-"); return NOMBRES_MES[+m - 1].replace(/^./, c => c.toUpperCase()) + " " + y; }
+let depto = null;
+
+const deptos = $("deptos");
+for (let i = 1; i <= UNIDADES; i++) { const b = document.createElement("button"); b.type = "button"; b.textContent = i; b.dataset.n = i; b.onclick = () => elegir(i); deptos.appendChild(b); }
+function elegir(n) {
+  depto = n; [...deptos.children].forEach(x => x.classList.toggle("sel", +x.dataset.n === n));
+  try { localStorage.setItem("misiones_depto", n); } catch (e) {}
+  cargar(n);
+}
+
+function tarjeta(m, principal) {
+  const rec = m.recibo, hayCargo = m.cargo !== null && rec && rec.monto > 0;
+  const estado = m.pagado ? '<span class="badge si">pagado el ' + m.pagado + '</span>' : (hayCargo ? '<span class="badge">por pagar</span>' : '<span class="badge gris">recibo CEA pendiente</span>');
+  let h = '<div class="recibo"><h2>' + nombreMes(m.mes) + estado + '</h2>';
+  h += '<div class="fila"><span>Lectura anterior</span><span>' + m.anterior + '</span></div>';
+  h += '<div class="fila"><span>Lectura actual' + (m.estimado ? ' <small>(estimada)</small>' : '') + '</span><span>' + m.actual + '</span></div>';
+  h += '<div class="fila"><span>Tu consumo</span><span>' + m.consumo + ' m³</span></div>';
+  if (hayCargo) {
+    h += '<div class="fila"><span>Tu agua: ' + m.consumo + ' m³ × ' + fmt(rec.precio) + '</span><span>' + fmt(rec.precio * m.consumo) + '</span></div>';
+    h += '<div class="fila"><span>Tu parte de áreas comunes</span><span>' + fmt(rec.comunesDepto) + '</span></div>';
+    h += '<div class="total"><small>Total de ' + nombreMes(m.mes).toLowerCase() + (rec.limite ? ' · pagar antes del ' + rec.limite : '') + '</small><strong>' + fmt(m.cargo) + '</strong></div>';
+    if (!m.pagado) h += '<div class="cta-row" style="margin:.4rem 0 0"><a class="btn primary" href="pago.html?agua=' + Math.round(m.cargo * 100) / 100 + '&mes=' + m.mes + '">Registrar mi pago</a></div>';
+    if (principal) {
+      h += '<div class="reparto"><h3>Así se repartió el recibo del edificio</h3>';
+      h += '<div class="fila"><span>Recibo de la CEA</span><span>' + fmt(rec.monto) + '</span></div>';
+      h += '<div class="fila"><span>m³ del medidor general</span><span>' + rec.m3 + ' m³</span></div>';
+      h += '<div class="fila"><span>Precio del m³ este mes</span><span>' + fmt(rec.precio) + '</span></div>';
+      h += '<div class="fila"><span>Suma de los 16 medidores</span><span>' + rec.suma + ' m³</span></div>';
+      h += '<div class="fila"><span>Áreas comunes (alberca, riego, limpieza)</span><span>' + Math.round(rec.comunes * 10) / 10 + ' m³ ÷ 16</span></div>';
+      h += '</div>';
+    }
+  } else if (!m.pagado) {
+    h += '<p class="pista" style="text-align:left;margin-top:.5rem">Tu lectura ya está registrada. El monto aparece en cuanto llegue el recibo de la CEA y la mesa lo capture.</p>';
+  }
+  if (m.nota) h += '<p class="pista" style="text-align:left;margin-top:.4rem">' + m.nota + '</p>';
+  return h + '</div>';
+}
+
+async function cargar(n) {
+  const c = $("contenido");
+  c.innerHTML = '<p class="pista">Consultando…</p>';
+  try {
+    const r = await fetch(SCRIPT_URL + "?accion=agua&depto=" + n + "&t=" + Date.now());
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error);
+    if (!j.meses) throw new Error("servicio");
+    if (!j.meses.length) { c.innerHTML = '<p class="pista">Todavía no hay lecturas registradas para el depto ' + n + '.' + (j.diaLectura ? ' Los medidores se leen el día ' + j.diaLectura + ' de cada mes.' : '') + '</p>'; return; }
+    let h = tarjeta(j.meses[0], true);
+    if (j.meses.length > 1) h += '<h2 class="section-title" style="font-size:1.15rem;margin:1.2rem 0 .5rem">Meses anteriores</h2><div class="hist">' + j.meses.slice(1).map(m => tarjeta(m, false)).join("") + '</div>';
+    c.innerHTML = h;
+  } catch (e) {
+    c.innerHTML = '<p class="pista">' + (String(e.message) === "servicio" ? "El servicio todavía no tiene activa la consulta de agua." : "No se pudo consultar. Intenta de nuevo.") + '</p>';
+  }
+}
+try { const g = parseInt(localStorage.getItem("misiones_depto"), 10); if (g >= 1 && g <= UNIDADES) elegir(g); } catch (e) {}
+</script>
+</body>
+</html>

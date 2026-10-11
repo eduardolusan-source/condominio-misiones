@@ -76,6 +76,7 @@
       <a href="pendientes.html">Pendientes</a>
       <a href="finanzas.html">Finanzas</a>
       <a href="pago.html" class="active">Registrar pago</a>
+      <a href="agua.html">Agua</a>
     </nav>
   </div>
 </header>
@@ -333,6 +334,16 @@ $("btnOtro").onclick = () => {
   if (depto) cargarEstado(depto); validar(); window.scrollTo(0, 0);
 };
 
+/* Si se llega desde agua.html con ?agua=monto&mes=AAAA-MM, el agua y el mes vienen puestos */
+try {
+  const q = new URLSearchParams(location.search);
+  const qa = num(q.get("agua") || ""), qm = q.get("mes") || "";
+  if (qa > 0) $("i_agua").value = qa;
+  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(qm)) {
+    mesesSel.clear(); mesesSel.add(qm);
+    if (cortos.indexOf(qm) < 0) $("btnOtroMes").onclick(); else pintarMeses(cortos);
+  }
+} catch (e) {}
 /* Recordar el departamento de la última vez */
 try { const g = parseInt(localStorage.getItem("misiones_depto"), 10); if (g >= 1 && g <= UNIDADES) elegirDepto(g); } catch (e) {}
 validar();
