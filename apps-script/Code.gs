@@ -405,10 +405,9 @@ function hojaSimple_(nombre, enc) {
   return h;
 }
 /* La mesa directiva registra el voto de cada depto al momento, con lo que la gente dice en la
-   videollamada. Un voto por depto y pregunta; si se vuelve a registrar, se sustituye; con
-   opción vacía se borra. */
+   videollamada. Sin clave: el tablero se usa en la junta y a la vista de todos. Un voto por
+   depto y pregunta; si se vuelve a registrar, se sustituye; con opción vacía se borra. */
 function votar_(d) {
-  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
   const depto = parseInt(d.depto, 10);
   if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
   const pregunta = limpiar_(d.pregunta, 40), opcion = limpiar_(d.opcion, 40);
@@ -441,7 +440,6 @@ function votos_() {
   return r;
 }
 function guardarAcuerdo_(d) {
-  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
   const tema = limpiar_(d.tema, 40);
   if (!tema) return { ok: false, error: "tema" };
   const h = hojaSimple_(HOJA_ACUERDOS, ["Tema", "Acuerdo", "Responsable", "Fecha compromiso", "Actualizado"]);

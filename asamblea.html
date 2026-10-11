@@ -444,20 +444,20 @@
   </div>
 
   <h2 class="section-title" id="votacion">Votación</h2>
-  <p class="section-sub">La mesa directiva registra al momento lo que cada departamento dice en la videollamada. El conteo se actualiza solo en todas las pantallas; cada depto cuenta una vez y vale el último registro.</p>
+  <p class="section-sub">Durante la junta, la mesa directiva registra al momento lo que cada departamento dice en la videollamada, a la vista de todos. El conteo se actualiza solo en todas las pantallas; cada depto cuenta una vez y vale el último registro.</p>
   <div class="rule-block">
-    <div class="cta-row" style="margin:0 0 .8rem"><button type="button" class="btn ghost" id="btnRegistrar">Registrar votos (mesa directiva)</button></div>
+    <div class="cta-row" style="margin:0 0 .8rem"><button type="button" class="btn ghost" id="btnRegistrar">Abrir el tablero de votos</button></div>
     <div id="vPreguntas"></div>
     <p class="fuente" id="vEstado">Conectando con el conteo…</p>
   </div>
 
   <h2 class="section-title" id="acuerdos">Acuerdos de la asamblea</h2>
-  <p class="section-sub">Se llenan en vivo al cierre, con responsable y fecha, y quedan aquí para consultarlos. El botón de descarga arma el documento con los resultados de las votaciones y los acuerdos.</p>
+  <p class="section-sub">Se llenan en vivo al cierre de la junta, con responsable y fecha, y quedan aquí para consultarlos. El botón de descarga arma el documento con los resultados de las votaciones y los acuerdos.</p>
   <div class="rule-block">
     <div id="aLista"><p class="fuente">Cargando acuerdos…</p></div>
     <div class="cta-row" style="margin-top:.8rem">
       <a class="btn primary" href="acuerdos.html" target="_blank" rel="noopener">Descargar acuerdos</a>
-      <button type="button" class="btn ghost" id="btnEditar">Llenar acuerdos (mesa directiva)</button>
+      <button type="button" class="btn ghost" id="btnEditar">Llenar acuerdos</button>
     </div>
     <div class="editor hidden" id="aEditor"></div>
   </div>
@@ -596,12 +596,8 @@
   var votos = null, registrando = false, claveAdmin = "", activa = {};
   try { claveAdmin = localStorage.getItem("misiones_clave_admin") || ""; } catch (e) {}
   $("btnRegistrar").onclick = function () {
-    if (!registrando) {
-      var c = prompt("Clave de la mesa directiva:", claveAdmin || ""); if (c === null) return;
-      claveAdmin = c.trim(); if (!claveAdmin) return;
-      try { localStorage.setItem("misiones_clave_admin", claveAdmin); } catch (e) {}
-      registrando = true; $("btnRegistrar").textContent = "Dejar de registrar";
-    } else { registrando = false; $("btnRegistrar").textContent = "Registrar votos (mesa directiva)"; }
+    registrando = !registrando;
+    $("btnRegistrar").textContent = registrando ? "Cerrar el tablero" : "Abrir el tablero de votos";
     pintarPreguntas();
   };
   function pintarPreguntas() {
@@ -633,8 +629,8 @@
     var nueva = reg.deptos[d] === activa[q] ? "" : activa[q];
     enviando = true; b.style.opacity = ".5";
     try {
-      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "voto", claveAdmin: claveAdmin, depto: d, pregunta: q, opcion: nueva }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
-      var j = await r.json(); if (!j.ok) throw new Error(j.error === "clave" ? "clave incorrecta" : (j.error || "error"));
+      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "voto", depto: d, pregunta: q, opcion: nueva }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+      var j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
       if (reg.deptos[d]) reg.conteo[reg.deptos[d]] = Math.max(0, (reg.conteo[reg.deptos[d]] || 1) - 1);
       if (nueva) { reg.deptos[d] = nueva; reg.conteo[nueva] = (reg.conteo[nueva] || 0) + 1; } else delete reg.deptos[d];
     } catch (e) { alert("No se registró: " + (e.message || e)); }
@@ -668,17 +664,15 @@
   $("btnEditar").onclick = function () {
     var ed = $("aEditor"); ed.classList.toggle("hidden");
     if (!ed.innerHTML) {
-      var h = '<label>Clave de la mesa directiva</label><input type="password" id="aClave" autocomplete="off">';
+      var h = '';
       TEMAS.forEach(function (t) { var a = acuerdos[t[0]] || {}; h += '<label>' + t[1] + ' · acuerdo</label><textarea id="ac_' + t[0] + '">' + (a.acuerdo || "") + '</textarea><div class="dos"><div><label>Responsable</label><input type="text" id="ar_' + t[0] + '" value="' + (a.responsable || "") + '"></div><div><label>Fecha compromiso</label><input type="text" id="af_' + t[0] + '" value="' + (a.fecha || "") + '" placeholder="p. ej. 20 de octubre"></div></div><button type="button" class="guardar" data-t="' + t[0] + '">Guardar ' + t[1].split(" · ")[0] + '</button>'; });
       ed.innerHTML = h;
-      try { $("aClave").value = localStorage.getItem("misiones_clave_admin") || ""; } catch (e) {}
       ed.querySelectorAll(".guardar").forEach(function (b) { b.onclick = async function () {
-        var t = b.dataset.t, clave = $("aClave").value.trim(); if (!clave) { alert("Falta la clave."); return; }
-        try { localStorage.setItem("misiones_clave_admin", clave); } catch (e) {}
+        var t = b.dataset.t;
         b.disabled = true; b.textContent = "Guardando…";
         try {
-          var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "acuerdo", claveAdmin: clave, tema: t, acuerdo: $("ac_" + t).value, responsable: $("ar_" + t).value, fecha: $("af_" + t).value }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
-          var j = await r.json(); if (!j.ok) throw new Error(j.error === "clave" ? "clave incorrecta" : (j.error || "error"));
+          var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "acuerdo", tema: t, acuerdo: $("ac_" + t).value, responsable: $("ar_" + t).value, fecha: $("af_" + t).value }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+          var j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
           acuerdos[t] = { acuerdo: $("ac_" + t).value, responsable: $("ar_" + t).value, fecha: $("af_" + t).value }; pintarAcuerdos();
           b.textContent = "✓ Guardado";
         } catch (e) { alert("No se guardó: " + (e.message || e)); b.textContent = "Guardar"; }
