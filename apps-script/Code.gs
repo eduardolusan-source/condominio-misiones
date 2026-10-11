@@ -200,6 +200,7 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents || "{}");
     if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
     if (d.accion === "lectura") { lock.waitLock(10000); return json_(guardarLectura_(d)); }
+    if (d.accion === "recibo") { lock.waitLock(10000); return json_(guardarRecibo_(d)); }
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);
@@ -468,8 +469,40 @@ function lecturasMes_(mes, clave) {
     if (actual && actual.act !== "") r.capturados++;
   }
   const fr = filaRecibo_(mes, false);
-  if (fr) { const v = hojaRecibos_().getRange(fr, 2, 1, 2).getValues()[0]; r.recibo = { monto: Number(v[0]) || 0, m3: Number(v[1]) || 0 }; }
+  if (fr) {
+    const v = hojaRecibos_().getRange(fr, 2, 1, 8).getValues()[0];
+    r.recibo = { monto: Number(v[0]) || 0, m3: Number(v[1]) || 0, limite: v[2] instanceof Date ? Utilities.formatDate(v[2], "America/Mexico_City", "yyyy-MM-dd") : "",
+      precio: Number(v[3]) || 0, suma: Number(v[4]) || 0, comunes: Number(v[5]) || 0, comunesDepto: Number(v[6]) || 0, foto: String(v[7] || "").match(/https?:\/\/\S+/) ? String(v[7]).match(/https?:\/\/\S+/)[0] : "" };
+  }
   return r;
+}
+/* El recibo de la CEA del mes, capturado por la misma persona que lee los medidores:
+   monto, m³ del medidor general (impresos en el recibo), fecha límite y foto. */
+function guardarRecibo_(d) {
+  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const mes = String(d.mes || "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
+  const monto = Math.round((parseFloat(d.monto) || 0) * 100) / 100;
+  const m3 = Math.round((parseFloat(d.m3) || 0) * 10) / 10;
+  if (!(monto > 0)) return { ok: false, error: "monto" };
+  if (!(m3 > 0)) return { ok: false, error: "m3" };
+  const h = hojaRecibos_();
+  const fila = filaRecibo_(mes, true);
+  h.getRange(fila, 2, 1, 2).setValues([[monto, m3]]);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(d.limite || ""))) {
+    const [y, m, dd] = String(d.limite).split("-").map(Number);
+    h.getRange(fila, 4).setValue(new Date(y, m - 1, dd)).setNumberFormat("dd/mm/yyyy");
+  }
+  let foto = "";
+  if (d.imagen && String(d.imagen).length > 100) {
+    const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), d.tipo || "image/jpeg", mes + " · Recibo CEA $" + monto + ".jpg");
+    foto = subcarpeta_("Agua " + mes).createFile(blob).getUrl();
+  }
+  const nota = "Capturado el " + Utilities.formatDate(new Date(), "America/Mexico_City", "dd/MM/yyyy HH:mm") + (foto ? " · " + foto : "");
+  h.getRange(fila, 9).setValue(nota);
+  SpreadsheetApp.flush();
+  const v = h.getRange(fila, 5, 1, 4).getValues()[0];
+  return { ok: true, mes: mes, monto: monto, m3: m3, precio: Number(v[0]) || 0, suma: Number(v[1]) || 0, comunes: Number(v[2]) || 0, comunesDepto: Number(v[3]) || 0, foto: foto };
 }
 /* Guarda la lectura de un depto (número y foto). La fila del mes en Recibos agua se crea sola. */
 function guardarLectura_(d) {

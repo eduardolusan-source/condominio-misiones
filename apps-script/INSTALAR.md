@@ -89,11 +89,11 @@ Tras pegar el `Code.gs` nuevo y publicar nueva versión (paso 6):
   Las fotos caen en "Misiones · Comprobantes / Agua AAAA-MM".
 - La pestaña **Agua** se crea sola: una fila por depto y mes con lectura anterior, actual,
   consumo, foto, cargo (fórmula) y **Pagado el**.
-- La pestaña **Recibos agua** se crea sola con una fila por mes. Eduardo captura solo las
-  celdas azules: **B** monto del recibo CEA, **C** m³ del medidor general (viene impreso en el
-  recibo) y, si quiere, **D** fecha límite. Las demás columnas se calculan: precio por m³,
-  suma de lecturas, m³ comunes y comunes por depto. Con eso el cargo de cada depto aparece
-  en Agua y en `agua.html`.
+- El recibo de la CEA lo captura la misma persona en el primer bloque de `lecturas.html`:
+  monto, m³ (impresos en el recibo), fecha límite y foto. Cae en la pestaña **Recibos agua**
+  (una fila por mes; B, C y D también se pueden corregir a mano). Las demás columnas se
+  calculan: precio por m³, suma de lecturas, m³ comunes y comunes por depto. Con eso el cargo
+  de cada depto aparece en Agua y en `agua.html` sin que nadie más haga nada.
 - **Pagado**: se marca solo cuando se confirma en Pagos (bandeja o columna J) un pago de ese
   depto con agua y ese mes; o a mano escribiendo la fecha en Agua → columna J.
 - `dia_lectura` en Config: día del mes en que se leen los medidores (por definir).

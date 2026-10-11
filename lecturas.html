@@ -66,7 +66,7 @@
 
 <main class="lect">
   <h1>Lectura de medidores</h1>
-  <p class="lead">Un depto a la vez: toma la foto del medidor, escribe los números negros (sin las carátulas rojas) y guarda. Cada lectura se guarda al momento, así que puedes parar y seguir después.</p>
+  <p class="lead">Un depto a la vez: toma la foto del medidor, escribe los números negros (sin las carátulas rojas) y guarda. Cada lectura se guarda al momento, así que puedes parar y seguir después. Cuando llegue el recibo de la CEA, captúralo en el primer bloque.</p>
 
   <div class="clave" id="cajaClave">
     <input id="clave" type="password" placeholder="Clave de lectura" autocomplete="off">
@@ -81,6 +81,23 @@
     </div>
     <div class="avance" id="avance">Cargando…</div>
     <div id="aviso" class="notice hidden"></div>
+    <div class="medidor" id="recibo">
+      <div class="cab"><h3>Recibo de la CEA del mes</h3><small id="rEstado"></small></div>
+      <p style="margin:.3rem 0 0;color:var(--ink-2);font-size:.9rem">Cuando llegue el recibo del edificio, copia aquí lo que viene impreso. Con esto se calcula el cobro de cada depto.</p>
+      <div class="num">
+        <div><label>Monto total del recibo $</label><input type="text" inputmode="decimal" id="rMonto" placeholder="10,078"></div>
+        <div><label>m³ consumidos (del recibo)</label><input type="text" inputmode="decimal" id="rM3" placeholder="110"></div>
+      </div>
+      <div class="num">
+        <div><label>Fecha límite de pago</label><input type="date" id="rLimite"></div>
+        <div><label>Precio por m³ (se calcula)</label><div class="ant" id="rPrecio">—</div></div>
+      </div>
+      <div class="acc">
+        <label class="foto" id="rFoto">📷 Foto del recibo<input type="file" accept="image/*" capture="environment"></label>
+        <button type="button" class="guardar" id="rGuardar" disabled>Guardar recibo</button>
+      </div>
+      <div class="hecho" id="rHecho"></div>
+    </div>
     <div id="lista"></div>
   </div>
 </main>
@@ -127,7 +144,7 @@ async function cargar() {
       throw new Error(j.error);
     }
     if (!j.deptos) throw new Error("El servicio todavía no tiene activa la captura de lecturas.");
-    datos = j; pintar();
+    datos = j; pintar(); pintarRecibo();
   } catch (e) {
     $("avance").textContent = "No se pudo cargar"; $("aviso").textContent = String(e.message || e); $("aviso").classList.remove("hidden");
   }
@@ -135,7 +152,7 @@ async function cargar() {
 
 function pintar() {
   $("aviso").classList.add("hidden");
-  $("avance").textContent = datos.capturados + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes) + (datos.recibo && datos.recibo.monto ? " · recibo CEA $" + datos.recibo.monto.toLocaleString("es-MX") : " · recibo CEA pendiente");
+  $("avance").textContent = datos.capturados + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes) + (datos.recibo && datos.recibo.monto ? " · recibo CEA " + fmtP(datos.recibo.monto) : " · recibo CEA pendiente");
   const lista = $("lista"); lista.innerHTML = "";
   datos.deptos.forEach(d => {
     const card = document.createElement("div"); card.className = "medidor" + (d.actual !== null ? " ok" : ""); card.id = "m_" + d.depto;
@@ -192,6 +209,49 @@ function pintar() {
   });
 }
 
+/* --- Recibo de la CEA del mes --- */
+let fotoRecibo = "";
+function pintarRecibo() {
+  const r = datos.recibo;
+  $("rMonto").value = r && r.monto ? r.monto : ""; $("rM3").value = r && r.m3 ? r.m3 : ""; $("rLimite").value = r && r.limite ? r.limite : "";
+  $("rEstado").textContent = r && r.monto ? "capturado" : "pendiente";
+  $("recibo").classList.toggle("ok", !!(r && r.monto));
+  $("rHecho").innerHTML = r && r.monto ? "✓ Recibo guardado · precio " + fmtP(r.precio) + " por m³ · comunes " + fmtP(r.comunesDepto) + " por depto" + (r.foto ? ' · <a href="' + r.foto + '" target="_blank" rel="noopener">ver foto</a>' : "") : "";
+  $("rFoto").firstChild.textContent = r && r.foto ? "📷 Cambiar foto" : "📷 Foto del recibo";
+  calcRecibo();
+}
+const fmtP = n => "$" + Number(n || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function calcRecibo() {
+  const m = num($("rMonto").value), c = num($("rM3").value);
+  $("rPrecio").textContent = m > 0 && c > 0 ? fmtP(m / c) : "—";
+  $("rGuardar").disabled = !(m > 0 && c > 0);
+}
+$("rMonto").addEventListener("input", calcRecibo); $("rM3").addEventListener("input", calcRecibo);
+$("rFoto").querySelector("input").addEventListener("change", ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  const img = new Image(); const url = URL.createObjectURL(f);
+  img.onload = () => {
+    const max = 1600, esc = Math.min(1, max / Math.max(img.width, img.height));
+    const cv = document.createElement("canvas"); cv.width = Math.round(img.width * esc); cv.height = Math.round(img.height * esc);
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    fotoRecibo = cv.toDataURL("image/jpeg", 0.85);
+    $("rFoto").classList.add("lista"); $("rFoto").firstChild.textContent = "📷 Foto lista"; URL.revokeObjectURL(url);
+  };
+  img.src = url;
+});
+$("rGuardar").onclick = async () => {
+  const btn = $("rGuardar"); btn.disabled = true; btn.textContent = "Guardando…";
+  const cuerpo = { accion: "recibo", clave: clave, mes: mes, monto: num($("rMonto").value), m3: num($("rM3").value), limite: $("rLimite").value, imagen: fotoRecibo, tipo: "image/jpeg" };
+  try {
+    const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    const j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
+    datos.recibo = { monto: j.monto, m3: j.m3, limite: $("rLimite").value, precio: j.precio, suma: j.suma, comunes: j.comunes, comunesDepto: j.comunesDepto, foto: j.foto || (datos.recibo && datos.recibo.foto) || "" };
+    fotoRecibo = ""; pintarRecibo();
+    $("avance").textContent = document.querySelectorAll(".medidor.ok:not(#recibo)").length + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes) + " · recibo CEA " + fmtP(j.monto);
+  } catch (e) { alert("No se guardó el recibo: " + (e.message || e)); }
+  btn.textContent = "Guardar recibo"; calcRecibo();
+};
+
 async function guardar(d, sinAnterior) {
   const btn = $("g_" + d.depto); btn.disabled = true; btn.textContent = "Guardando…";
   const cuerpo = { accion: "lectura", clave: clave, mes: mes, depto: d.depto, actual: num($("l_" + d.depto).value), estimado: $("e_" + d.depto).checked, imagen: fotos[d.depto] || "", tipo: "image/jpeg" };
@@ -203,7 +263,7 @@ async function guardar(d, sinAnterior) {
     $("h_" + d.depto).innerHTML = "✓ Guardada: " + j.consumo + " m³" + (j.foto ? ' · <a href="' + j.foto + '" target="_blank" rel="noopener">ver foto</a>' : "");
     btn.textContent = "Guardar"; btn.disabled = false;
     delete fotos[d.depto];
-    const n = document.querySelectorAll(".medidor.ok").length;
+    const n = document.querySelectorAll(".medidor.ok:not(#recibo)").length;
     $("avance").textContent = n + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes);
   } catch (e) {
     alert("No se guardó: " + (e.message || e)); btn.textContent = "Guardar"; btn.disabled = false;
