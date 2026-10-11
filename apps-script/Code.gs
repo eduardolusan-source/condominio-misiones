@@ -461,6 +461,7 @@ function lecturasMes_(mes, clave) {
     r.deptos.push({
       depto: d,
       anterior: previas.length ? Number(previas[0].act) : (actual && actual.ant !== "" ? Number(actual.ant) : null),
+      anteriorEditable: !previas.length,
       actual: actual && actual.act !== "" ? Number(actual.act) : null,
       estimado: actual ? String(actual.est) === "sí" : false,
       foto: actual ? String(actual.foto || "") : "",
@@ -516,7 +517,7 @@ function guardarLectura_(d) {
   const h = hojaAgua_();
   const info = lecturasMes_(mes, d.clave).deptos[depto - 1];
   let anterior = info.anterior;
-  if (anterior === null && d.anterior !== undefined && d.anterior !== "") anterior = Math.round(parseFloat(d.anterior) * 10) / 10;
+  if (info.anteriorEditable && d.anterior !== undefined && d.anterior !== "" && d.anterior !== null) anterior = Math.round(parseFloat(d.anterior) * 10) / 10;
   if (anterior === null || isNaN(anterior)) return { ok: false, error: "falta la lectura anterior" };
   let consumo = Math.round((actual - anterior) * 10) / 10;
   if (consumo < 0 && actual < 1000) consumo = Math.round((actual + 10000 - anterior) * 10) / 10;   // el medidor dio la vuelta
@@ -531,7 +532,9 @@ function guardarLectura_(d) {
   filaRecibo_(mes, true);
   let fila = filaAgua_(h, mes, depto);
   if (!fila) { fila = h.getLastRow() + 1; h.getRange(fila, 1).setNumberFormat("@").setValue(mes); h.getRange(fila, 2).setValue(depto); }
-  h.getRange(fila, 3, 1, 4).setValues([[anterior, actual, consumo, d.estimado ? "sí" : "no"]]);
+  h.getRange(fila, 3, 1, 2).setValues([[anterior, actual]]);
+  h.getRange(fila, 5).setFormula("=IF(AND(ISNUMBER(C" + fila + "),ISNUMBER(D" + fila + ")),IF(D" + fila + "<C" + fila + ",D" + fila + "+10000-C" + fila + ",D" + fila + "-C" + fila + "),\"\")");   // si corriges C o D en la hoja, el consumo se recalcula
+  h.getRange(fila, 6).setValue(d.estimado ? "sí" : "no");
   if (foto) h.getRange(fila, 7).setValue(foto);
   h.getRange(fila, 8).setValue(ahora).setNumberFormat("dd/mm/yyyy hh:mm");
   h.getRange(fila, 9).setFormula("=IF(AND(ISNUMBER(E" + fila + "),ISNUMBER(VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE))),VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE)*E" + fila + "+VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$H,8,FALSE),\"\")").setNumberFormat("$#,##0.00");

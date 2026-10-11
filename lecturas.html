@@ -157,12 +157,12 @@ function pintar() {
   const lista = $("lista"); lista.innerHTML = "";
   datos.deptos.forEach(d => {
     const card = document.createElement("div"); card.className = "medidor" + (d.actual !== null ? " ok" : ""); card.id = "m_" + d.depto;
-    const sinAnterior = d.anterior === null;
+    const sinAnterior = d.anterior === null || d.anteriorEditable;
     card.innerHTML =
       '<div class="cab"><h3>Depto ' + d.depto + '</h3><small>' + (d.promedio !== null ? "promedio " + d.promedio + " m³/mes" : "sin historial") + '</small></div>' +
       '<div class="num">' +
         (sinAnterior
-          ? '<div><label>Lectura anterior (primera vez)</label><input type="text" inputmode="decimal" id="a_' + d.depto + '" placeholder="0000"></div>'
+          ? '<div><label>Lectura anterior' + (d.anterior === null ? ' (primera vez)' : '') + '</label><input type="text" inputmode="decimal" id="a_' + d.depto + '" placeholder="0000" value="' + (d.anterior !== null ? d.anterior : "") + '"></div>'
           : '<div><label>Lectura anterior</label><div class="ant">' + d.anterior + '</div></div>') +
         '<div><label>Lectura de hoy</label><input type="text" inputmode="decimal" id="l_' + d.depto + '" placeholder="0000" value="' + (d.actual !== null ? d.actual : "") + '"></div>' +
       '</div>' +
