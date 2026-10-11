@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Asamblea del 13 de octubre · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  /* Estilos propios de esta página (temporal, mientras dura la asamblea). */
+  .asm-hero { background: var(--accent); color: #fff; border-radius: var(--radius); padding: 1.6rem 1.75rem; margin-top: 1rem; }
+  @media (prefers-color-scheme: dark) { .asm-hero { color: #0d0d0d; } }
+  .asm-hero .kicker { opacity: .85; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 .3rem; }
+  .asm-hero h1 { margin: 0; font-size: 1.9rem; line-height: 1.15; }
+  .asm-hero .when { font-size: 1.15rem; margin: .6rem 0 0; font-weight: 600; }
+  .asm-hero .why { margin: .6rem 0 0; opacity: .92; max-width: 60ch; }
+  .agenda { counter-reset: tema; display: grid; gap: .75rem; margin-top: 1rem; }
+  .tema { display: grid; grid-template-columns: 3rem 1fr auto; gap: .9rem; align-items: start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: var(--shadow); text-decoration: none; color: var(--ink); }
+  .tema:hover { border-color: var(--accent); }
+  .tema .n { counter-increment: tema; font-size: 1.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
+  .tema .n::before { content: counter(tema); }
+  .tema .n.info::before { content: "ℹ️"; font-size: 1.2rem; }
+  .tema .n.cierre::before { content: "✅"; font-size: 1.2rem; }
+  .tema h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
+  .tema p { margin: 0; color: var(--ink-2); font-size: .92rem; }
+  .tema .meta { display: flex; flex-direction: column; align-items: flex-end; gap: .3rem; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+  .tag { display: inline-block; font-size: .72rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+  .tag.decidir { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  .tag.informar { background: color-mix(in srgb, var(--muted) 20%, transparent); color: var(--muted); }
+  .tag.urgente { background: color-mix(in srgb, var(--bad-text) 14%, transparent); color: var(--bad-text); }
+  @media (max-width: 640px) { .tema { grid-template-columns: 2.4rem 1fr; } .tema .meta { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; } }
+  .opciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .9rem; margin-top: .9rem; }
+  .opcion { border: 1px solid var(--border); border-radius: 12px; padding: .9rem 1rem; background: color-mix(in srgb, var(--accent) 4%, transparent); }
+  .opcion h4 { margin: 0 0 .35rem; font-size: 1rem; }
+  .opcion .letra { display: inline-block; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: #fff; text-align: center; line-height: 1.6rem; font-weight: 800; margin-right: .4rem; }
+  @media (prefers-color-scheme: dark) { .opcion .letra { color: #0d0d0d; } }
+  .opcion ul { margin: .3rem 0 0; padding-left: 1.1rem; font-size: .88rem; color: var(--ink-2); }
+  .opcion li { margin-bottom: .25rem; }
+  .pro::marker { content: "+ "; color: var(--good-text); font-weight: 700; }
+  .con::marker { content: "− "; color: var(--bad-text); font-weight: 700; }
+  .stat .v.neg { color: var(--bad-text); }
+  .stat .v.pos { color: var(--good-text); }
+  .pregunta { border-left: 4px solid var(--series-2); padding: .6rem 1rem; margin: 1rem 0 0; background: color-mix(in srgb, var(--series-2) 8%, transparent); border-radius: 0 10px 10px 0; }
+  .pregunta strong { display: block; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--series-2); margin-bottom: .2rem; }
+  .pregunta p { margin: 0; font-size: 1rem; }
+  .fuente { font-size: .8rem; color: var(--muted); margin-top: .6rem; }
+  .reglas li { margin-bottom: .4rem; }
+  @media print { .site-header, .cta-row { display: none; } .rule-block { break-inside: avoid; box-shadow: none; } body { background: #fff; } }
+  /* Pestañas */
+  .tabs { position: sticky; top: var(--tabs-top, 0px); z-index: 5; display: flex; gap: .4rem; overflow-x: auto; padding: .6rem 0; margin: .9rem 0 .4rem; background: var(--page); scrollbar-width: none; -webkit-overflow-scrolling: touch; border-bottom: 1px solid var(--border); }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs a { flex: 0 0 auto; font-size: .88rem; font-weight: 600; padding: .45rem .85rem; border: 1px solid var(--border); border-radius: 999px; text-decoration: none; color: var(--ink); background: var(--surface); white-space: nowrap; }
+  .tabs a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  @media (prefers-color-scheme: dark) { .tabs a.active { color: #0d0d0d; } }
+  main [id] { scroll-margin-top: calc(var(--tabs-top, 0px) + 3.6rem); }
+  main, body { overflow-anchor: none; }
+  .panel { display: none; animation: fade .18s ease-out; }
+  .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .panel > .section-title:first-child, .panel > .rule-block:first-child { margin-top: 1rem; }
+  .pager { display: flex; justify-content: space-between; gap: .6rem; margin-top: 1.5rem; }
+  .pager .btn { font-size: .9rem; }
+  .step { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin: 1rem 0 -.6rem; }
+  @media print { .tabs, .pager { display: none; } .panel { display: block !important; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="asamblea.html" class="active">Asamblea 13 oct</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pago.html">Registrar pago</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="asm-hero">
+    <p class="kicker">Convocatoria · Asamblea de propietarios</p>
+    <h1>Nos quedamos sin administrador. Toca decidir juntos.</h1>
+    <p class="when">🗓️ Martes 13 de octubre de 2026 · 7:00 pm · Por videollamada</p>
+    <p class="why" style="margin-top:.3rem">El enlace de la videollamada se manda al grupo de WhatsApp de propietarios ese mismo día. Si no puedes conectarte, avisa en el grupo quién vota por ti.</p>
+    <p class="why">Víctor (Admin-Solutions) dejó la administración sin entregar cuentas. Hay una deuda con la CEA, un conserje que pagar y meses de los que nadie tiene información. Esta página reúne todo lo que sabemos para que lleguemos a la asamblea con los mismos datos y decidamos en una sola sesión.</p>
+  </section>
+
+  <nav class="tabs" id="tabs" aria-label="Secciones de la página">
+    <a href="#inicio" data-tab="inicio">Inicio</a>
+    <a href="#p-t1" data-tab="p-t1">1 · CEA</a>
+    <a href="#p-t2" data-tab="p-t2">2 · Administración</a>
+    <a href="#p-t3" data-tab="p-t3">3 · Cuentas</a>
+    <a href="#p-t4" data-tab="p-t4">4 · Víctor</a>
+    <a href="#p-elevador" data-tab="p-elevador">Elevador</a>
+    <a href="#dinero" data-tab="dinero">Caja y cuentas</a>
+  </nav>
+
+  <section class="panel" id="inicio" data-title="En dos minutos y orden del día">
+  <!-- ===================== RESUMEN ===================== -->
+  <h2 class="section-title" id="resumen">En dos minutos</h2>
+  <p class="section-sub">Las cuatro cifras que explican por qué nos reunimos. Cortes: cuenta de la mesa directiva al 11 de octubre; portal de la CEA al 9 de octubre; cuentas de la administración al 30 de junio.</p>
+  <div class="stat-grid">
+    <div class="stat"><div class="k">Caja de la mesa directiva</div><div class="v pos">$6,538</div><div class="d">lo que queda de $19,050 cobrados desde octubre, tras pagar un recibo de agua y al conserje</div></div>
+    <div class="stat"><div class="k">Deuda con la CEA</div><div class="v neg">$30,472</div><div class="d">tres recibos vencidos (julio, agosto y septiembre). El de octubre ya se pagó</div></div>
+    <div class="stat"><div class="k">Caja al 30 de junio, según Víctor</div><div class="v">$18,452</div><div class="d">última cifra que entregó. No sabemos dónde está ese dinero ni qué entró después</div></div>
+    <div class="stat"><div class="k">Meses sin cuentas</div><div class="v neg">3</div><div class="d">julio, agosto y septiembre: lo que cada quien pagó a Víctor solo lo sabe cada quien</div></div>
+  </div>
+  <div class="notice" style="margin-top:1.25rem">🧭 <strong>Cómo usar esta página.</strong> Arriba hay una pestaña por sección. Toca un tema del orden del día para ir directo, o usa los botones de abajo para leer en orden. Cada tema trae lo que sabemos, las opciones sobre la mesa y la pregunta que se votará.</div>
+
+  <!-- ===================== ORDEN DEL DÍA ===================== -->
+  <h2 class="section-title" id="orden">Orden del día</h2>
+  <p class="section-sub">Cuatro decisiones y un informe. Calculamos hora y media. Los tiempos son una guía para que alcance para todo.</p>
+  <div class="agenda">
+    <a class="tema" href="#t1"><div class="n"></div><div><h3>¿Cómo pagamos la deuda con la CEA?</h3><p>Debemos $30,472 de agua y tenemos $6,538. Decidir de dónde sale el dinero y en qué plazo.</p></div><div class="meta"><span class="tag urgente">Urgente</span><span class="tag decidir">Se vota</span><span>20 min</span></div></a>
+    <a class="tema" href="#t2"><div class="n"></div><div><h3>¿Quién administra y quién hace el mantenimiento?</h3><p>Ratificar la autogestión por la mesa directiva, fijar el pago y las tareas del conserje, y quién firma y paga qué.</p></div><div class="meta"><span class="tag decidir">Se vota</span><span>20 min</span></div></a>
+    <a class="tema" href="#t3"><div class="n"></div><div><h3>¿Cómo reconstruimos las cuentas de cada depto?</h3><p>Acordar cómo cada quien acredita lo que pagó de julio a septiembre y desde qué fecha se parte de cero.</p></div><div class="meta"><span class="tag decidir">Se acuerda</span><span>15 min</span></div></a>
+    <a class="tema" href="#t4"><div class="n"></div><div><h3>¿Qué hacemos con Víctor?</h3><p>Exigir la entrega de cuentas y del dinero: quién lo hace, por qué vía y hasta dónde estamos dispuestos a llegar.</p></div><div class="meta"><span class="tag decidir">Se vota</span><span>15 min</span></div></a>
+    <a class="tema" href="#elevador"><div class="n info"></div><div><h3>Elevador: solo información</h3><p>Dónde está la reparación y qué propone el técnico. No se decide hoy; se agenda una sesión aparte.</p></div><div class="meta"><span class="tag informar">Informe</span><span>5 min</span></div></a>
+    <div class="tema" style="grid-template-columns:3rem 1fr auto"><div class="n cierre"></div><div><h3>Cierre: acuerdos, responsables y fechas</h3><p>Se leen en voz alta los acuerdos tomados, quién los ejecuta y para cuándo, y se anota quién estuvo conectado.</p></div><div class="meta"><span>10 min</span></div></div>
+  </div>
+
+    <div class="pager"><span></span><a class="btn primary" href="#p-t1">1 · CEA →</a></div>
+  </section>
+
+  <section class="panel" id="p-t1" data-title="La deuda con la CEA">
+  <!-- ===================== TEMA 1 ===================== -->
+  <section class="rule-block" id="t1">
+    <div class="area-head"><h2>1. La deuda con la CEA</h2><span class="badge warn">Se vota</span></div>
+    <p class="lead-note">La Comisión Estatal de Aguas cobra un solo recibo para todo el edificio (referencia 604884). La administración dejó de pagarlo en julio. La mesa directiva pagó el recibo de octubre la semana pasada para frenar los recargos; faltan los tres vencidos.</p>
+    <div class="table-scroll">
+      <table class="data">
+        <tr><th>Recibo</th><th>Mes (aprox.)</th><th class="num">Monto</th><th>Estado</th></tr>
+        <tr><td>109098441</td><td>Octubre 2026</td><td class="num">$10,722</td><td><span class="pill cumplido">Pagado por la mesa · 9 oct</span></td></tr>
+        <tr><td>107797075</td><td>Septiembre 2026</td><td class="num">$10,078</td><td><span class="pill incongruencia">Vencido</span></td></tr>
+        <tr><td>106540319</td><td>Agosto 2026</td><td class="num">$10,287</td><td><span class="pill incongruencia">Vencido</span></td></tr>
+        <tr><td>105202866</td><td>Julio 2026</td><td class="num">$10,107</td><td><span class="pill incongruencia">Vencido</span></td></tr>
+        <tr class="total"><td colspan="2">Lo que seguimos debiendo</td><td class="num">$30,472</td><td></td></tr>
+      </table>
+    </div>
+    <p class="fuente">Los recibos de abril, mayo y junio ($8,185, $8,401 y $8,723) sí están pagados y coinciden con lo que la administración reportó como gasto de agua esos meses. El mes de cada recibo vencido se infiere del orden de los folios; se confirmará con la CEA.</p>
+    <p style="margin:.9rem 0 0"><strong>Lo importante:</strong> el agua de julio a septiembre la cobró Víctor a los vecinos que pagaron, pero no la entregó a la CEA. Hoy la deuda es del condominio, no de él, y mientras no se pague siguen los recargos y existe el riesgo de que nos corten el servicio.</p>
+    <div class="opciones">
+      <div class="opcion"><h4><span class="letra">A</span>Cuota extraordinaria única</h4>
+        <ul><li class="pro">$30,472 entre 16 deptos = <strong>$1,905 por depto</strong>, una sola vez.</li><li class="pro">Se liquida de inmediato y se frenan los recargos.</li><li class="con">Quienes ya pagaron su agua a Víctor pagan dos veces.</li><li class="con">Hay vecinos con adeudos previos que difícilmente la cubrirán pronto.</li><li class="pro">Lo que se recupere de Víctor se devuelve a los vecinos.</li></ul></div>
+      <div class="opcion"><h4><span class="letra">B</span>Pagar con las cuotas de los próximos meses</h4>
+        <ul><li class="pro">Sin administrador, el gasto fijo baja unos $7,000 al mes; ese margen puede ir a la deuda.</li><li class="con">Tardaría entre cuatro y seis meses, con recargos corriendo.</li><li class="con">Deja la caja en cero ante cualquier imprevisto (bomba, luz, puerta).</li></ul></div>
+    </div>
+    <div class="pregunta"><strong>Lo que se vota</strong><p>¿Pagamos los $30,472 con una cuota única de $1,905 por depto, o con el margen mensual de las cuotas? Si es cuota única: ¿para qué fecha?</p></div>
+  </section>
+
+    <div class="pager"><a class="btn ghost" href="#inicio">← Inicio</a><a class="btn primary" href="#p-t2">2 · Administración →</a></div>
+  </section>
+
+  <section class="panel" id="p-t2" data-title="Quién administra y quién hace el mantenimiento">
+  <!-- ===================== TEMA 2 ===================== -->
+  <section class="rule-block" id="t2">
+    <div class="area-head"><h2>2. Quién administra y quién hace el mantenimiento</h2><span class="badge warn">Se vota</span></div>
+    <p class="lead-note">En la reunión del 18 de septiembre, seis propietarios votaron por que la mesa directiva administre directamente, con un conserje para el mantenimiento y tareas repartidas entre vecinos; nadie votó por contratar otra administradora. Esa reunión no fue asamblea; hoy toca ratificarlo con validez.</p>
+    <div class="two-col">
+      <div>
+        <h3 style="margin:.4rem 0 .3rem;font-size:1rem">Lo que hacía Víctor y ahora hay que cubrir</h3>
+        <ul style="padding-left:1.1rem;color:var(--ink-2);font-size:.92rem">
+          <li>Cobrar cuotas y llevar las cuentas → ya lo hace la mesa (Eduardo, depto 14) con <a href="pago.html">Registrar pago</a>.</li>
+          <li>Pagar agua (CEA), luz (CFE) y al conserje.</li>
+          <li>Lectura del medidor de agua de cada depto y cobro del agua.</li>
+          <li>Limpieza de la alberca y arreglo de la puerta.</li>
+          <li>Trámites: protocolización de la mesa y cuenta bancaria del condominio.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin:.4rem 0 .3rem;font-size:1rem">Lo que costaba y lo que costaría</h3>
+        <div class="table-scroll"><table class="data">
+          <tr><th>Concepto</th><th class="num">Con Víctor</th><th class="num">Autogestión</th></tr>
+          <tr><td>Administración</td><td class="num">$7,000</td><td class="num">$0</td></tr>
+          <tr><td>Limpieza y conserjería</td><td class="num">$7,000</td><td class="num">por definir</td></tr>
+          <tr><td>Agua (CEA)</td><td class="num">≈ $10,300</td><td class="num">≈ $10,300</td></tr>
+          <tr><td>Luz (CFE, bimestral)</td><td class="num">≈ $4,400</td><td class="num">≈ $4,400</td></tr>
+        </table></div>
+        <p class="fuente">Cifras mensuales de referencia, tomadas de las cuentas de junio y de los recibos recientes de la CEA. Si los 16 deptos pagan la cuota de $1,500, entran $24,000 al mes más el agua de cada quien.</p>
+      </div>
+    </div>
+    <h3 style="margin:1.3rem 0 .3rem;font-size:1rem">Reparto de responsabilidades entre propietarios</h3>
+    <p style="margin:0 0 .6rem;color:var(--ink-2);font-size:.92rem">Sin administrador, lo que antes costaba $7,000 al mes se reparte en tareas chicas. Ninguna toma más de una o dos horas al mes. La columna "Quién" se llena en la asamblea.</p>
+    <div class="table-scroll"><table class="data">
+      <tr><th>Tarea</th><th>Qué implica</th><th>Cada cuánto</th><th>Quién</th></tr>
+      <tr><td>Cuentas y registro de pagos</td><td>Recibir pagos, llevar la hoja, publicar en el sitio</td><td>Continuo</td><td>Eduardo (14)</td></tr>
+      <tr><td>Lectura de medidores de agua</td><td>Foto de los 16 medidores y del general, y mandarla a Eduardo para calcular el agua de cada depto</td><td>Mensual, el mismo día</td><td class="pend">por asignar</td></tr>
+      <tr><td>Pago de recibos (CEA y CFE)</td><td>Vigilar fechas de vencimiento y pagar desde la cuenta de la mesa</td><td>Mensual / bimestral</td><td class="pend">por asignar</td></tr>
+      <tr><td>Supervisión del conserje</td><td>Acordar la lista de tareas de la semana, revisarla y avisar a la mesa para el pago</td><td>Semanal</td><td class="pend">por asignar</td></tr>
+      <tr><td>Alberca</td><td>Revisar limpieza, químicos y bomba; llamar al técnico cuando haga falta</td><td>Quincenal</td><td class="pend">por asignar</td></tr>
+      <tr><td>Puerta y control de acceso</td><td>Seguir el proyecto del nuevo control de acceso y resolver fallas de la puerta</td><td>Mientras dure el proyecto</td><td class="pend">por asignar</td></tr>
+      <tr><td>Elevador</td><td>Ser el contacto con el técnico, juntar cotizaciones por escrito y preparar la sesión del elevador</td><td>Mientras dure</td><td class="pend">por asignar</td></tr>
+      <tr><td>Protocolización y cuenta bancaria</td><td>Llevar el trámite con la notaría y el banco</td><td>Hasta terminar</td><td class="pend">por asignar</td></tr>
+      <tr><td>Seguimiento a Víctor</td><td>Entregar el requerimiento, llevar la comunicación y guardar las pruebas</td><td>Hasta cerrar</td><td class="pend">por asignar</td></tr>
+      <tr><td>Salón de eventos</td><td>Reservas, llaves, revisar cómo se entrega y pendientes del recorrido (vidrio roto)</td><td>Cuando se use</td><td class="pend">por asignar</td></tr>
+      <tr><td>Jardines</td><td>Contratar y supervisar la jardinería; riego y plantas de la entrada</td><td>Mensual</td><td class="pend">por asignar</td></tr>
+      <tr><td>Comunicación</td><td>Grupo de WhatsApp, avisos, minutas y convocatorias</td><td>Continuo</td><td class="pend">mesa directiva</td></tr>
+    </table></div>
+    <div class="pregunta"><strong>Lo que se vota</strong><p>1) ¿Ratificamos que la mesa directiva administre, sin contratar otra administradora? 2) Conserje: ¿cuánto se le paga, cada cuánto, qué tareas y quién lo supervisa? 3) ¿Quién toma cada tarea de la tabla?</p></div>
+  </section>
+
+    <div class="pager"><a class="btn ghost" href="#p-t1">← 1 · CEA</a><a class="btn primary" href="#p-t3">3 · Cuentas →</a></div>
+  </section>
+
+  <section class="panel" id="p-t3" data-title="Las cuentas de cada depto">
+  <!-- ===================== TEMA 3 ===================== -->
+  <section class="rule-block" id="t3">
+    <div class="area-head"><h2>3. Las cuentas de cada depto</h2><span class="badge">Se acuerda</span></div>
+    <p class="lead-note">Lo último que sabemos de cada depto es el estado de cuenta que emitió la administración el 22 de junio. Entre julio y septiembre cada quien le pagó a Víctor (o no) y la mesa no tiene ningún registro: ni las cuotas de mantenimiento, ni el agua, ni la <strong>cuota extraordinaria de $1,000 por depto</strong> aprobada en agosto para la protocolización, la cuenta bancaria y el nuevo control de acceso. Desde octubre, los pagos llegan a la cuenta de la mesa y sí están registrados.</p>
+    <div class="stat-grid">
+      <div class="stat"><div class="k">Al 22 de junio</div><div class="v neg">$23,681</div><div class="d">adeudo total de 10 deptos; 6 al corriente</div></div>
+      <div class="stat"><div class="k">Julio a septiembre</div><div class="v" style="color:var(--muted)">?</div><div class="d">sin registro: lo cobró Víctor</div></div>
+      <div class="stat"><div class="k">Extraordinaria de $1,000</div><div class="v">$16,000</div><div class="d">aprobada en agosto; no sabemos cuántos la pagaron a Víctor</div></div>
+      <div class="stat"><div class="k">Desde octubre</div><div class="v pos">11 deptos</div><div class="d">han pagado algo a la mesa; ver <a href="#caja">caja</a></div></div>
+    </div>
+    <h3 style="margin:1.2rem 0 .3rem;font-size:1rem">Propuesta de la mesa directiva: un formulario por depto</h3>
+    <ol style="padding-left:1.2rem;color:var(--ink-2);font-size:.95rem">
+      <li><strong>Cada depto recibe un formulario</strong> con su estado al 22 de junio y los conceptos de julio a septiembre: mantenimiento, agua y la extraordinaria de $1,000.</li>
+      <li><strong>Ahí valida</strong> si en efecto debe eso, reporta lo que no cuadre y <strong>sube los comprobantes</strong> de lo que pagó a Víctor (captura de la transferencia o recibo).</li>
+      <li><strong>La mesa arma la hoja de cuentas</strong> con esas respuestas y la publica en <a href="finanzas.html">Finanzas</a>. Fecha límite propuesta para contestar: <strong>viernes 23 de octubre</strong>.</li>
+      <li><strong>Quien no conteste</strong> queda con esos meses como pendientes hasta que lo aclare; nadie parte de cero sin comprobante.</li>
+      <li>Esos comprobantes son también la prueba de cuánto dinero recibió Víctor y no entregó.</li>
+    </ol>
+    <div class="pregunta"><strong>Lo que se acuerda</strong><p>¿Aceptamos el formulario y la fecha límite? ¿Alguien no tiene forma de comprobar sus pagos y cómo lo resolvemos?</p></div>
+  </section>
+
+    <div class="pager"><a class="btn ghost" href="#p-t2">← 2 · Administración</a><a class="btn primary" href="#p-t4">4 · Víctor →</a></div>
+  </section>
+
+  <section class="panel" id="p-t4" data-title="Qué hacemos con Víctor">
+  <!-- ===================== TEMA 4 ===================== -->
+  <section class="rule-block" id="t4">
+    <div class="area-head"><h2>4. Qué hacemos con Víctor</h2><span class="badge warn">Se vota</span></div>
+    <p class="lead-note">Admin-Solutions administró sin contrato firmado. De diez acuerdos a su cargo, ocho quedaron sin cumplir; dejó de responder mensajes, no se conectó a la reunión del 14 de septiembre y no ha entregado cuentas posteriores a junio.</p>
+    <h3 style="margin:.6rem 0 .3rem;font-size:1rem">Lo que tendría que entregar</h3>
+    <ul style="padding-left:1.1rem;color:var(--ink-2);font-size:.92rem">
+      <li>El saldo de $18,452 que reportó al 30 de junio, más todo lo cobrado de julio a septiembre: mantenimiento, agua y la cuota extraordinaria de $1,000 por depto.</li>
+      <li>Las cuentas de julio a septiembre: quién pagó, cuánto, y en qué se gastó.</li>
+      <li>Comprobantes de lo que sí pagó (CFE, conserje) y la explicación de por qué no pagó la CEA.</li>
+      <li>Documentos, llaves, contraseñas, estados de cuenta, lecturas de medidores y el avance del trámite de protocolización.</li>
+    </ul>
+    <div class="opciones">
+      <div class="opcion"><h4><span class="letra">A</span>Requerimiento por escrito</h4>
+        <ul><li class="pro">Carta firmada por la mesa con la lista de arriba y un plazo (por ejemplo, 10 días). Es el paso que cualquier vía posterior va a exigir.</li><li class="con">Si no responde, no pasa nada por sí sola.</li></ul></div>
+      <div class="opcion"><h4><span class="letra">B</span>Asesoría legal y reclamación</h4>
+        <ul><li class="pro">Un abogado dice qué procede (civil o penal) con lo que tengamos documentado.</li><li class="con">Cuesta tiempo y dinero; conviene que la mesa esté protocolizada.</li></ul></div>
+      <div class="opcion"><h4><span class="letra">C</span>Negociar la entrega</h4>
+        <ul><li class="pro">Reunión en persona para cerrar la entrega-recepción y un plan de devolución.</li><li class="con">Depende de que quiera sentarse; hasta ahora no ha respondido.</li></ul></div>
+    </div>
+    <p class="fuente">Las opciones no se excluyen: lo normal es A primero y, según responda, C o B.</p>
+    <div class="pregunta"><strong>Lo que se vota</strong><p>¿Mandamos el requerimiento por escrito esta semana? ¿Quién lo firma y lo entrega? Si no responde en el plazo, ¿autorizamos a la mesa a buscar asesoría legal y con qué tope de gasto?</p></div>
+  </section>
+
+    <div class="pager"><a class="btn ghost" href="#p-t3">← 3 · Cuentas</a><a class="btn primary" href="#p-elevador">Elevador →</a></div>
+  </section>
+
+  <section class="panel" id="p-elevador" data-title="Elevador: solo información">
+  <!-- ===================== ELEVADOR ===================== -->
+  <section class="rule-block" id="elevador">
+    <div class="area-head"><h2>ℹ️ Elevador: dónde estamos</h2><span class="badge">Solo información</span></div>
+    <p class="lead-note">No se decide hoy. Se informa para que, cuando se convoque la sesión del elevador, todos lleguen con el mismo contexto.</p>
+    <div class="stat-grid">
+      <div class="stat"><div class="k">Derrama de 2025</div><div class="v">$43,400</div><div class="d">cobrados a 14 de 16 deptos ($3,100 c/u); faltan $6,200</div></div>
+      <div class="stat"><div class="k">Gastado en reparaciones</div><div class="v neg">$40,658</div><div class="d">tres facturas de MSM Elevadores (aceite, tarjeta principal, tarjeta de puertas)</div></div>
+      <div class="stat"><div class="k">Queda de la derrama</div><div class="v">$2,742</div><div class="d">$8,942 si se completa la cobranza</div></div>
+      <div class="stat"><div class="k">Modernizar</div><div class="v">$170,000</div><div class="d">cotización verbal del 4 de julio; ≈ $10,625 por depto. Por confirmar</div></div>
+    </div>
+    <p style="margin:1rem 0 0;color:var(--ink-2);font-size:.95rem"><strong>Qué falla hoy.</strong> El motor ya quedó resuelto; ahora fallan las comunicaciones: las tarjetas de los botones se oxidaron por la humedad mientras el equipo estuvo detenido y, por la marca, conseguirlas es difícil. Si cambiarlas no corrige la falla, sigue abrir la tarjeta principal.</p>
+    <div class="opciones">
+      <div class="opcion"><h4>Seguir reparando · monto abierto</h4><ul><li class="pro">No exige un desembolso grande de entrada ni acuerdo de asamblea.</li><li class="con">Se cobra por visita y nadie puede acotar cuántas faltan; el control conserva daños por humedad.</li></ul></div>
+      <div class="opcion"><h4>Modernizar · $170,000 cerrado</h4><ul><li class="pro">Control nuevo, refacciones disponibles, mantenimiento programable. Se conservan motobomba y cabina.</li><li class="con">Exige cuota extraordinaria grande; las puertas de cabina se clausuran (seguridad por puertas exteriores y cortina infrarroja).</li></ul></div>
+    </div>
+    <p class="fuente">Antes de llevarlo a votación hace falta la cotización por escrito con desglose y vigencia, la garantía del control nuevo y una segunda cotización para comparar. El mantenimiento posterior cuesta lo mismo en las dos rutas. Fuente: llamada con Alberto, técnico del elevador, 25 de agosto de 2026, y reporte de gastos del elevador al 30 de junio.</p>
+  </section>
+
+    <div class="pager"><a class="btn ghost" href="#p-t4">← 4 · Víctor</a><a class="btn primary" href="#dinero">Caja y cuentas →</a></div>
+  </section>
+
+  <section class="panel" id="dinero" data-title="La caja de la mesa y lo que dejó la administración">
+  <!-- ===================== CAJA ===================== -->
+  <h2 class="section-title" id="caja">La caja de la mesa directiva</h2>
+  <p class="section-sub">Desde el 6 de octubre los pagos llegan a la cuenta que maneja la mesa (Eduardo, depto 14) mientras se abre la cuenta del condominio. Todo lo que entra y sale está aquí.</p>
+  <div class="rule-block">
+    <div class="two-col">
+      <div>
+        <h3 style="margin:0 0 .4rem;font-size:1rem">Entró · $19,050</h3>
+        <div class="table-scroll"><table class="data">
+          <tr><th>Depto</th><th>Qué cubre</th><th class="num">Monto</th></tr>
+          <tr><td>2</td><td>Mantenimiento y agua de agosto, extraordinario de octubre</td><td class="num">$3,110</td></tr>
+          <tr><td>11</td><td>Agua de julio y agosto, mantenimiento de sept. y oct.</td><td class="num">$3,940</td></tr>
+          <tr><td>4, 5, 6, 7, 8, 10, 12 y 14</td><td>Mantenimiento de octubre ($1,500 c/u)</td><td class="num">$12,000</td></tr>
+          <tr class="total"><td colspan="2">Total recibido</td><td class="num">$19,050</td></tr>
+        </table></div>
+      </div>
+      <div>
+        <h3 style="margin:0 0 .4rem;font-size:1rem">Salió · $12,522</h3>
+        <div class="table-scroll"><table class="data">
+          <tr><th>Concepto</th><th class="num">Monto</th></tr>
+          <tr><td>CEA · recibo de octubre (folio 644637178)</td><td class="num">$10,722</td></tr>
+          <tr><td>Jorge, conserje · mantenimiento</td><td class="num">$1,800</td></tr>
+          <tr class="total"><td>Total pagado</td><td class="num">$12,522</td></tr>
+        </table></div>
+        <div class="stat" style="margin-top:.9rem"><div class="k">Queda en la cuenta</div><div class="v pos">$6,538</div><div class="d">$19,050 − $12,522 = $6,528; la cuenta marca $6,537.93 por los rendimientos que paga el banco</div></div>
+      </div>
+    </div>
+    <p class="fuente">Los deptos 1, 3, 9, 13, 15 y 16 no han registrado pago de octubre a la fecha. Si ya pagaste, regístralo en <a href="pago.html">Registrar pago</a>.</p>
+  </div>
+
+  <!-- ===================== JUNIO ===================== -->
+  <h2 class="section-title" id="junio">Lo que dejó la administración: cuentas al 30 de junio</h2>
+  <p class="section-sub">Es la única información financiera que entregó Admin-Solutions. El detalle de 2025 y de enero a junio de 2026 está en <a href="finanzas.html">Finanzas</a>.</p>
+  <div class="rule-block">
+    <div class="stat-grid">
+      <div class="stat"><div class="k">Caja al 30 de junio</div><div class="v">$18,452</div><div class="d">según la tabla contable de la administración</div></div>
+      <div class="stat"><div class="k">Por cobrar al 22 de junio</div><div class="v neg">$23,681</div><div class="d">10 deptos con adeudo: $10,000 de mantenimiento, $7,481 de agua, $6,200 del elevador</div></div>
+      <div class="stat"><div class="k">Gasto de un mes</div><div class="v">$27,133</div><div class="d">junio: administración, limpieza, agua y luz</div></div>
+      <div class="stat"><div class="k">Cobranza de junio</div><div class="v">13 de 16</div><div class="d">deptos que pagaron el mes</div></div>
+    </div>
+    <h3 style="margin:1.2rem 0 .3rem;font-size:1rem">Adeudos por depto al 22 de junio</h3>
+    <div class="table-scroll"><table class="data">
+      <tr><th>Depto</th><th class="num">Mantenimiento</th><th class="num">Agua</th><th class="num">Elevador</th><th class="num">Total</th></tr>
+      <tr><td>1</td><td class="num">$7,000</td><td class="num pend">—</td><td class="num pend">—</td><td class="num"><strong>$7,000</strong></td></tr>
+      <tr><td>11</td><td class="num pend">—</td><td class="num pend">—</td><td class="num">$3,100</td><td class="num"><strong>$3,100</strong></td></tr>
+      <tr><td>13</td><td class="num pend">—</td><td class="num pend">—</td><td class="num">$3,100</td><td class="num"><strong>$3,100</strong></td></tr>
+      <tr><td>12</td><td class="num pend">—</td><td class="num">$2,953</td><td class="num pend">—</td><td class="num"><strong>$2,953</strong></td></tr>
+      <tr><td>15</td><td class="num">$1,500</td><td class="num">$1,222</td><td class="num pend">—</td><td class="num"><strong>$2,722</strong></td></tr>
+      <tr><td>2</td><td class="num">$1,500</td><td class="num">$464</td><td class="num pend">—</td><td class="num"><strong>$1,964</strong></td></tr>
+      <tr><td>16</td><td class="num pend">—</td><td class="num">$1,240</td><td class="num pend">—</td><td class="num"><strong>$1,240</strong></td></tr>
+      <tr><td>6</td><td class="num pend">—</td><td class="num">$737</td><td class="num pend">—</td><td class="num"><strong>$737</strong></td></tr>
+      <tr><td>7</td><td class="num pend">—</td><td class="num">$489</td><td class="num pend">—</td><td class="num"><strong>$489</strong></td></tr>
+      <tr><td>10</td><td class="num pend">—</td><td class="num">$376</td><td class="num pend">—</td><td class="num"><strong>$376</strong></td></tr>
+      <tr class="total"><td>Total</td><td class="num">$10,000</td><td class="num">$7,481</td><td class="num">$6,200</td><td class="num">$23,681</td></tr>
+    </table></div>
+    <p class="fuente">Deptos 3, 4, 5, 8, 9 y 14 al corriente en esa fecha. Es la foto que dejó la administración; lo pagado después a Víctor no está reflejado (ver tema 3). Los nombres de los propietarios no se publican.</p>
+    <h3 style="margin:1.2rem 0 .3rem;font-size:1rem">Acuerdos de la reunión del 18 de septiembre</h3>
+    <ul style="padding-left:1.1rem;color:var(--ink-2);font-size:.92rem">
+      <li><strong>Antes, en agosto</strong>, la asamblea aprobó por unanimidad la cuota extraordinaria de $1,000 por depto para protocolizar la mesa, abrir la cuenta bancaria y el nuevo control de acceso. La cobró Víctor.</li>
+      <li><strong>Autogestión con conserje</strong>: seis votos a favor; ninguno por otra administradora.</li>
+      <li><strong>Transición</strong>: Víctor seguía hasta octubre para entregar cuentas; la cuota de octubre no se le depositaba sin rendición. Ya no está.</li>
+      <li><strong>Asamblea General en octubre</strong> para protocolizar la mesa y formalizar las cuentas: es esta.</li>
+      <li><strong>Cuotas</strong>: en cuanto exista la cuenta del condominio, se depositan ahí.</li>
+      <li>Tareas: Demián investiga los requisitos legales de la asamblea y el voto a distancia; Eduardo creó el grupo de WhatsApp de propietarios.</li>
+    </ul>
+  </div>
+
+  <h2 class="section-title" id="despues">Después de la asamblea</h2>
+  <div class="rule-block">
+    <p style="margin:0;color:var(--ink-2);font-size:.95rem">La minuta con los acuerdos, responsables y fechas se publica en <a href="pendientes.html">Pendientes</a> dentro de la semana siguiente, y el formulario de cuentas se manda al grupo de WhatsApp. Si ya pagaste octubre y no apareces en la <a href="#caja">caja</a>, regístralo en <a href="pago.html">Registrar pago</a>.</p>
+  </div>
+
+    <div class="pager"><a class="btn ghost" href="#p-elevador">← Elevador</a><a class="btn primary" href="#inicio">Volver al inicio</a></div>
+  </section>
+
+  <div class="cta-row" style="margin-top:1.5rem">
+    <a class="btn primary" href="pago.html">Registrar mi pago</a>
+    <a class="btn ghost" href="finanzas.html">Ver finanzas</a>
+    <a class="btn ghost" href="pendientes.html">Pendientes</a>
+    <a class="btn ghost" href="#" onclick="window.print();return false;">Imprimir esta página</a>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="inner">
+    Las Misiones Residencial · Senda Eterna 444, Fraccionamiento Milenio III, Santiago de Querétaro, Qro. · Página temporal de la mesa directiva para la asamblea del 13 de octubre de 2026. Fuentes: cuenta de la mesa directiva al 11 de octubre; portal de la CEA (referencia 604884) al 9 de octubre; tablas contables y estados de cuenta entregados por Admin-Solutions con corte al 30 de junio; minuta del 18 de septiembre; reportes del elevador del 25 de agosto. Los nombres de los propietarios no se publican.
+  </div>
+</footer>
+<script>
+(function () {
+  var header = document.querySelector('.site-header');
+  function headerH() { return header && getComputedStyle(header).position === 'sticky' ? header.offsetHeight : 0; }
+  function setTop() { document.documentElement.style.setProperty('--tabs-top', headerH() + 'px'); }
+  setTop(); window.addEventListener('resize', setTop);
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('#tabs a'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  var ids = panels.map(function (p) { return p.id; });
+  function show(id, scrollToEl) {
+    var panel = document.getElementById(id);
+    var target = null;
+    if (!panel || !panel.classList.contains('panel')) {
+      // un ancla dentro de una pestaña (#t1, #caja, #junio…)
+      target = document.getElementById(id);
+      panel = target ? target.closest('.panel') : null;
+      if (!panel) { panel = panels[0]; target = null; }
+    }
+    panels.forEach(function (p) { p.classList.toggle('active', p === panel); });
+    tabs.forEach(function (a) {
+      var on = a.getAttribute('data-tab') === panel.id;
+      a.classList.toggle('active', on);
+      if (on && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'center' });
+    });
+    var bar = document.getElementById('tabs');
+    // Se desplaza después del repintado, para que el anclaje de scroll del navegador no lo deshaga
+    requestAnimationFrame(function () {
+      var offset = headerH() + bar.offsetHeight + 8;
+      if (target) {
+        var y = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo(0, Math.max(0, y));
+      } else if (scrollToEl) {
+        // la barra es sticky: su posición natural es offsetTop, no la del rectángulo en pantalla
+        var y2 = bar.offsetTop - headerH();
+        if (window.pageYOffset > y2) window.scrollTo(0, Math.max(0, y2));
+      }
+    });
+  }
+  function fromHash(scroll) {
+    var id = (location.hash || '#inicio').slice(1);
+    show(id, scroll);
+  }
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.addEventListener('hashchange', function () { fromHash(true); });
+  fromHash(false);
+  window.addEventListener('load', function () { if (location.hash) setTimeout(function () { fromHash(true); }, 0); });
+  // el índice del orden del día y los pagers ya navegan por hash; nada más que hacer
+})();
+</script>
+</body>
+</html>
