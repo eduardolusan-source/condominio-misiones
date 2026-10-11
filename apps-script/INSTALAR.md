@@ -101,9 +101,9 @@ Tras pegar el `Code.gs` nuevo y publicar nueva versión (paso 6):
 ## 8. Asamblea: votación en vivo y acuerdos
 La pestaña **Sesión** de `asamblea.html` tiene la presentación (botón de pantalla completa), la
 votación por departamento y los acuerdos.
-- **Votos**: cada depto toca su número y vota; cae en la pestaña **Votos** (una fila por depto y
-  pregunta; si vuelve a votar, se sustituye). Los conteos se refrescan solos cada 8 segundos en
-  todas las pantallas.
+- **Votos**: la mesa directiva los registra al momento con "Registrar votos" (pide `CLAVE_ADMIN`):
+  elige la opción y toca los deptos que la votaron. Caen en la pestaña **Votos** (una fila por
+  depto y pregunta). Todos ven el conteo, refrescado cada 8 segundos.
 - **Acuerdos**: el botón "Llenar acuerdos (mesa directiva)" pide `CLAVE_ADMIN` y guarda en la
   pestaña **Acuerdos** (tema, acuerdo, responsable, fecha). `acuerdos.html` arma el documento con
   los resultados y los acuerdos, listo para guardar como PDF.

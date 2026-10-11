@@ -404,12 +404,15 @@ function hojaSimple_(nombre, enc) {
   h.setFrozenRows(1);
   return h;
 }
-/* Un voto por depto y pregunta; si vuelve a votar, se sustituye. */
+/* La mesa directiva registra el voto de cada depto al momento, con lo que la gente dice en la
+   videollamada. Un voto por depto y pregunta; si se vuelve a registrar, se sustituye; con
+   opción vacía se borra. */
 function votar_(d) {
+  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
   const depto = parseInt(d.depto, 10);
   if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
   const pregunta = limpiar_(d.pregunta, 40), opcion = limpiar_(d.opcion, 40);
-  if (!pregunta || !opcion) return { ok: false, error: "voto" };
+  if (!pregunta) return { ok: false, error: "voto" };
   const h = hojaSimple_(HOJA_VOTOS, ["Pregunta", "Depto", "Opción", "Fecha"]);
   const n = h.getLastRow();
   let fila = 0;
@@ -417,6 +420,7 @@ function votar_(d) {
     const vals = h.getRange(2, 1, n - 1, 2).getValues();
     for (let i = 0; i < vals.length; i++) if (String(vals[i][0]) === pregunta && Number(vals[i][1]) === depto) { fila = i + 2; break; }
   }
+  if (!opcion) { if (fila) h.deleteRow(fila); return { ok: true, pregunta: pregunta, depto: depto, opcion: "" }; }
   if (!fila) fila = n + 1;
   h.getRange(fila, 1, 1, 4).setValues([[pregunta, depto, opcion, new Date()]]);
   h.getRange(fila, 4).setNumberFormat("dd/mm/yyyy hh:mm");

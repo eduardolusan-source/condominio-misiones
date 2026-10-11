@@ -99,10 +99,15 @@
   #overlay .zona.izq { left: 0; } #overlay .zona.der { right: 0; }
   #overlay .cerrar { position: absolute; top: 12px; right: 12px; font: inherit; font-weight: 700; padding: .4rem .8rem; border-radius: 999px; border: 1px solid rgba(255,255,255,.4); background: rgba(0,0,0,.5); color: #fff; cursor: pointer; opacity: .6; }
   #overlay .cuenta { position: absolute; bottom: 12px; left: 16px; color: rgba(255,255,255,.5); font-size: .85rem; }
-  .vdeptos { display: grid; grid-template-columns: repeat(8, 1fr); gap: .4rem; margin: .4rem 0 1rem; }
+  .vdeptos { display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; margin: .5rem 0 .3rem; }
   @media (max-width: 640px) { .vdeptos { grid-template-columns: repeat(4, 1fr); } }
-  .vdeptos button { font: inherit; font-weight: 700; min-height: 46px; border: 2px solid var(--baseline); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
-  .vdeptos button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vdeptos button { font: inherit; font-weight: 700; min-height: 44px; border: 2px solid var(--baseline); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; font-size: .9rem; }
+  .vdeptos button.o0 { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .vdeptos button.o1 { background: var(--series-2); border-color: var(--series-2); color: #fff; }
+  .vdeptos button.o2 { background: var(--muted); border-color: var(--muted); color: #fff; }
+  .vdeptos button small { display: block; font-weight: 600; font-size: .68rem; opacity: .9; }
+  .opciones-v button.c1.sel { background: var(--series-2); border-color: var(--series-2); }
+  .modo { font-size: .85rem; color: var(--ink-2); margin: .2rem 0 0; }
   .pregunta-v { border: 1px solid var(--border); border-radius: 12px; padding: .9rem 1rem; margin-bottom: .9rem; background: var(--surface); }
   .pregunta-v .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--series-2); font-weight: 700; }
   .pregunta-v h3 { margin: .15rem 0 .6rem; font-size: 1.05rem; }
@@ -439,10 +444,9 @@
   </div>
 
   <h2 class="section-title" id="votacion">Votación</h2>
-  <p class="section-sub">Cada departamento vota desde su celular cuando el tema llegue a votación. Se puede cambiar el voto; cuenta el último. Los conteos se actualizan solos en todas las pantallas.</p>
+  <p class="section-sub">La mesa directiva registra al momento lo que cada departamento dice en la videollamada. El conteo se actualiza solo en todas las pantallas; cada depto cuenta una vez y vale el último registro.</p>
   <div class="rule-block">
-    <p style="margin:0 0 .3rem;font-weight:700">¿Qué departamento eres?</p>
-    <div class="vdeptos" id="vDeptos"></div>
+    <div class="cta-row" style="margin:0 0 .8rem"><button type="button" class="btn ghost" id="btnRegistrar">Registrar votos (mesa directiva)</button></div>
     <div id="vPreguntas"></div>
     <p class="fuente" id="vEstado">Conectando con el conteo…</p>
   </div>
@@ -588,47 +592,61 @@
   ov.addEventListener("touchstart", function (e) { tx = e.touches[0].clientX; }, { passive: true });
   ov.addEventListener("touchend", function (e) { if (tx === null) return; var dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 40) mostrar(dx < 0 ? idx + 1 : idx - 1); tx = null; }, { passive: true });
 
-  /* --- Votación --- */
-  var depto = null, votos = null, enviando = false;
-  var vd = $("vDeptos");
-  for (var i = 1; i <= UNIDADES; i++) (function (n) { var b = document.createElement("button"); b.type = "button"; b.textContent = n; b.onclick = function () { depto = n; try { localStorage.setItem("misiones_depto", n); } catch (e) {} pintarDeptos(); pintarPreguntas(); }; vd.appendChild(b); })(i);
-  function pintarDeptos() { Array.prototype.forEach.call(vd.children, function (b) { b.classList.toggle("sel", +b.textContent === depto); }); }
-  try { var g = parseInt(localStorage.getItem("misiones_depto"), 10); if (g >= 1 && g <= UNIDADES) depto = g; } catch (e) {}
-  pintarDeptos();
+  /* --- Votación: la mesa registra, todos ven --- */
+  var votos = null, registrando = false, claveAdmin = "", activa = {};
+  try { claveAdmin = localStorage.getItem("misiones_clave_admin") || ""; } catch (e) {}
+  $("btnRegistrar").onclick = function () {
+    if (!registrando) {
+      var c = prompt("Clave de la mesa directiva:", claveAdmin || ""); if (c === null) return;
+      claveAdmin = c.trim(); if (!claveAdmin) return;
+      try { localStorage.setItem("misiones_clave_admin", claveAdmin); } catch (e) {}
+      registrando = true; $("btnRegistrar").textContent = "Dejar de registrar";
+    } else { registrando = false; $("btnRegistrar").textContent = "Registrar votos (mesa directiva)"; }
+    pintarPreguntas();
+  };
   function pintarPreguntas() {
     var cont = $("vPreguntas"); cont.innerHTML = "";
     PREGUNTAS.forEach(function (q) {
       var r = votos && votos.preguntas && votos.preguntas[q.id] ? votos.preguntas[q.id] : { conteo: {}, deptos: {} };
-      var mio = depto ? r.deptos[depto] : null;
       var total = Object.keys(r.deptos).length;
+      if (activa[q.id] === undefined) activa[q.id] = q.op[0];
       var div = document.createElement("div"); div.className = "pregunta-v"; div.id = "q_" + q.id;
-      var ops = q.op.map(function (o) { return '<button type="button" data-q="' + q.id + '" data-o="' + o + '" class="' + (mio === o ? "sel" : "") + '"' + (depto ? "" : " disabled") + '>' + o + '</button>'; }).join("");
-      var barras = q.op.map(function (o) { var c = r.conteo[o] || 0; var pct = total ? Math.round(c * 100 / total) : 0; return '<div class="barra"><div><div style="display:flex;justify-content:space-between;font-size:.88rem"><span>' + o + '</span><span>' + pct + '%</span></div><div class="fondo"><div class="lleno" style="width:' + pct + '%"></div></div></div><b>' + c + '</b></div>'; }).join("");
-      var quien = total ? "Han votado " + total + " de 16: deptos " + Object.keys(r.deptos).map(Number).sort(function (a, b) { return a - b; }).join(", ") + "." : "Nadie ha votado todavía.";
-      div.innerHTML = '<div class="k">' + q.k + '</div><h3>' + q.t + '</h3><div class="opciones-v">' + ops + '</div><div class="conteo">' + barras + '<div class="quien">' + quien + (mio ? " Tu voto: <b>" + mio + "</b>." : "") + '</div></div>';
+      var barras = q.op.map(function (o, i) { var c = r.conteo[o] || 0; var pct = total ? Math.round(c * 100 / total) : 0; return '<div class="barra"><div><div style="display:flex;justify-content:space-between;font-size:.88rem"><span>' + o + '</span><span>' + pct + '%</span></div><div class="fondo"><div class="lleno" style="width:' + pct + '%' + (i === 1 ? ";background:var(--series-2)" : "") + '"></div></div></div><b>' + c + '</b></div>'; }).join("");
+      var lista = q.op.map(function (o) { var ds = Object.keys(r.deptos).filter(function (k) { return r.deptos[k] === o; }).map(Number).sort(function (a, b) { return a - b; }); return ds.length ? o + ": deptos " + ds.join(", ") : ""; }).filter(Boolean).join(" · ");
+      var quien = total ? "Registrados " + total + " de 16. " + lista + "." : "Sin votos registrados todavía.";
+      var tablero = "";
+      if (registrando) {
+        tablero = '<p class="modo">Elige la opción y toca los departamentos que la votaron. Tocar de nuevo con la misma opción borra el voto.</p><div class="opciones-v">' + q.op.map(function (o, i) { return '<button type="button" class="c' + i + (activa[q.id] === o ? " sel" : "") + '" data-q="' + q.id + '" data-o="' + o + '">' + o + '</button>'; }).join("") + '</div><div class="vdeptos">';
+        for (var n = 1; n <= UNIDADES; n++) { var o = r.deptos[n]; var ci = o ? q.op.indexOf(o) : -1; tablero += '<button type="button" class="' + (ci >= 0 ? "o" + ci : "") + '" data-q="' + q.id + '" data-d="' + n + '">' + n + (o ? '<small>' + o.split(" · ")[0] + '</small>' : '') + '</button>'; }
+        tablero += '</div>';
+      }
+      div.innerHTML = '<div class="k">' + q.k + '</div><h3>' + q.t + '</h3>' + tablero + '<div class="conteo">' + barras + '<div class="quien">' + quien + '</div></div>';
       cont.appendChild(div);
     });
-    cont.querySelectorAll(".opciones-v button").forEach(function (b) { b.onclick = function () { votar(b.dataset.q, b.dataset.o, b); }; });
-    if (!depto) $("vEstado").textContent = "Toca tu departamento para poder votar.";
+    cont.querySelectorAll(".opciones-v button").forEach(function (b) { b.onclick = function () { activa[b.dataset.q] = b.dataset.o; pintarPreguntas(); }; });
+    cont.querySelectorAll(".vdeptos button").forEach(function (b) { b.onclick = function () { registrar(b.dataset.q, +b.dataset.d, b); }; });
   }
-  async function votar(q, o, b) {
-    if (!depto || enviando) return;
-    enviando = true; b.textContent = "Enviando…";
+  var enviando = false;
+  async function registrar(q, d, b) {
+    if (enviando) return;
+    var reg = (votos = votos || { preguntas: {} }).preguntas[q] = votos.preguntas[q] || { conteo: {}, deptos: {} };
+    var nueva = reg.deptos[d] === activa[q] ? "" : activa[q];
+    enviando = true; b.style.opacity = ".5";
     try {
-      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "voto", clave: "misiones", depto: depto, pregunta: q, opcion: o }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
-      var j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
-      votos = votos || { preguntas: {} }; votos.preguntas[q] = votos.preguntas[q] || { conteo: {}, deptos: {} };
-      var reg = votos.preguntas[q]; if (reg.deptos[depto]) reg.conteo[reg.deptos[depto]]--; reg.deptos[depto] = o; reg.conteo[o] = (reg.conteo[o] || 0) + 1;
-      pintarPreguntas();
-    } catch (e) { alert("No se registró el voto: " + (e.message || e)); pintarPreguntas(); }
-    enviando = false;
+      var r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "voto", claveAdmin: claveAdmin, depto: d, pregunta: q, opcion: nueva }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+      var j = await r.json(); if (!j.ok) throw new Error(j.error === "clave" ? "clave incorrecta" : (j.error || "error"));
+      if (reg.deptos[d]) reg.conteo[reg.deptos[d]] = Math.max(0, (reg.conteo[reg.deptos[d]] || 1) - 1);
+      if (nueva) { reg.deptos[d] = nueva; reg.conteo[nueva] = (reg.conteo[nueva] || 0) + 1; } else delete reg.deptos[d];
+    } catch (e) { alert("No se registró: " + (e.message || e)); }
+    enviando = false; pintarPreguntas();
   }
   async function cargarVotos() {
+    if (enviando) return;
     try {
       var r = await fetch(SCRIPT_URL + "?accion=votos&t=" + Date.now()); var j = await r.json();
       if (!j.ok || !j.preguntas) throw new Error(j.error || "sin servicio");
       votos = j; pintarPreguntas();
-      $("vEstado").textContent = depto ? "Conteo en vivo · se actualiza cada 8 segundos." : "Toca tu departamento para poder votar.";
+      $("vEstado").textContent = "Conteo en vivo · se actualiza cada 8 segundos.";
     } catch (e) { $("vEstado").textContent = "El conteo en vivo no está disponible todavía (" + (e.message || e) + ")."; if (!votos) pintarPreguntas(); }
   }
   setInterval(function () { var a = document.querySelector(".panel.active"); if (a && a.id === "sesion" && !document.hidden) cargarVotos(); }, 8000);
