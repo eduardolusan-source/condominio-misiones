@@ -66,3 +66,17 @@ La clave se guarda en el celular para no pedirla cada vez; "Salir" la borra.
   Entonces muestra lo que diga "Adeudos (hoja maestra)" para cada departamento.
 - **Si cambias el script:** Implementar → Administrar implementaciones → lápiz → Versión: *Nueva* → Implementar.
   La URL no cambia.
+
+## 6. Actualizar el script cuando cambie `Code.gs` (por ejemplo, para `cuentas.html`)
+La dirección `/exec` no cambia si editas la implementación existente:
+1. **Extensiones → Apps Script**, pegar el `Code.gs` nuevo completo y guardar.
+2. **Implementar → Administrar implementaciones** → lápiz de la implementación activa →
+   Versión: **Nueva versión** → **Implementar**.
+3. Probar en `cuentas.html`: tocar un depto; debe aparecer su adeudo al corte y los
+   renglones de julio a septiembre. Al enviar, nace la pestaña **Validaciones** y la
+   subcarpeta **Validaciones** dentro de "Misiones · Comprobantes".
+
+`cuentas.html` no toca Pagos ni las pestañas de los meses: solo registra qué dice cada
+depto de su adeudo (lo debe, lo pagó a la administración anterior, no es correcto), cuánto
+dice haber pagado y sus comprobantes. Con eso se arma la hoja de cuentas y se calcula lo
+que debe la administración anterior.

@@ -11,6 +11,10 @@
    - doGet: responde a pago.html qué tiene por pagar un departamento y sus pagos
      anteriores con su estatus.
    - onEdit: cuando cambias el estatus a "Confirmado" pone la fecha sola.
+   - doGet accion=cuentas / doPost accion=validar: cuentas.html. Cada depto dice si
+     reconoce su adeudo al corte y lo de julio a septiembre (lo cobró la administración
+     anterior), y sube comprobantes. Cae en la pestaña "Validaciones"; las imágenes van
+     a la subcarpeta "Validaciones" de la carpeta de comprobantes.
 */
 
 const CLAVE        = "misiones";            // la misma que en pago.html; solo frena envíos ajenos
@@ -27,6 +31,16 @@ const ESTATUS = ["Pendiente","Confirmado","Rechazado"];
 const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa club","Total","Nota","Comprobante","Estatus","Mes","Confirmado el","Celdas del mes","Folio"];
 //                  A       B       C               D      E               F           G       H      I             J         K     L               M (uso interno)  N
 const AMARILLO = "#ffe599";                 // color de lo reportado y aún no confirmado
+const HOJA_VALID = "Validaciones";
+const ENC_VALID = ["Fecha","Depto","Concepto","Respuesta","Monto pagado a la admin. anterior","Nota","Comprobantes","Folio","Nota general"];
+/* Lo que tocaba pagar de julio a septiembre de 2026, cobrado por la administración anterior. */
+const CONCEPTOS_PREVIOS = [
+  { id: "manto-2026-07", nom: "Mantenimiento de julio", sub: "cuota de $1,500", monto: 1500 },
+  { id: "manto-2026-08", nom: "Mantenimiento de agosto", sub: "cuota de $1,500", monto: 1500 },
+  { id: "manto-2026-09", nom: "Mantenimiento de septiembre", sub: "cuota de $1,500", monto: 1500 },
+  { id: "extra-2026-08", nom: "Cuota extraordinaria de $1,000", sub: "protocolización, cuenta bancaria y control de acceso · agosto", monto: 1000 },
+  { id: "agua-2026-07-09", nom: "Agua de julio a septiembre", sub: "lo que te cobró la administración por el agua de esos meses", monto: 0, abierto: true }
+];
 
 /* ============================ INSTALACIÓN ============================ */
 
@@ -165,6 +179,7 @@ function doGet(e) {
     if (p.accion === "estado") return json_(estadoDepto_(parseInt(p.depto, 10)));
     if (p.accion === "pendientes") return json_(pendientes_(p.clave));
     if (p.accion === "imagen") return json_(imagen_(p.clave, p.folio));
+    if (p.accion === "cuentas") return json_(cuentasDepto_(parseInt(p.depto, 10)));
     return json_({ ok: true, servicio: "misiones-pagos" });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -177,6 +192,7 @@ function doPost(e) {
     const d = JSON.parse(e.postData.contents || "{}");
     if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
+    if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);
     if (!(depto >= 1 && depto <= UNIDADES)) return json_({ ok: false, error: "departamento" });
     const monto = k => Math.max(0, Math.round((parseFloat(d[k]) || 0) * 100) / 100);
@@ -279,6 +295,86 @@ function estadoDepto_(depto) {
     r.pagos = r.pagos.slice(0, 8).map(x => { delete x.t; return x; });
   }
   return r;
+}
+
+/* ===================== VALIDACIÓN DE CUENTAS (cuentas.html) ===================== */
+
+/* Adeudo al corte según la hoja maestra (siempre, sin esperar Config → adeudos), los
+   conceptos de julio a septiembre y lo que ese depto ya respondió. Sin nombres. */
+function cuentasDepto_(depto) {
+  if (!(depto >= 1 && depto <= UNIDADES)) throw new Error("departamento");
+  const ss = SpreadsheetApp.getActive();
+  const r = { ok: true, depto: depto, adeudo: null, conceptos: CONCEPTOS_PREVIOS, validaciones: [] };
+  const ad = ss.getSheetByName(HOJA_ADEUDOS);
+  if (ad) {
+    const fc = ad.createTextFinder("Fecha de corte").matchCase(false).findNext();
+    const corte = fc ? ad.getRange(fc.getRow(), fc.getColumn() + 1).getDisplayValue() : "";
+    const celda = ad.createTextFinder("^Depto " + depto + "$").useRegularExpression(true).matchEntireCell(true).findNext();
+    if (celda) {
+      const v = ad.getRange(celda.getRow(), celda.getColumn() + 2, 1, 4).getValues()[0].map(x => Number(x) || 0);
+      r.adeudo = { corte: corte, mantenimiento: v[0], agua: v[1], extraordinario: v[2], total: v[3] };
+    }
+  }
+  const h = ss.getSheetByName(HOJA_VALID);
+  if (h && h.getLastRow() > 1) {
+    h.getRange(2, 1, h.getLastRow() - 1, ENC_VALID.length).getValues().forEach(f => {
+      if (Number(f[1]) !== depto) return;
+      r.validaciones.push({ t: new Date(f[0]).getTime(), fecha: Utilities.formatDate(new Date(f[0]), "America/Mexico_City", "d/MM/yyyy"),
+        nombre: String(f[2] || ""), respuesta: String(f[3] || ""), monto: Number(f[4]) || 0 });
+    });
+    r.validaciones.sort((a, b) => b.t - a.t);
+    r.validaciones = r.validaciones.slice(0, 12).map(x => { delete x.t; return x; });
+  }
+  return r;
+}
+
+/* Guarda la respuesta de un depto: un renglón por concepto contestado, mismo folio,
+   y las imágenes en Drive. Nada de esto toca las pestañas de los meses ni Pagos. */
+function validar_(d) {
+  const depto = parseInt(d.depto, 10);
+  if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
+  const lista = Array.isArray(d.respuestas) ? d.respuestas : [];
+  const imgs = Array.isArray(d.imagenes) ? d.imagenes.filter(x => String(x || "").length > 100).slice(0, 10) : [];
+  if (!lista.length && !imgs.length) return { ok: false, error: "vacío" };
+  const ahora = new Date();
+  const folio = "V-" + String(siguienteFolioValid_()).padStart(4, "0");
+  const urls = imgs.map((img, i) => {
+    const nombre = Utilities.formatDate(ahora, "America/Mexico_City", "yyyy-MM-dd HHmm") +
+      " · Depto " + (depto < 10 ? "0" : "") + depto + " · " + folio + " · " + (i + 1) + ".jpg";
+    const blob = Utilities.newBlob(Utilities.base64Decode(String(img).replace(/^data:[^,]+,/, "")), d.tipo || "image/jpeg", nombre);
+    return subcarpeta_(HOJA_VALID).createFile(blob).getUrl();
+  });
+  const h = hojaValid_();
+  const notaGeneral = limpiar_(d.nota, 300);
+  const filas = (lista.length ? lista : [{ nombre: "Solo comprobantes", respuesta: "comprobantes" }]).map(x => [
+    ahora, depto, limpiar_(x.nombre || x.concepto, 80),
+    ["debo", "pagado", "otro", "comprobantes"].includes(String(x.respuesta)) ? String(x.respuesta) : "otro",
+    x.respuesta === "pagado" ? Math.max(0, Math.round((parseFloat(x.monto) || 0) * 100) / 100) : "",
+    limpiar_(x.nota, 200), urls.join("\n"), folio, notaGeneral
+  ]);
+  h.insertRowsBefore(2, filas.length);
+  h.getRange(2, 1, filas.length, ENC_VALID.length).setValues(filas);
+  h.getRange(2, 1, filas.length, 1).setNumberFormat("dd/mm/yyyy hh:mm");
+  h.getRange(2, 5, filas.length, 1).setNumberFormat("$#,##0.00");
+  return { ok: true, folio: folio, renglones: filas.length, comprobantes: urls.length };
+}
+
+function hojaValid_() {
+  const ss = SpreadsheetApp.getActive();
+  let h = ss.getSheetByName(HOJA_VALID);
+  if (h) return h;
+  h = ss.insertSheet(HOJA_VALID);
+  h.getRange(1, 1, 1, ENC_VALID.length).setValues([ENC_VALID]).setFontWeight("bold").setBackground("#d9e2ec");
+  h.setFrozenRows(1);
+  h.setColumnWidths(1, 1, 130); h.setColumnWidths(3, 1, 260); h.setColumnWidths(6, 2, 260); h.setColumnWidths(9, 1, 260);
+  return h;
+}
+function siguienteFolioValid_() {
+  const props = PropertiesService.getScriptProperties();
+  let n = parseInt(props.getProperty("folioValid"), 10);
+  if (!(n >= 1)) n = 1;
+  props.setProperty("folioValid", String(n + 1));
+  return n;
 }
 
 /* Al poner "Confirmado" en la columna J de Pagos, anota la fecha en L. */
