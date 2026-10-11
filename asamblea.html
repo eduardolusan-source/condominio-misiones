@@ -79,7 +79,7 @@
     table.data td.titulo { display: block; font-weight: 800; color: var(--ink); font-size: 1.02rem; padding-bottom: .4rem; border-bottom: 2px solid var(--grid); margin-bottom: .2rem; }
     table.data td.titulo::before { content: attr(data-label) " · "; text-transform: none; letter-spacing: 0; font-size: .85rem; }
     table.data td.titulo.solo::before { content: ""; }
-    table.data td.pend { display: none; }
+    table.data td.vacio { display: none; }
     table.data td.largo { display: block; }
     table.data td.largo::before { display: block; margin-bottom: .15rem; }
     table.data tr.total { background: var(--accent-soft); border-color: var(--accent); }
@@ -453,6 +453,7 @@
         td.setAttribute('data-label', cab[idx] || '');
         if (i === 0) { td.classList.add('titulo'); if (tr.classList.contains('total') || !cab[0]) td.classList.add('solo'); }
         if (td.textContent.trim().length > 60) td.classList.add('largo');
+        if (td.textContent.trim() === '—' || td.textContent.trim() === '') td.classList.add('vacio');
       });
     });
   });
