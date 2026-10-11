@@ -424,11 +424,17 @@ function filaRecibo_(mes, crear) {
   h.getRange(r, 1).setNumberFormat("@").setValue(mes);
   h.getRange(r, 2).setNumberFormat("$#,##0.00");
   h.getRange(r, 4).setNumberFormat("dd/mm/yyyy");
-  h.getRange(r, 5).setFormula('=IF(AND(B' + r + '>0,C' + r + '>0),B' + r + '/C' + r + ',"")').setNumberFormat("$#,##0.00");
+  formulasRecibo_(h, r);
+  return r;
+}
+/* Fórmulas del mes. Si la suma de lecturas supera los m³ del recibo (lecturas que abarcan más
+   días que el recibo, o medidor general sin dato), el recibo se reparte en proporción directa
+   al consumo, sin comunes. En todos los casos la suma de los 16 cargos es el monto del recibo. */
+function formulasRecibo_(h, r) {
+  h.getRange(r, 5).setFormula('=IF(B' + r + '>0,IF(AND(C' + r + '>0,C' + r + '-F' + r + '>=0),B' + r + '/C' + r + ',IF(F' + r + '>0,B' + r + '/F' + r + ',"")),"")').setNumberFormat("$#,##0.00");
   h.getRange(r, 6).setFormula("=SUMIF('" + HOJA_AGUA + "'!$A:$A,A" + r + ",'" + HOJA_AGUA + "'!$E:$E)");
   h.getRange(r, 7).setFormula('=IF(C' + r + '>0,C' + r + '-F' + r + ',"")');
-  h.getRange(r, 8).setFormula('=IF(AND(ISNUMBER(E' + r + '),ISNUMBER(G' + r + ')),E' + r + '*MAX(G' + r + ',0)/' + UNIDADES + ',"")').setNumberFormat("$#,##0.00");
-  return r;
+  h.getRange(r, 8).setFormula('=IF(AND(ISNUMBER(E' + r + '),ISNUMBER(G' + r + '),G' + r + '>0),E' + r + '*G' + r + '/' + UNIDADES + ',0)').setNumberFormat("$#,##0.00");
 }
 function filaAgua_(h, mes, depto) {
   const n = h.getLastRow();
@@ -489,6 +495,7 @@ function guardarRecibo_(d) {
   if (!(m3 > 0)) return { ok: false, error: "m3" };
   const h = hojaRecibos_();
   const fila = filaRecibo_(mes, true);
+  formulasRecibo_(h, fila);                                 // por si la fila venía de una versión anterior
   h.getRange(fila, 2, 1, 2).setValues([[monto, m3]]);
   if (/^\d{4}-\d{2}-\d{2}$/.test(String(d.limite || ""))) {
     const [y, m, dd] = String(d.limite).split("-").map(Number);

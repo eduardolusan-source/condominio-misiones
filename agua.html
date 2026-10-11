@@ -90,7 +90,7 @@ function tarjeta(m, principal) {
   h += '<div class="fila"><span>Tu consumo</span><span>' + m.consumo + ' m³</span></div>';
   if (hayCargo) {
     h += '<div class="fila"><span>Tu agua: ' + m.consumo + ' m³ × ' + fmt(rec.precio) + '</span><span>' + fmt(rec.precio * m.consumo) + '</span></div>';
-    h += '<div class="fila"><span>Tu parte de áreas comunes</span><span>' + fmt(rec.comunesDepto) + '</span></div>';
+    if (rec.comunes >= 0) h += '<div class="fila"><span>Tu parte de áreas comunes</span><span>' + fmt(rec.comunesDepto) + '</span></div>';
     h += '<div class="total"><small>Total de ' + nombreMes(m.mes).toLowerCase() + (rec.limite ? ' · pagar antes del ' + rec.limite : '') + '</small><strong>' + fmt(m.cargo) + '</strong></div>';
     if (!m.pagado) h += '<div class="cta-row" style="margin:.4rem 0 0"><a class="btn primary" href="pago.html?agua=' + Math.round(m.cargo * 100) / 100 + '&mes=' + m.mes + '">Registrar mi pago</a></div>';
     if (principal) {
@@ -99,7 +99,8 @@ function tarjeta(m, principal) {
       h += '<div class="fila"><span>m³ del medidor general</span><span>' + rec.m3 + ' m³</span></div>';
       h += '<div class="fila"><span>Precio del m³ este mes</span><span>' + fmt(rec.precio) + '</span></div>';
       h += '<div class="fila"><span>Suma de los 16 medidores</span><span>' + rec.suma + ' m³</span></div>';
-      h += '<div class="fila"><span>Áreas comunes (alberca, riego, limpieza)</span><span>' + Math.round(rec.comunes * 10) / 10 + ' m³ ÷ 16</span></div>';
+      if (rec.comunes >= 0) h += '<div class="fila"><span>Áreas comunes (alberca, riego, limpieza)</span><span>' + Math.round(rec.comunes * 10) / 10 + ' m³ ÷ 16</span></div>';
+      else h += '<p class="pista" style="text-align:left;margin-top:.4rem">Las lecturas de este mes abarcan más días que el recibo, así que el recibo se repartió en proporción directa al consumo de cada depto, sin parte de comunes.</p>';
       h += '</div>';
     }
   } else if (!m.pagado) {
