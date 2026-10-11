@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Asamblea del 13 de octubre · Las Misiones Residencial</title>
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=20261011">
 <link rel="icon" href="assets/mark.svg">
 <style>
   /* Estilos propios de esta página (temporal, mientras dura la asamblea). */
@@ -53,6 +53,11 @@
   .tabs a { flex: 0 0 auto; font-size: .88rem; font-weight: 600; padding: .45rem .85rem; border: 1px solid var(--border); border-radius: 999px; text-decoration: none; color: var(--ink); background: var(--surface); white-space: nowrap; }
   .tabs a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   @media (prefers-color-scheme: dark) { .tabs a.active { color: #0d0d0d; } }
+  /* En celular las pestañas se ven todas, en dos renglones, sin deslizar */
+  @media (max-width: 640px) {
+    .tabs { flex-wrap: wrap; overflow: visible; gap: .35rem; padding: .5rem 0; }
+    .tabs a { flex: 1 1 auto; text-align: center; font-size: .82rem; padding: .4rem .6rem; }
+  }
   main [id] { scroll-margin-top: calc(var(--tabs-top, 0px) + 3.6rem); }
   main, body { overflow-anchor: none; }
   .panel { display: none; animation: fade .18s ease-out; }
@@ -69,6 +74,8 @@
 <header class="site-header">
   <div class="inner">
     <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
     <nav class="main">
       <a href="index.html">Inicio</a>
       <a href="asamblea.html" class="active">Asamblea 13 oct</a>
@@ -92,11 +99,11 @@
   <nav class="tabs" id="tabs" aria-label="Secciones de la página">
     <a href="#inicio" data-tab="inicio">Inicio</a>
     <a href="#p-t1" data-tab="p-t1">1 · CEA</a>
-    <a href="#p-t2" data-tab="p-t2">2 · Administración</a>
+    <a href="#p-t2" data-tab="p-t2">2 · Admin.</a>
     <a href="#p-t3" data-tab="p-t3">3 · Cuentas</a>
     <a href="#p-t4" data-tab="p-t4">4 · Víctor</a>
     <a href="#p-elevador" data-tab="p-elevador">Elevador</a>
-    <a href="#dinero" data-tab="dinero">Caja y cuentas</a>
+    <a href="#dinero" data-tab="dinero">Caja</a>
   </nav>
 
   <section class="panel" id="inicio" data-title="En dos minutos y orden del día">
@@ -374,6 +381,8 @@
   function headerH() { return header && getComputedStyle(header).position === 'sticky' ? header.offsetHeight : 0; }
   function setTop() { document.documentElement.style.setProperty('--tabs-top', headerH() + 'px'); }
   setTop(); window.addEventListener('resize', setTop);
+  var toggle = document.getElementById('nav-toggle');
+  if (toggle) toggle.addEventListener('change', function () { setTimeout(setTop, 0); });
   var tabs = Array.prototype.slice.call(document.querySelectorAll('#tabs a'));
   var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
   var ids = panels.map(function (p) { return p.id; });
