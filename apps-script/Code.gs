@@ -491,7 +491,7 @@ function guardarRecibo_(d) {
   h.getRange(fila, 2, 1, 2).setValues([[monto, m3]]);
   if (/^\d{4}-\d{2}-\d{2}$/.test(String(d.limite || ""))) {
     const [y, m, dd] = String(d.limite).split("-").map(Number);
-    h.getRange(fila, 4).setValue(new Date(y, m - 1, dd)).setNumberFormat("dd/mm/yyyy");
+    h.getRange(fila, 4).setValue(new Date(y, m - 1, dd, 12)).setNumberFormat("dd/mm/yyyy");   // a mediodía, para que no se corra un día entre zonas horarias
   }
   let foto = "";
   if (d.imagen && String(d.imagen).length > 100) {
