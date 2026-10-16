@@ -15,6 +15,10 @@
      reconoce su adeudo al corte y lo de julio a septiembre (lo cobró la administración
      anterior), y sube comprobantes. Cae en la pestaña "Validaciones"; las imágenes van
      a la subcarpeta "Validaciones" de la carpeta de comprobantes.
+   - doGet accion=egresos / doPost accion=egreso y quitarEgreso: pestaña "Gastos" de
+     bandeja.html. Cada gasto (agua, luz, conserje…) se escribe en la sección EGRESOS
+     ORDINARIOS o EGRESOS EXTRAORDINARIOS de la pestaña del mes, con el comprobante en
+     Drive, y queda anotado en la pestaña "Egresos" (bitácora).
 */
 
 const CLAVE        = "misiones";            // la misma que en pago.html; solo frena envíos ajenos
@@ -42,6 +46,8 @@ const ENC_AGUA = ["Mes","Depto","Lectura anterior","Lectura actual","Consumo m³
 const ENC_RECIBOS = ["Mes","Monto del recibo CEA","m³ del medidor general (viene en el recibo)","Fecha límite de pago","Precio por m³","Suma de lecturas m³","m³ de áreas comunes","Comunes por depto $","Notas"];
 //                    A     B                      C                                            D                      E               F                     G                     H                     I
 const ENC_VALID = ["Fecha","Depto","Concepto","Respuesta","Monto pagado a la admin. anterior","Nota","Comprobantes","Folio","Nota general"];
+const HOJA_EGRESOS = "Egresos";             // bitácora: una fila por gasto capturado o retirado desde la bandeja
+const ENC_EGRESOS = ["Fecha","Mes","Tipo","Concepto","Monto","Nota","Comprobante","Acción"];
 /* Lo que tocaba pagar de julio a septiembre de 2026, cobrado por la administración anterior. */
 const CONCEPTOS_PREVIOS = [
   { id: "manto-2026-07", nom: "Mantenimiento de julio", sub: "cuota de $1,500", monto: 1500 },
@@ -194,6 +200,7 @@ function doGet(e) {
     if (p.accion === "votos") return json_(votos_());
     if (p.accion === "acuerdos") return json_(acuerdos_());
     if (p.accion === "tareas") return json_(tareas_());
+    if (p.accion === "egresos") return json_(egresosMes_(p.mes, p.clave));
     return json_({ ok: true, servicio: "misiones-pagos" });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -210,6 +217,8 @@ function doPost(e) {
     if (d.accion === "voto") { lock.waitLock(10000); return json_(votar_(d)); }
     if (d.accion === "acuerdo") { lock.waitLock(10000); return json_(guardarAcuerdo_(d)); }
     if (d.accion === "tarea") { lock.waitLock(10000); return json_(guardarTarea_(d)); }
+    if (d.accion === "egreso") { lock.waitLock(10000); return json_(guardarEgreso_(d)); }
+    if (d.accion === "quitarEgreso") { lock.waitLock(10000); return json_(quitarEgreso_(d)); }
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);
@@ -785,16 +794,7 @@ function resolverDesdeBandeja_(d) {
 /* Suma lo reportado en la pestaña del mes y lo pinta de amarillo. Devuelve la lista
    de celdas tocadas ("Octubre!C44=#d6e2ee=1500;...") para poder confirmarlas o retirarlas. */
 function anotarEnMes_(ss, mes, depto, m, fecha) {
-  const idx = parseInt(mes.split("-")[1], 10) - 1;
-  const anio = parseInt(mes.split("-")[0], 10);
-  const nombre = nombreHojaMes_(idx, anio);
-  let hoja = buscarHojaMes_(ss, nombre);
-  if (!hoja) {
-    hoja = ss.getSheetByName(PLANTILLA).copyTo(ss).setName(nombre);
-    hoja.getRange("C5").setValue(capitalizar_(MESES[idx]) + " " + anio);
-    hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
-    ajustarCasaClub_(hoja);
-  }
+  const hoja = hojaDelMes_(ss, mes, true);
   const refs = [];
   const pinta = (rg, monto) => {
     const previo = Number(rg.getValue()) || 0;
@@ -855,6 +855,146 @@ function aplicarCeldas_(ss, celdas, modo) {
   });
 }
 
+/* ============================ EGRESOS (bandeja, pestaña Gastos) ============================ */
+
+/* Dónde está en la pestaña del mes la sección "EGRESOS ORDINARIOS" o "EGRESOS EXTRAORDINARIOS":
+   fila del título, primera y última fila de captura y fila del TOTAL. Se busca por el texto,
+   nunca por posiciones fijas, así que aguanta que se inserten renglones. */
+function seccionEgresos_(hoja, tipo) {
+  const titulo = tipo === "extraordinario" ? "EGRESOS EXTRAORDINARIOS" : "EGRESOS ORDINARIOS";
+  const t = hoja.createTextFinder("^" + titulo).useRegularExpression(true).matchCase(false).findNext();
+  if (!t) throw new Error("No encuentro la sección " + titulo + " en la pestaña " + hoja.getName());
+  const h = t.getRow();
+  const n = Math.max(hoja.getLastRow() - h - 1, 1);
+  const col = hoja.getRange(h + 2, 2, n, 1).getValues();
+  for (let i = 0; i < col.length; i++) {
+    if (String(col[i][0]).trim().toUpperCase().indexOf("TOTAL") === 0) return { titulo: titulo, primera: h + 2, ultima: h + 1 + i, total: h + 2 + i };
+  }
+  throw new Error("No encuentro el TOTAL de " + titulo + " en la pestaña " + hoja.getName());
+}
+/* Renglones de una sección: B concepto · C monto · D enlace del comprobante (o nota). */
+function filasSeccion_(hoja, s, soloConMonto) {
+  const n = s.ultima - s.primera + 1;
+  if (n < 1) return [];
+  const out = [];
+  hoja.getRange(s.primera, 2, n, 3).getValues().forEach((f, i) => {
+    const concepto = String(f[0] || "").trim(), monto = Number(f[1]) || 0, link = String(f[2] || "").trim();
+    if (!concepto && !monto && !link) return;
+    if (soloConMonto && !monto && !link) return;
+    const m = link.match(/https?:\/\/\S+/);
+    out.push({ fila: s.primera + i, concepto: concepto, monto: monto, nota: m ? "" : link, url: m ? m[0] : "" });
+  });
+  return out;
+}
+/* Conceptos fijos de la plantilla (Administración, Agua, Luz, Limpieza y conserjería…): son los
+   botones de la bandeja y los renglones que no se borran al retirar un gasto. */
+function conceptosPlantilla_(ss) {
+  const pl = ss.getSheetByName(PLANTILLA);
+  if (!pl) return [];
+  try { return filasSeccion_(pl, seccionEgresos_(pl, "ordinario"), false).map(x => x.concepto).filter(Boolean); } catch (e) { return []; }
+}
+/* Lo que la pestaña Gastos necesita de un mes. No crea la pestaña si no existe. */
+function egresosMes_(mes, clave) {
+  if (clave !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(mes || ""))) throw new Error("mes");
+  const ss = SpreadsheetApp.getActive();
+  const r = { ok: true, mes: mes, hoja: ss.getUrl(), sinHoja: false, conceptos: conceptosPlantilla_(ss), ordinarios: [], extraordinarios: [], totalOrdinarios: 0, totalExtraordinarios: 0 };
+  const hoja = hojaDelMes_(ss, mes, false);
+  if (!hoja) { r.sinHoja = true; return r; }
+  r.hoja += "#gid=" + hoja.getSheetId();
+  const so = seccionEgresos_(hoja, "ordinario"), se = seccionEgresos_(hoja, "extraordinario");
+  r.ordinarios = filasSeccion_(hoja, so, true);
+  r.extraordinarios = filasSeccion_(hoja, se, true);
+  r.totalOrdinarios = Number(hoja.getRange(so.total, 3).getValue()) || 0;
+  r.totalExtraordinarios = Number(hoja.getRange(se.total, 3).getValue()) || 0;
+  return r;
+}
+/* Escribe un gasto en la pestaña del mes. Orden: 1) el renglón de ese concepto si aún no tiene
+   monto (Luz, Agua…); 2) el primer renglón vacío de la sección; 3) un renglón nuevo dentro del
+   rango de la suma. El comprobante (foto o PDF) va a Drive: carpeta del mes / Egresos, y su
+   enlace queda en la columna D, que es la que lee el reporte mensual. */
+function guardarEgreso_(d) {
+  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const mes = String(d.mes || "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
+  const tipo = d.tipo === "extraordinario" ? "extraordinario" : "ordinario";
+  const concepto = limpiar_(d.concepto, 80);
+  if (!concepto) return { ok: false, error: "concepto" };
+  const monto = Math.round((parseFloat(d.monto) || 0) * 100) / 100;
+  if (!(monto > 0)) return { ok: false, error: "monto" };
+  const nota = limpiar_(d.nota, 200);
+  const ss = SpreadsheetApp.getActive();
+  const hoja = hojaDelMes_(ss, mes, true);
+  const s = seccionEgresos_(hoja, tipo);
+
+  let url = "";
+  if (d.imagen && String(d.imagen).length > 100) {
+    const esPdf = /pdf/i.test(String(d.tipoArchivo || "")) || /^data:application\/pdf/i.test(String(d.imagen));
+    const nombre = mes + " · " + concepto + " · $" + monto + (nota ? " · " + nota : "") + (esPdf ? ".pdf" : ".jpg");
+    const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), esPdf ? "application/pdf" : "image/jpeg", nombre);
+    url = carpetaEgresos_(mes).createFile(blob).getUrl();
+  }
+
+  const n = s.ultima - s.primera + 1;
+  const v = hoja.getRange(s.primera, 2, n, 2).getValues();
+  let fila = 0, nuevo = false;
+  for (let i = 0; i < v.length; i++) if (String(v[i][0]).trim().toLowerCase() === concepto.toLowerCase() && v[i][1] === "") { fila = s.primera + i; break; }
+  if (!fila) for (let i = 0; i < v.length; i++) if (String(v[i][0]).trim() === "" && v[i][1] === "") { fila = s.primera + i; nuevo = true; break; }
+  if (!fila) { hoja.insertRowBefore(s.ultima); fila = s.ultima; nuevo = true; s.ultima++; s.total++; }
+
+  if (nuevo) hoja.getRange(fila, 2).setValue(concepto + (nota ? " · " + nota : ""));
+  hoja.getRange(fila, 3).setValue(monto).setNumberFormat("$#,##0.00");
+  if (url || nota) hoja.getRange(fila, 4).setValue(url || nota);
+  // El TOTAL debe abarcar toda la sección (por si el renglón quedó fuera de la suma original)
+  const tot = hoja.getRange(s.total, 3);
+  const f = tot.getFormula();
+  if (!f || /^=SUM\(C\d+:C\d+\)$/i.test(f)) tot.setFormula("=SUM(C" + s.primera + ":C" + s.ultima + ")");
+  // Enlace a la carpeta del mes en DATOS DEL MES, si sigue el texto de la plantilla
+  try {
+    const c = hoja.createTextFinder("Carpeta de comprobantes del mes").matchCase(false).findNext();
+    if (c && /^\(pega/i.test(String(hoja.getRange(c.getRow(), 3).getValue()))) hoja.getRange(c.getRow(), 3).setValue(subcarpeta_(mes).getUrl());
+  } catch (e) {}
+  bitacoraEgreso_([new Date(), mes, tipo, concepto, monto, nota, url, "Registrado"]);
+  SpreadsheetApp.flush();
+  return { ok: true, fila: fila, concepto: concepto, monto: monto, url: url, hoja: hoja.getName() };
+}
+/* Retira un gasto: borra monto y comprobante del renglón. El concepto se borra también, salvo que
+   sea uno de los fijos de la plantilla. Se exige que el concepto coincida con lo que vio la
+   bandeja, para no borrar otra cosa si alguien movió la hoja mientras tanto. */
+function quitarEgreso_(d) {
+  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  const mes = String(d.mes || "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
+  const tipo = d.tipo === "extraordinario" ? "extraordinario" : "ordinario";
+  const fila = parseInt(d.fila, 10);
+  const ss = SpreadsheetApp.getActive();
+  const hoja = hojaDelMes_(ss, mes, false);
+  if (!hoja) return { ok: false, error: "mes" };
+  const s = seccionEgresos_(hoja, tipo);
+  if (!(fila >= s.primera && fila <= s.ultima)) return { ok: false, error: "cambió" };
+  const v = hoja.getRange(fila, 2, 1, 3).getValues()[0];
+  if (String(v[0]).trim() !== String(d.concepto || "").trim() || (Number(v[1]) || 0) !== (Number(d.monto) || 0)) return { ok: false, error: "cambió" };
+  const fijo = conceptosPlantilla_(ss).some(c => c.toLowerCase() === String(v[0]).trim().toLowerCase());
+  hoja.getRange(fila, 3, 1, 2).clearContent();
+  if (!fijo) hoja.getRange(fila, 2).clearContent();
+  bitacoraEgreso_([new Date(), mes, tipo, String(v[0]), Number(v[1]) || 0, "", String(v[2] || ""), "Retirado"]);
+  SpreadsheetApp.flush();
+  return { ok: true };
+}
+function bitacoraEgreso_(fila) {
+  const h = hojaSimple_(HOJA_EGRESOS, ENC_EGRESOS);
+  h.appendRow(fila);
+  const r = h.getLastRow();
+  h.getRange(r, 1).setNumberFormat("dd/mm/yyyy hh:mm");
+  h.getRange(r, 2).setNumberFormat("@").setValue(fila[1]);
+  h.getRange(r, 5).setNumberFormat("$#,##0.00");
+}
+function carpetaEgresos_(mes) {
+  const m = subcarpeta_(mes);
+  const it = m.getFoldersByName("Egresos");
+  return it.hasNext() ? it.next() : m.createFolder("Egresos");
+}
+
 /* ============================ AUXILIARES ============================ */
 
 function siguienteFolio_() {
@@ -903,6 +1043,20 @@ function nombreHojaMes_(idx, anio) {
 }
 function buscarHojaMes_(ss, nombre) {
   return ss.getSheets().find(h => h.getName().trim().toLowerCase() === nombre.toLowerCase()) || null;
+}
+/* Pestaña del mes "AAAA-MM". Con crear=true, si no existe la copia de la plantilla. */
+function hojaDelMes_(ss, mes, crear) {
+  const idx = parseInt(mes.split("-")[1], 10) - 1;
+  const anio = parseInt(mes.split("-")[0], 10);
+  const nombre = nombreHojaMes_(idx, anio);
+  let hoja = buscarHojaMes_(ss, nombre);
+  if (!hoja && crear) {
+    hoja = ss.getSheetByName(PLANTILLA).copyTo(ss).setName(nombre);
+    hoja.getRange("C5").setValue(capitalizar_(MESES[idx]) + " " + anio);
+    hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
+    ajustarCasaClub_(hoja);
+  }
+  return hoja;
 }
 /* El mes guardado puede venir como texto "2026-10" o, si la hoja lo convirtió, como fecha. */
 function mesTexto_(v) {

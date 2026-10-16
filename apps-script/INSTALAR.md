@@ -111,3 +111,28 @@ votación por departamento y los acuerdos.
   la tabla del tema 2 y en `acuerdos.html`.
 - Las preguntas están en el código de `asamblea.html` y `acuerdos.html` (lista `PREGUNTAS`); para
   otra asamblea se cambian ahí.
+
+## 9. Gastos desde la bandeja (agua, luz, conserje…)
+Tras pegar el `Code.gs` nuevo y publicar nueva versión (paso 6), `bandeja.html` tiene dos pestañas:
+**Pagos** (lo de siempre) y **Gastos**. Misma clave (`CLAVE_ADMIN`).
+- **Qué hace:** eliges el mes, si es ordinario o extraordinario, el concepto, el monto, una nota
+  opcional y, si quieres, la foto o el PDF del recibo. Al guardar, el gasto queda en la pestaña
+  de ese mes, en la sección **EGRESOS ORDINARIOS** o **EGRESOS EXTRAORDINARIOS**: concepto en B,
+  monto en C y el enlace del comprobante en D (la columna que lee el reporte mensual para el
+  botón "Ver factura"). El TOTAL de la sección y el resumen del mes se recalculan solos.
+- **Conceptos:** los botones de "ordinario" son los renglones fijos de la plantilla
+  (Administración, Agua, Luz, Limpieza y conserjería, Jardinería, Alberca). Si agregas o
+  renombras un renglón en la sección de egresos ordinarios de **Plantilla (vacía)**, los botones
+  cambian solos. "Otro…" y los extraordinarios se escriben a mano.
+- **Dónde cae cada gasto:** si el concepto tiene su renglón y está vacío, se llena ese renglón.
+  Si ya tiene monto (por ejemplo un segundo recibo, o un monto precargado en la plantilla), entra
+  en el primer renglón libre de la sección; si no queda ninguno, se inserta uno dentro de la suma.
+- **Quitar:** cada gasto de la lista tiene un botón "Quitar" que borra monto y comprobante en la
+  hoja (el renglón fijo conserva su nombre; uno agregado se vacía). El archivo se queda en Drive.
+- **Comprobantes:** carpeta "Misiones · Comprobantes / AAAA-MM / Egresos". La primera vez que
+  se guarda un gasto, el enlace de la carpeta del mes se pega solo en "Carpeta de comprobantes
+  del mes" si todavía dice "(pega aquí…)".
+- **Bitácora:** la pestaña **Egresos** se crea sola y anota cada gasto registrado o retirado
+  (fecha, mes, tipo, concepto, monto, nota, enlace). Es solo registro; la cifra que manda es la
+  de la pestaña del mes.
+- La pestaña del mes se crea desde la plantilla si todavía no existe (igual que con los pagos).

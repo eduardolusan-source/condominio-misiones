@@ -15,6 +15,7 @@ Publicado con GitHub Pages: https://eduardolusan-source.github.io/condominio-mis
 | `areas-comunes.html` | Qué es área común, y reglas por espacio (acceso, salón, alberca, estacionamiento, elevador, jardines, agua, residuos) |
 | `pendientes.html` | Protocolización de la mesa directiva (acuerdo de asamblea), minuta del 10 de agosto de 2026 y seguimiento de los 12 acuerdos. Antes se llamaba "Mesa directiva"; `mesa-directiva.html` redirige aquí |
 | `finanzas.html` | Rendición de cuentas 2025 y enero–junio 2026. **Acceso abierto, sin clave.** |
+| `bandeja.html` | Privada, con clave de la mesa directiva. Pestaña **Pagos**: confirmar o rechazar lo reportado en `pago.html`. Pestaña **Gastos**: capturar egresos del mes (agua, luz, conserje…) con comprobante; caen en la sección de egresos de la pestaña del mes en la hoja. Ver `apps-script/INSTALAR.md` |
 
 ## Origen de la información
 

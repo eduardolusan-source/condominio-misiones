@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Bandeja de pagos · Las Misiones Residencial</title>
+<title>Bandeja de la administración · Las Misiones Residencial</title>
 <link rel="stylesheet" href="css/styles.css?v=20261011">
 <link rel="icon" href="assets/mark.svg">
 <style>
@@ -33,7 +33,31 @@
   .vacio .big { font-size: 2.5rem; }
   .hecho { border-color: var(--good-text); opacity: 0.6; }
   .hidden { display: none !important; }
-  @media (prefers-color-scheme: dark) { .btn-l.ok, .btn-l.neutro { color: #0d0d0d; } }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; background: var(--page); border: 1px solid var(--border); border-radius: 12px; padding: 0.3rem; margin: 0.6rem 0 1rem; }
+  .tabs button { font: inherit; font-weight: 800; font-size: 1rem; padding: 0.6rem; border: none; border-radius: 9px; background: transparent; color: var(--ink-2); cursor: pointer; }
+  .tabs button.sel { background: var(--accent); color: #fff; }
+  .campo { display: block; margin-bottom: 0.7rem; font-size: 0.9rem; color: var(--ink-2); font-weight: 700; }
+  .campo input, .campo select { margin-top: 0.25rem; font-size: 1.1rem; font-weight: 400; color: var(--ink); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.7rem; }
+  .seg button, .chips button { font: inherit; font-weight: 700; font-size: 0.95rem; min-height: 44px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; padding: 0.4rem 0.6rem; }
+  .seg button.sel, .chips button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.7rem; }
+  .captura { display: block; width: 100%; font: inherit; font-weight: 700; font-size: 1rem; padding: 0.8rem; border: 2px dashed var(--accent); border-radius: 12px; background: var(--surface); color: var(--accent); text-align: center; cursor: pointer; margin-bottom: 0.7rem; }
+  .captura input { display: none; }
+  .captura.lista { border-style: solid; }
+  .vista { text-align: center; margin: -0.2rem 0 0.7rem; font-size: 0.9rem; color: var(--ink-2); }
+  .vista img { max-width: 100%; max-height: 220px; border-radius: 10px; border: 1px solid var(--border); display: block; margin: 0 auto 0.3rem; }
+  .msg { margin: 0.6rem 0 0; font-size: 0.95rem; text-align: center; min-height: 1.2em; }
+  .msg.ok { color: var(--good-text); font-weight: 700; } .msg.mal { color: var(--bad-text); font-weight: 700; }
+  .grupo { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.8rem 1rem; margin-bottom: 1rem; }
+  .grupo h3 { display: flex; justify-content: space-between; margin: 0 0 0.4rem; font-size: 1rem; }
+  .grupo .fila { display: grid; grid-template-columns: 1fr auto auto; gap: 0.5rem; align-items: center; padding: 0.4rem 0; border-top: 1px dashed var(--grid); font-size: 0.95rem; }
+  .grupo .fila .m { font-weight: 800; white-space: nowrap; }
+  .grupo .fila .c small { display: block; color: var(--muted); font-size: 0.8rem; }
+  .grupo .fila .x { font: inherit; font-size: 0.8rem; border: 1px solid var(--baseline); background: none; border-radius: 999px; padding: 0.2rem 0.6rem; color: var(--ink-2); cursor: pointer; }
+  .grupo .fila .x:disabled { opacity: 0.5; }
+  .grupo .nada { color: var(--muted); font-size: 0.9rem; padding: 0.3rem 0; }
+  @media (prefers-color-scheme: dark) { .btn-l.ok, .btn-l.neutro, .tabs button.sel, .seg button.sel, .chips button.sel { color: #0d0d0d; } }
 </style>
 </head>
 <body>
@@ -44,7 +68,7 @@
 </header>
 
 <main class="bandeja">
-  <h1>Bandeja de pagos</h1>
+  <h1>Bandeja de la administración</h1>
 
   <div id="pedirClave" class="clave hidden">
     <p style="margin:0">Clave de la mesa directiva</p>
@@ -54,9 +78,32 @@
   </div>
 
   <div id="panel" class="hidden">
-    <p class="sub"><span id="cuenta">Cargando…</span><a id="verHoja" href="#" target="_blank" rel="noopener">Abrir la hoja</a></p>
-    <div id="lista"></div>
-    <button class="btn-l neutro" id="btnActualizar" style="margin-top:0.5rem">Actualizar</button>
+    <div class="tabs"><button class="sel" id="tabPagos">Pagos</button><button id="tabGastos">Gastos</button></div>
+
+    <div id="vPagos">
+      <p class="sub"><span id="cuenta">Cargando…</span><a id="verHoja" href="#" target="_blank" rel="noopener">Abrir la hoja</a></p>
+      <div id="lista"></div>
+      <button class="btn-l neutro" id="btnActualizar" style="margin-top:0.5rem">Actualizar</button>
+    </div>
+
+    <div id="vGastos" class="hidden">
+      <p class="sub"><span id="gResumen">Gastos del mes</span><a id="gVerHoja" href="#" target="_blank" rel="noopener">Abrir el mes</a></p>
+      <div class="tarjeta">
+        <label class="campo">Mes<select id="gMes"></select></label>
+        <div class="seg"><button class="sel" data-tipo="ordinario">Ordinario</button><button data-tipo="extraordinario">Extraordinario</button></div>
+        <div class="chips" id="gChips"></div>
+        <label class="campo hidden" id="gOtroCampo">Concepto<input id="gConcepto" placeholder="p. ej. Plomero, pintura de la fachada" maxlength="80"></label>
+        <label class="campo">Monto<input id="gMonto" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00"></label>
+        <label class="campo">Nota (opcional)<input id="gNota" placeholder="proveedor, periodo del recibo…" maxlength="200"></label>
+        <label class="captura" id="gLbl">📎 Comprobante (foto o PDF, opcional)<input id="gArchivo" type="file" accept="image/*,application/pdf"></label>
+        <div class="vista hidden" id="gVista"></div>
+        <button class="btn-l ok" id="gGuardar">Guardar en la hoja</button>
+        <p class="msg" id="gMsg"></p>
+      </div>
+      <div id="gLista"></div>
+      <button class="btn-l neutro" id="gActualizar" style="margin-top:0.5rem">Actualizar</button>
+    </div>
+
     <p style="text-align:center;margin-top:1rem"><a href="#" id="salir" style="font-size:0.85rem;color:var(--muted)">Salir</a></p>
   </div>
 </main>
@@ -143,6 +190,149 @@ async function resolver(p, estatus, t) {
     alert("No se pudo guardar. Intenta de nuevo.");
     t.querySelectorAll("button").forEach(b => b.disabled = false);
   }
+}
+
+/* ===================== GASTOS (egresos del mes) ===================== */
+let gTipo = "ordinario", gConceptoSel = "", gArchivo = null, gConceptos = [], gDatos = null;
+const mesActual = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); };
+
+$("tabPagos").onclick = () => { $("tabPagos").classList.add("sel"); $("tabGastos").classList.remove("sel"); $("vPagos").classList.remove("hidden"); $("vGastos").classList.add("hidden"); };
+$("tabGastos").onclick = () => { $("tabGastos").classList.add("sel"); $("tabPagos").classList.remove("sel"); $("vGastos").classList.remove("hidden"); $("vPagos").classList.add("hidden"); if (!gDatos) cargarGastos(); };
+
+/* Meses desde julio de 2026 hasta el actual, el actual preseleccionado. */
+(function llenarMeses() {
+  const sel = $("gMes"), hoy = mesActual();
+  const op = [];
+  for (let y = 2026, m = 7; ; m++) { if (m > 12) { m = 1; y++; } const id = y + "-" + String(m).padStart(2, "0"); if (id > hoy) break; op.push(id); }
+  if (!op.length) op.push(hoy);
+  op.reverse().forEach(id => { const o = document.createElement("option"); o.value = id; o.textContent = nombreMes(id); sel.appendChild(o); });
+  sel.value = hoy;
+})();
+$("gMes").onchange = cargarGastos;
+$("gActualizar").onclick = cargarGastos;
+
+document.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".seg button").forEach(x => x.classList.remove("sel")); b.classList.add("sel");
+  gTipo = b.dataset.tipo; pintarChips();
+});
+
+/* Ordinario: botones con los conceptos fijos de la hoja (Agua, Luz, Limpieza y conserjería…) y "Otro".
+   Extraordinario: concepto libre. */
+function pintarChips() {
+  const c = $("gChips"); c.innerHTML = "";
+  if (gTipo !== "ordinario" || !gConceptos.length) { c.classList.add("hidden"); $("gOtroCampo").classList.remove("hidden"); gConceptoSel = ""; return; }
+  c.classList.remove("hidden");
+  gConceptos.concat(["Otro…"]).forEach(nombre => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = nombre;
+    if (nombre === gConceptoSel || (nombre === "Otro…" && gConceptoSel === "*")) b.classList.add("sel");
+    b.onclick = () => { gConceptoSel = nombre === "Otro…" ? "*" : nombre; pintarChips(); if (gConceptoSel === "*") $("gConcepto").focus(); };
+    c.appendChild(b);
+  });
+  $("gOtroCampo").classList.toggle("hidden", gConceptoSel !== "*");
+}
+
+async function cargarGastos() {
+  const mes = $("gMes").value;
+  $("gResumen").textContent = "Consultando " + nombreMes(mes) + "…";
+  $("gActualizar").disabled = true;
+  try {
+    const r = await fetch(SCRIPT_URL + "?accion=egresos&clave=" + encodeURIComponent(clave) + "&mes=" + mes + "&t=" + Date.now());
+    const j = await r.json();
+    if (!j.ok) { if (j.error === "clave") { pedir(); return; } throw new Error(j.error); }
+    gDatos = j; gConceptos = j.conceptos || [];
+    $("gVerHoja").href = j.hoja;
+    pintarChips(); pintarGastos(j);
+  } catch (e) {
+    $("gResumen").textContent = "No se pudo consultar. Revisa tu conexión.";
+  } finally { $("gActualizar").disabled = false; }
+}
+
+function pintarGastos(j) {
+  const total = (j.totalOrdinarios || 0) + (j.totalExtraordinarios || 0);
+  $("gResumen").textContent = j.sinHoja ? nombreMes(j.mes) + ": la pestaña se crea con el primer gasto" : "Egresos de " + nombreMes(j.mes) + ": " + fmt(total);
+  const l = $("gLista"); l.innerHTML = "";
+  [["Ordinarios", j.ordinarios, j.totalOrdinarios, "ordinario"], ["Extraordinarios", j.extraordinarios, j.totalExtraordinarios, "extraordinario"]].forEach(([tit, filas, tot, tipo]) => {
+    const g = document.createElement("div"); g.className = "grupo";
+    g.innerHTML = "<h3><span>" + tit + "</span><span>" + fmt(tot || 0) + "</span></h3>";
+    if (!filas || !filas.length) g.innerHTML += '<div class="nada">Sin gastos capturados.</div>';
+    (filas || []).forEach(f => {
+      const d = document.createElement("div"); d.className = "fila";
+      d.innerHTML = '<div class="c">' + f.concepto.replace(/</g, "&lt;") + (f.nota ? "<small>" + f.nota.replace(/</g, "&lt;") + "</small>" : "") + (f.url ? '<small><a href="' + f.url + '" target="_blank" rel="noopener">Ver comprobante</a></small>' : "") + "</div>" +
+        '<div class="m">' + fmt(f.monto) + "</div><button class=\"x\">Quitar</button>";
+      d.querySelector(".x").onclick = () => quitarGasto(f, tipo, d);
+      g.appendChild(d);
+    });
+    l.appendChild(g);
+  });
+}
+
+/* El comprobante se reduce en el celular si es foto; un PDF va tal cual (hasta 8 MB). */
+$("gArchivo").addEventListener("change", ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  const vista = $("gVista");
+  if (f.type === "application/pdf") {
+    if (f.size > 8 * 1024 * 1024) { alert("El PDF pesa más de 8 MB. Toma una foto del recibo o reduce el archivo."); ev.target.value = ""; return; }
+    const rd = new FileReader();
+    rd.onload = () => { gArchivo = { datos: rd.result, tipo: "application/pdf" }; vista.innerHTML = "📄 " + f.name.replace(/</g, "&lt;"); vista.classList.remove("hidden"); $("gLbl").classList.add("lista"); $("gLbl").firstChild.textContent = "📎 Cambiar el comprobante"; };
+    rd.readAsDataURL(f);
+    return;
+  }
+  const img = new Image(); const url = URL.createObjectURL(f);
+  img.onload = () => {
+    const max = 1400, esc = Math.min(1, max / Math.max(img.width, img.height));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(img.width * esc); cv.height = Math.round(img.height * esc);
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    gArchivo = { datos: cv.toDataURL("image/jpeg", 0.82), tipo: "image/jpeg" };
+    vista.innerHTML = '<img src="' + gArchivo.datos + '" alt="">'; vista.classList.remove("hidden");
+    $("gLbl").classList.add("lista"); $("gLbl").firstChild.textContent = "📎 Cambiar el comprobante";
+    URL.revokeObjectURL(url);
+  };
+  img.onerror = () => { alert("No pude leer ese archivo. Usa una foto o un PDF."); ev.target.value = ""; };
+  img.src = url;
+});
+
+function limpiarFormulario() {
+  $("gMonto").value = ""; $("gNota").value = ""; $("gConcepto").value = ""; $("gArchivo").value = "";
+  gArchivo = null; $("gVista").classList.add("hidden"); $("gVista").innerHTML = "";
+  $("gLbl").classList.remove("lista"); $("gLbl").firstChild.textContent = "📎 Comprobante (foto o PDF, opcional)";
+  if (gTipo === "ordinario") { gConceptoSel = ""; pintarChips(); }
+}
+
+$("gGuardar").onclick = async () => {
+  const msg = $("gMsg"); msg.className = "msg"; msg.textContent = "";
+  const concepto = (gTipo === "ordinario" && gConceptoSel && gConceptoSel !== "*") ? gConceptoSel : $("gConcepto").value.trim();
+  const monto = parseFloat($("gMonto").value);
+  if (!concepto) { msg.className = "msg mal"; msg.textContent = gTipo === "ordinario" ? "Elige el concepto." : "Escribe el concepto."; return; }
+  if (!(monto > 0)) { msg.className = "msg mal"; msg.textContent = "Escribe el monto."; $("gMonto").focus(); return; }
+  const mes = $("gMes").value;
+  if (!confirm("Anotar " + fmt(monto) + " de " + concepto + " en " + nombreMes(mes) + " (" + gTipo + ")?")) return;
+  $("gGuardar").disabled = true; msg.textContent = "Guardando…";
+  try {
+    const cuerpo = { accion: "egreso", claveAdmin: clave, mes: mes, tipo: gTipo, concepto: concepto, monto: monto, nota: $("gNota").value.trim() };
+    if (gArchivo) { cuerpo.imagen = gArchivo.datos; cuerpo.tipoArchivo = gArchivo.tipo; }
+    const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    const j = await r.json();
+    if (!j.ok) { if (j.error === "clave") { pedir(); return; } throw new Error(j.error || "error"); }
+    msg.className = "msg ok"; msg.textContent = "Anotado en la pestaña " + j.hoja + " ✓";
+    limpiarFormulario();
+    await cargarGastos();
+  } catch (e) {
+    msg.className = "msg mal"; msg.textContent = "No se pudo guardar: " + (e.message || "intenta de nuevo") + ".";
+  } finally { $("gGuardar").disabled = false; }
+};
+
+async function quitarGasto(f, tipo, fila) {
+  if (!confirm("¿Quitar " + fmt(f.monto) + " de " + f.concepto + "? Se borra el monto en la hoja; el comprobante se queda en Drive.")) return;
+  fila.querySelector(".x").disabled = true;
+  try {
+    const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "quitarEgreso", claveAdmin: clave, mes: $("gMes").value, tipo: tipo, fila: f.fila, concepto: f.concepto, monto: f.monto }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error === "cambió" ? "la hoja cambió; se vuelve a cargar" : (j.error || "error"));
+  } catch (e) {
+    alert("No se pudo quitar: " + (e.message || "intenta de nuevo") + ".");
+  }
+  cargarGastos();
 }
 
 if (clave) cargar(); else pedir();
