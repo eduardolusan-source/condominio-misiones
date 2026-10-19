@@ -199,7 +199,8 @@ function aclararCasaClub_(h) {
   const enc = h.getRange(rEnc, 2, 1, 4).getValues()[0].map(v => String(v).trim());
   const quiero = ["Depto que rentó", "Fecha del evento", "Monto cobrado ($)", "Observaciones"];
   const tituloQuiero = "RENTA DE CASA CLUB  ·  un renglón por evento: depto, fecha y monto. El monto se suma solo en el resumen";
-  if (String(titulo.getValue()) === tituloQuiero && enc.join("|") === quiero.join("|")) return false;
+  // Se comparan solo Depto, Fecha y Monto: en varias pestañas la columna E está combinada y no guarda el encabezado.
+  if (String(titulo.getValue()) === tituloQuiero && enc.slice(0, 3).join("|") === quiero.slice(0, 3).join("|")) return false;
   titulo.setValue(tituloQuiero);
   h.getRange(rEnc, 2, 1, 4).setValues([quiero]).setFontWeight("bold");
   h.getRange(rEnc + 1, 2, 5, 1).setNumberFormat("0").setDataValidation(
