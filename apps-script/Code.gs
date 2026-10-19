@@ -159,8 +159,9 @@ function instalar() {
     if (limpiarMuestras_(h)) avisos.push("Montos de muestra borrados en: " + h.getName());
   });
 
-  // 9. Registro de casa club: encabezados claros y montos que quedaron en la columna Depto
+  // 9. Registro de casa club: deshacer un ajuste repetido, encabezados claros y montos que quedaron en la columna Depto
   ss.getSheets().filter(h => esHojaMes_(h)).forEach(h => {                 // la plantilla también tiene la sección
+    desduplicarCasaClub_(h).forEach(a => avisos.push(a));
     if (aclararCasaClub_(h)) avisos.push("Casa club aclarado en: " + h.getName());
     repararCasaClub_(h).forEach(a => avisos.push(a));
   });
@@ -175,7 +176,8 @@ function instalar() {
     const prev = vivos[i - 1];
     if (idDeHojaMes_(prev) !== mesSiguiente_(idDeHojaMes_(h), -1)) return;   // solo si el anterior es el mes inmediato
     const ref = /\s/.test(prev.getName()) ? "'" + prev.getName() + "'" : prev.getName();
-    c6.setFormula("=" + ref + "!C18");
+    const fin = prev.createTextFinder("SALDO FINAL DEL MES").matchCase(false).findNext();
+    c6.setFormula("=" + ref + "!C" + (fin ? fin.getRow() : 18));
     avisos.push("Saldo inicial de " + h.getName() + " encadenado a " + prev.getName());
   });
 
@@ -202,6 +204,53 @@ function aclararCasaClub_(h) {
   h.getRange(rEnc + 1, 3, 5, 1).setNumberFormat("dd/mm/yyyy");
   h.getRange(rEnc + 1, 4, 5, 1).setNumberFormat("$#,##0.00");
   return true;
+}
+
+/* Deshace lo que deja ajustarCasaClub_ cuando corre dos veces sobre la misma pestaña
+   (pasó el 19 de octubre de 2026 porque el encabezado ya decía "Monto cobrado ($)"):
+   un segundo renglón "(+) Casa club cobrada" en el resumen (y su "+C15" extra en
+   SALDO FINAL y Total de ingresos) y los montos del registro corridos a la columna
+   Observaciones. Idempotente: si no hay nada que deshacer, no toca nada. */
+function desduplicarCasaClub_(h) {
+  const out = [];
+  // a) renglón duplicado en el resumen
+  const filas = [];
+  const vals = h.getRange(1, 2, 40, 1).getValues();
+  vals.forEach((f, i) => { if (normEt_(f[0]) === "casaclubcobrada") filas.push(i + 1); });
+  if (filas.length > 1) {
+    const sobra = filas.slice(0, filas.length - 1);                  // se conserva el de más abajo (el original)
+    sobra.reverse().forEach(r => h.deleteRow(r));
+    const rCasa = filas[filas.length - 1] - sobra.length;
+    ["SALDO FINAL DEL MES", "Total de ingresos del mes"].forEach(etq => {
+      const c = h.createTextFinder(etq).matchCase(false).findNext();
+      if (!c) return;
+      const celda = h.getRange(c.getRow(), 3);
+      let f = celda.getFormula();
+      if (!f) return;
+      f = f.replace(/\+#REF!/g, "").replace(new RegExp("\\+C" + rCasa + "(?![0-9])", "g"), "") + "+C" + rCasa;
+      celda.setFormula(f);
+    });
+    out.push(h.getName() + ": se quitó un renglón repetido de casa club en el resumen y se corrigieron las fórmulas");
+  }
+  // b) montos corridos a Observaciones: renglones con Monto vacío y un número en Observaciones
+  const titulo = h.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+  if (titulo) {
+    const rEnc = titulo.getRow() + 1;
+    const de = h.getRange(rEnc + 1, 4, 5, 2).getValues();            // D monto · E observaciones
+    let movidos = 0;
+    de.forEach((f, i) => {
+      const d = f[0], e = f[1];
+      if ((d === "" || d === null) && typeof e === "number" && e >= 1) {
+        h.getRange(rEnc + 1 + i, 4).setValue(e).setNumberFormat("$#,##0.00");
+        h.getRange(rEnc + 1 + i, 5).clearContent();
+        movidos++;
+      }
+    });
+    if (/^monto$/i.test(String(h.getRange(rEnc, 4).getValue()).trim())) h.getRange(rEnc, 4).setValue("Monto cobrado ($)");
+    if (/^monto cobrado/i.test(String(h.getRange(rEnc, 5).getValue()).trim())) h.getRange(rEnc, 5).setValue("Observaciones");
+    if (movidos) out.push(h.getName() + ": " + movidos + " monto(s) de casa club volvieron de Observaciones a Monto");
+  }
+  return out;
 }
 
 /* Si en el registro de casa club alguien escribió el monto en la columna Depto (sin
@@ -243,7 +292,7 @@ function ajustarCasaClub_(h) {
   const titulo = h.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
   if (!titulo) return false;
   const rEnc = titulo.getRow() + 1;                       // renglón de encabezados: Depto | Fecha | Observaciones
-  if (String(h.getRange(rEnc, 4).getValue()).trim().toLowerCase() === "monto") return false;
+  if (/^monto/i.test(String(h.getRange(rEnc, 4).getValue()).trim())) return false;   // ya tiene columna de monto ("Monto" o "Monto cobrado ($)")
 
   // Observaciones pasa de la columna D a la E; D queda para el monto
   const filas = 5;                                        // renglones de registro bajo el encabezado
