@@ -102,7 +102,7 @@
 
     const caja = vivo && vivo.caja && last.vivo && vivo.caja.ultimoMes === last.id ? vivo.caja : null;
     const cajaNota = caja
-      ? "en la cuenta de la mesa al cierre de " + esc(mesMin(last)) + (caja.totalPrevios > 0 ? " · incluye " + fmt(caja.totalPrevios) + " de cuotas atrasadas de " + caja.previos.map(p => esc(p.nombre.toLowerCase())).join(" y ") + " pagadas a la mesa" : "")
+      ? "en la cuenta de la mesa al cierre de " + esc(mesMin(last)) + " · " + esc(mesMin(last)) + " inició en " + fmt2(last.saldoIni)
       : "al cierre de " + esc(mesMin(last)) + " · el año inició en " + fmt2(first.saldoIni);
     document.getElementById("overviewCards").innerHTML =
       statCard("Saldo en caja", fmt2(last.saldoFin), cajaNota) +
