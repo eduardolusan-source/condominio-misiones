@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Registrar egresos · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261019">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  body { font-size: 1.05rem; }
+  .eg { max-width: 600px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  .eg h1 { font-size: 1.6rem; margin: 0.5rem 0 0.2rem; }
+  .eg .lead { color: var(--ink-2); margin: 0 0 1.2rem; font-size: 0.98rem; }
+  .paso { margin-bottom: 1.5rem; }
+  .paso h2 { font-size: 1.1rem; margin: 0 0 0.6rem; }
+  .paso h2 span.n { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.85em; margin-right: 0.4em; }
+  .fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .meses, .tipo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .tipo { grid-template-columns: 1fr 1fr; }
+  .meses button, .tipo button { font: inherit; font-weight: 700; font-size: 0.98rem; min-height: 46px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .meses button.sel, .tipo button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0; }
+  .chips button { font: inherit; font-size: 0.9rem; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1.5px solid var(--baseline); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .chips button.sel { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .chips button.rep { border-style: dashed; }
+  input[type=text], input[type=number], input[type=password] { width: 100%; font: inherit; font-size: 1.05rem; padding: 0.6rem 0.7rem; border: 1.5px solid var(--baseline); border-radius: 10px; background: var(--surface); color: var(--ink); box-sizing: border-box; margin-top: 0.4rem; }
+  input[type=number] { font-size: 1.4rem; font-weight: 700; text-align: right; }
+  label.l { display: block; font-size: 0.88rem; color: var(--ink-2); margin-top: 0.6rem; }
+  .cal { margin-top: 0.8rem; background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 0.7rem 0.8rem; }
+  .calCab { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .mini { font: inherit; font-size: 0.82rem; font-weight: 700; padding: 0.3rem 0.6rem; border-radius: 999px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent); cursor: pointer; margin-left: 0.25rem; }
+  .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; }
+  .dias .dn { text-align: center; font-size: 0.75rem; color: var(--muted); font-weight: 700; }
+  .dias button { font: inherit; font-size: 0.95rem; min-height: 40px; border: 1.5px solid var(--baseline); border-radius: 9px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .dias button.sel { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .dias button.futuro { opacity: 0.45; }
+  .dias button.hoy { box-shadow: inset 0 0 0 2px var(--accent); }
+  .total { background: var(--accent-soft); border-radius: 12px; padding: 0.7rem 1rem; text-align: center; margin-top: 0.7rem; }
+  .total small { display: block; color: var(--ink-2); font-size: 0.85rem; }
+  .total strong { display: block; font-size: 2rem; font-weight: 900; color: var(--accent); line-height: 1.15; }
+  .captura { display: block; width: 100%; font: inherit; font-weight: 700; font-size: 1rem; padding: 0.85rem; border: 2px dashed var(--accent); border-radius: 12px; background: var(--surface); color: var(--accent); text-align: center; cursor: pointer; box-sizing: border-box; }
+  .captura input { display: none; }
+  .vista { display: none; margin-top: 0.7rem; text-align: center; }
+  .vista img { max-width: 100%; max-height: 240px; border-radius: 10px; border: 1px solid var(--border); }
+  .vista button { font: inherit; font-size: 0.9rem; margin-top: 0.4rem; background: none; border: 1px solid var(--baseline); border-radius: 999px; padding: 0.3rem 0.9rem; color: var(--ink-2); cursor: pointer; }
+  .enviar { width: 100%; font: inherit; font-weight: 800; font-size: 1.2rem; padding: 0.95rem; border: none; border-radius: 12px; background: var(--accent); color: #fff; cursor: pointer; }
+  .enviar:disabled { background: var(--baseline); color: var(--ink-2); cursor: not-allowed; }
+  .pista { color: var(--ink-2); font-size: 0.9rem; margin: 0.6rem 0 0; }
+  .ok { background: var(--surface); border: 3px solid var(--good-text); border-radius: var(--radius); padding: 1rem 1.1rem; margin-top: 1rem; }
+  .ok h3 { color: var(--good-text); margin: 0 0 0.3rem; font-size: 1.2rem; }
+  .err { background: var(--surface); border: 3px solid var(--bad-text); border-radius: var(--radius); padding: 0.9rem 1rem; margin-top: 1rem; font-size: 0.95rem; }
+  .tarjeta { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 0.7rem 0.9rem; margin-bottom: 0.55rem; box-shadow: var(--shadow); }
+  .tarjeta .cab { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
+  .tarjeta .monto { font-weight: 800; white-space: nowrap; }
+  .tarjeta .det { color: var(--ink-2); font-size: 0.86rem; margin-top: 0.15rem; }
+  .tarjeta .acc { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .tarjeta .acc button, .tarjeta .acc a { font: inherit; font-size: 0.85rem; padding: 0.3rem 0.7rem; border-radius: 999px; border: 1.5px solid var(--baseline); background: var(--surface); color: var(--ink-2); cursor: pointer; text-decoration: none; }
+  .tarjeta .acc .no { border-color: var(--bad-text); color: var(--bad-text); }
+  .vacio { color: var(--muted); text-align: center; padding: 1rem; }
+  table.data td.num { text-align: right; }
+  .hidden { display: none !important; }
+  @media (prefers-color-scheme: dark) { .meses button.sel, .tipo button.sel, .dias button.sel, .enviar { color: #0d0d0d; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+<div class="eg">
+  <h1>Registrar egresos</h1>
+  <p class="lead">Lo que la mesa directiva paga del condominio. Cada gasto se anota en la pestaña del mes de la hoja de captura, con su comprobante en la carpeta de Drive, y aparece en <a href="finanzas.html">Finanzas</a>.</p>
+
+  <div id="pedirClave" class="hidden">
+    <label class="l">Clave de egresos</label>
+    <input id="clave" type="password" autocomplete="off">
+    <label class="l">Tu nombre (queda en la bitácora)</label>
+    <input id="quien" type="text" maxlength="40" placeholder="Por ejemplo: Eduardo">
+    <p class="pista hidden" id="claveMal" style="color:var(--bad-text)">Clave incorrecta.</p>
+    <button class="enviar" id="btnEntrar" style="margin-top:0.8rem">Entrar</button>
+  </div>
+
+  <div id="panel" class="hidden">
+    <section class="paso">
+      <h2><span class="n">1</span>Mes al que pertenece</h2>
+      <div class="meses" id="meses"></div>
+      <button class="chips-otro mini" id="btnOtroMes" style="margin:0.5rem 0 0">Otro mes…</button>
+    </section>
+
+    <section class="paso">
+      <h2><span class="n">2</span>Qué se pagó</h2>
+      <div class="tipo">
+        <button type="button" data-t="ordinario" class="sel">Gasto ordinario</button>
+        <button type="button" data-t="extraordinario">Extraordinario</button>
+      </div>
+      <p class="pista" id="tipoPista">Ordinario: lo de todos los meses (conserje, luz, agua, jardín…). Se suma al renglón de ese concepto en la hoja.</p>
+      <div class="chips" id="conceptos"></div>
+      <input id="concepto" type="text" maxlength="80" placeholder="Concepto (por ejemplo: Limpieza y conserjería)">
+      <input id="proveedor" type="text" maxlength="60" placeholder="A quién se le pagó (opcional)">
+    </section>
+
+    <section class="paso">
+      <h2><span class="n">3</span>Cuánto y cuándo</h2>
+      <label class="l">Monto por pago</label>
+      <input id="monto" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+      <div class="cal">
+        <div class="calCab">
+          <strong id="calTitulo"></strong>
+          <div><button type="button" class="mini" id="btnLMV" title="Lunes, miércoles y viernes del mes">L · M · V</button><button type="button" class="mini" id="btnHoy">Hoy</button><button type="button" class="mini" id="btnNinguno">Ninguno</button></div>
+        </div>
+        <div class="dias" id="dias"></div>
+        <p class="pista" style="margin-top:0.5rem">Toca los días en que se pagó. Para el conserje de lunes, miércoles y viernes, usa <b>L · M · V</b> y después quita los días que no se trabajó.</p>
+      </div>
+      <div class="total"><small id="totalTxt">0 fechas</small><strong id="totalMonto">$0.00</strong></div>
+      <input id="nota" type="text" maxlength="200" placeholder="Nota (opcional)">
+    </section>
+
+    <section class="paso">
+      <h2><span class="n">4</span>Comprobante</h2>
+      <label class="captura" id="lblCaptura">📎 Foto o PDF del comprobante (opcional)<input id="archivo" type="file" accept="image/*,application/pdf"></label>
+      <div class="vista" id="vista"><img id="miniatura" alt=""><div id="pdfNombre" class="pista"></div><button type="button" id="btnQuitar">Quitar</button></div>
+    </section>
+
+    <button class="enviar" id="btnEnviar" disabled>Registrar</button>
+    <p class="pista" id="estado" style="text-align:center"></p>
+    <div class="ok hidden" id="listo"></div>
+    <div class="err hidden" id="fallo"></div>
+
+    <section class="paso" style="margin-top:2rem">
+      <h2>Registrado en <span id="mesLista"></span></h2>
+      <div id="lista"><div class="vacio">Cargando…</div></div>
+      <h2 style="margin-top:1.2rem; font-size:1rem">Lo que la pestaña del mes tiene hoy</h2>
+      <div class="table-scroll"><table class="data" id="enHoja"></table></div>
+      <p class="pista"><a id="verHoja" href="#" target="_blank" rel="noopener">Abrir la hoja de captura</a> · <a href="bandeja.html">Bandeja de pagos</a> · <a href="#" id="salir">Salir</a></p>
+    </section>
+  </div>
+</div>
+</main>
+
+<script>
+/* ===== CONFIGURACIÓN ===== */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+const INICIO = "2026-10";                 // primer mes en que la mesa paga los gastos
+/* ========================= */
+const $ = id => document.getElementById(id);
+const fmt = n => "$" + Number(n || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const hoy = new Date();
+const idMes = f => f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0");
+const idDia = f => idMes(f) + "-" + String(f.getDate()).padStart(2, "0");
+const etiqueta = id => { const [y, m] = id.split("-"); const n = MES[+m - 1]; return n.charAt(0).toUpperCase() + n.slice(1) + (+y !== hoy.getFullYear() ? " " + y : ""); };
+
+let clave = "", quien = "";
+try { clave = localStorage.getItem("misiones_egresos") || ""; quien = localStorage.getItem("misiones_quien") || ""; } catch (e) {}
+let mes = idMes(hoy), tipo = "ordinario", archivo = null, tipoArchivo = "", enviando = false;
+const fechas = new Set();
+let conceptosBase = ["Administración", "Agua (recibo del organismo)", "Luz (CFE)", "Limpieza y conserjería", "Jardinería", "Alberca"];
+let repetibles = [];
+
+/* --- Acceso --- */
+function pedir() { $("pedirClave").classList.remove("hidden"); $("panel").classList.add("hidden"); $("quien").value = quien; $("clave").focus(); }
+$("btnEntrar").onclick = () => { clave = $("clave").value.trim(); quien = $("quien").value.trim(); if (!clave) return; try { localStorage.setItem("misiones_quien", quien); } catch (e) {} cargar(); };
+$("clave").addEventListener("keydown", ev => { if (ev.key === "Enter") $("btnEntrar").click(); });
+$("salir").onclick = ev => { ev.preventDefault(); clave = ""; try { localStorage.removeItem("misiones_egresos"); } catch (e) {} pedir(); };
+
+/* --- Mes --- */
+function pintarMeses(todos) {
+  const box = $("meses"); box.innerHTML = "";
+  const lista = [];
+  if (todos) { let d = new Date(+INICIO.slice(0, 4), +INICIO.slice(5) - 1, 1); const tope = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1); while (d <= tope) { lista.push(idMes(d)); d = new Date(d.getFullYear(), d.getMonth() + 1, 1); } }
+  else for (let k = -1; k <= 1; k++) { const d = new Date(hoy.getFullYear(), hoy.getMonth() + k, 1); const id = idMes(d); if (id >= INICIO) lista.push(id); }
+  if (lista.indexOf(mes) < 0) lista.push(mes);
+  lista.sort().forEach(id => {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = etiqueta(id); b.className = id === mes ? "sel" : "";
+    b.onclick = () => { mes = id; fechas.clear(); pintarMeses(todos); pintarCal(); actualizar(); cargarLista(); };
+    box.appendChild(b);
+  });
+  $("btnOtroMes").classList.toggle("hidden", !!todos);
+}
+$("btnOtroMes").onclick = () => pintarMeses(true);
+
+/* --- Tipo y concepto --- */
+document.querySelectorAll(".tipo button").forEach(b => b.onclick = () => {
+  tipo = b.dataset.t;
+  document.querySelectorAll(".tipo button").forEach(x => x.classList.toggle("sel", x === b));
+  $("tipoPista").textContent = tipo === "ordinario"
+    ? "Ordinario: lo de todos los meses (conserje, luz, agua, jardín…). Se suma al renglón de ese concepto en la hoja."
+    : "Extraordinario: reparaciones, compras y gastos de una vez. Cada uno ocupa su propio renglón en la hoja.";
+  pintarConceptos(); actualizar();
+});
+function pintarConceptos() {
+  const box = $("conceptos"); box.innerHTML = "";
+  const base = tipo === "ordinario" ? conceptosBase : ["Reparación", "Compra de material", "Elevador", "Plomería", "Electricidad", "Trámites y notaría"];
+  base.forEach(c => { const b = document.createElement("button"); b.type = "button"; b.textContent = c; b.className = $("concepto").value.trim() === c ? "sel" : ""; b.onclick = () => { $("concepto").value = c; pintarConceptos(); actualizar(); $("monto").focus(); }; box.appendChild(b); });
+  repetibles.filter(r => r.tipo === tipo).forEach(r => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "rep"; b.textContent = "↻ " + r.concepto + " · " + fmt(r.monto);
+    b.title = "Repetir este gasto";
+    b.onclick = () => { $("concepto").value = r.concepto; $("proveedor").value = r.proveedor || ""; $("monto").value = r.monto; pintarConceptos(); actualizar(); };
+    box.appendChild(b);
+  });
+}
+$("concepto").addEventListener("input", () => { pintarConceptos(); actualizar(); });
+
+/* --- Calendario del mes --- */
+function pintarCal() {
+  const [y, m] = mes.split("-").map(Number);
+  $("calTitulo").textContent = etiqueta(mes) + (y !== hoy.getFullYear() ? "" : " " + y);
+  const box = $("dias"); box.innerHTML = "";
+  ["L", "M", "X", "J", "V", "S", "D"].forEach(d => { const s = document.createElement("div"); s.className = "dn"; s.textContent = d; box.appendChild(s); });
+  const primero = new Date(y, m - 1, 1), n = new Date(y, m, 0).getDate();
+  const offset = (primero.getDay() + 6) % 7;
+  for (let i = 0; i < offset; i++) box.appendChild(document.createElement("div"));
+  for (let d = 1; d <= n; d++) {
+    const f = new Date(y, m - 1, d), id = idDia(f);
+    const b = document.createElement("button"); b.type = "button"; b.textContent = d;
+    b.className = (fechas.has(id) ? "sel " : "") + (f > hoy ? "futuro " : "") + (id === idDia(hoy) ? "hoy" : "");
+    b.onclick = () => { if (fechas.has(id)) fechas.delete(id); else fechas.add(id); pintarCal(); actualizar(); };
+    box.appendChild(b);
+  }
+}
+$("btnLMV").onclick = () => {
+  const [y, m] = mes.split("-").map(Number), n = new Date(y, m, 0).getDate();
+  fechas.clear();
+  for (let d = 1; d <= n; d++) { const f = new Date(y, m - 1, d); if ([1, 3, 5].indexOf(f.getDay()) >= 0 && f <= hoy) fechas.add(idDia(f)); }
+  pintarCal(); actualizar();
+};
+$("btnHoy").onclick = () => { fechas.clear(); if (idMes(hoy) === mes) fechas.add(idDia(hoy)); pintarCal(); actualizar(); };
+$("btnNinguno").onclick = () => { fechas.clear(); pintarCal(); actualizar(); };
+
+/* --- Total y validación --- */
+function actualizar() {
+  const monto = parseFloat($("monto").value) || 0, n = fechas.size;
+  $("totalTxt").textContent = n === 0 ? "Elige al menos una fecha" : n === 1 ? "1 fecha × " + fmt(monto) : n + " fechas × " + fmt(monto);
+  $("totalMonto").textContent = fmt(monto * n);
+  $("btnEnviar").disabled = enviando || !$("concepto").value.trim() || !(monto > 0) || n === 0;
+}
+$("monto").addEventListener("input", actualizar);
+
+/* --- Comprobante: imagen reducida o PDF --- */
+$("archivo").addEventListener("change", ev => {
+  const f = ev.target.files[0]; if (!f) return;
+  if (/pdf/i.test(f.type)) {
+    if (f.size > 6 * 1024 * 1024) { alert("El PDF pesa más de 6 MB. Mejor una foto o un PDF más ligero."); ev.target.value = ""; return; }
+    const r = new FileReader();
+    r.onload = () => { archivo = r.result; tipoArchivo = "application/pdf"; $("miniatura").style.display = "none"; $("pdfNombre").textContent = "📄 " + f.name; $("vista").style.display = "block"; $("lblCaptura").firstChild.textContent = "📎 Cambiar el comprobante"; };
+    r.readAsDataURL(f);
+    return;
+  }
+  const img = new Image(); const url = URL.createObjectURL(f);
+  img.onload = () => {
+    const max = 1400, esc = Math.min(1, max / Math.max(img.width, img.height));
+    const cv = document.createElement("canvas");
+    cv.width = Math.round(img.width * esc); cv.height = Math.round(img.height * esc);
+    cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+    archivo = cv.toDataURL("image/jpeg", 0.82); tipoArchivo = "image/jpeg";
+    $("miniatura").src = archivo; $("miniatura").style.display = ""; $("pdfNombre").textContent = ""; $("vista").style.display = "block";
+    $("lblCaptura").firstChild.textContent = "📎 Cambiar el comprobante";
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+});
+$("btnQuitar").onclick = () => { archivo = null; tipoArchivo = ""; $("archivo").value = ""; $("vista").style.display = "none"; $("lblCaptura").firstChild.textContent = "📎 Foto o PDF del comprobante (opcional)"; };
+
+/* --- Enviar --- */
+$("btnEnviar").onclick = async () => {
+  if (enviando) return;
+  enviando = true; actualizar();
+  $("listo").classList.add("hidden"); $("fallo").classList.add("hidden");
+  $("estado").textContent = "Guardando en la hoja…";
+  const cuerpo = { accion: "egreso", clave: clave, mes: mes, tipo: tipo, concepto: $("concepto").value.trim(), proveedor: $("proveedor").value.trim(),
+    monto: parseFloat($("monto").value) || 0, fechas: Array.from(fechas).sort(), nota: $("nota").value.trim(), imagen: archivo || "", tipoArchivo: tipoArchivo, quien: quien };
+  try {
+    const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    const j = await r.json();
+    if (!j.ok) { if (j.error === "clave") { pedir(); $("claveMal").classList.remove("hidden"); return; } throw new Error(j.error || "error"); }
+    $("listo").innerHTML = "<h3>Registrado ✓</h3><p>" + esc(cuerpo.concepto) + (cuerpo.proveedor ? " · " + esc(cuerpo.proveedor) : "") + ": " + (j.veces > 1 ? j.veces + " fechas × " + fmt(cuerpo.monto) + " = " : "") + "<b>" + fmt(j.total) + "</b> en <b>" + esc(j.hoja) + "</b>, celda " + esc(j.celda) + "." + (j.comprobante ? ' <a href="' + esc(j.comprobante) + '" target="_blank" rel="noopener">Ver comprobante en Drive</a>.' : "") + "</p>";
+    $("listo").classList.remove("hidden");
+    $("concepto").value = ""; $("proveedor").value = ""; $("monto").value = ""; $("nota").value = ""; fechas.clear(); $("btnQuitar").onclick();
+    pintarCal(); pintarConceptos();
+    cargarLista();
+    window.scrollTo({ top: $("listo").offsetTop - 80, behavior: "smooth" });
+  } catch (e) {
+    $("fallo").innerHTML = "<b>No se pudo guardar.</b> " + esc(e.message || "Revisa tu conexión.") + " El gasto no se registró; intenta de nuevo.";
+    $("fallo").classList.remove("hidden");
+  } finally { enviando = false; $("estado").textContent = ""; actualizar(); }
+};
+const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;");
+
+/* --- Lo registrado en el mes --- */
+async function cargar() {
+  $("claveMal").classList.add("hidden");
+  const ok = await cargarLista();
+  if (!ok) return;
+  try { localStorage.setItem("misiones_egresos", clave); } catch (e) {}
+  $("pedirClave").classList.add("hidden"); $("panel").classList.remove("hidden");
+  pintarMeses(false); pintarCal(); pintarConceptos(); actualizar();
+  if (idMes(hoy) === mes && !fechas.size) { fechas.add(idDia(hoy)); pintarCal(); actualizar(); }
+}
+async function cargarLista() {
+  $("mesLista").textContent = etiqueta(mes);
+  try {
+    const r = await fetch(SCRIPT_URL + "?accion=egresos&mes=" + mes + "&clave=" + encodeURIComponent(clave) + "&t=" + Date.now());
+    const j = await r.json();
+    if (!j.ok) { if (j.error === "clave") { pedir(); if ($("clave").value) $("claveMal").classList.remove("hidden"); return false; } throw new Error(j.error); }
+    if (j.conceptos && j.conceptos.length) conceptosBase = j.conceptos;
+    if (j.urlHoja) $("verHoja").href = j.urlHoja;
+    const vistos = {};
+    repetibles = [];
+    j.lista.forEach(r => { const k = r.tipo + "|" + r.concepto + "|" + r.monto; if (!vistos[k]) { vistos[k] = 1; repetibles.push(r); } });
+    pintarLista(j.lista);
+    pintarEnHoja(j.enHoja, j.hoja);
+    pintarConceptos();
+    return true;
+  } catch (e) {
+    $("lista").innerHTML = '<div class="vacio">No se pudo consultar. Revisa tu conexión.</div>';
+    return false;
+  }
+}
+function pintarLista(lista) {
+  const l = $("lista"); l.innerHTML = "";
+  if (!lista.length) { l.innerHTML = '<div class="vacio">Todavía no hay gastos registrados desde aquí en ' + etiqueta(mes).toLowerCase() + ".</div>"; return; }
+  let total = 0;
+  lista.forEach(r => {
+    total += r.monto;
+    const t = document.createElement("div"); t.className = "tarjeta";
+    t.innerHTML = '<div class="cab"><strong>' + esc(r.concepto) + (r.proveedor ? ' <span style="font-weight:400;color:var(--ink-2)">· ' + esc(r.proveedor) + "</span>" : "") + '</strong><span class="monto">' + fmt(r.monto) + "</span></div>" +
+      '<div class="det">' + (r.tipo === "extraordinario" ? "Extraordinario" : "Ordinario") + (r.fecha ? " · pagado el " + esc(r.fecha) : "") + " · registrado el " + esc(r.registrado) + (r.quien ? " por " + esc(r.quien) : "") + " · " + esc(r.folio) + (r.nota ? "<br>“" + esc(r.nota) + "”" : "") + "</div>" +
+      '<div class="acc">' + (r.comprobante ? '<a href="' + esc(r.comprobante) + '" target="_blank" rel="noopener">Comprobante</a>' : "") + '<button type="button" class="no">Quitar</button></div>';
+    t.querySelector(".no").onclick = () => anular(r, t);
+    l.appendChild(t);
+  });
+  const tot = document.createElement("p"); tot.className = "pista"; tot.style.textAlign = "right"; tot.innerHTML = "Registrado desde aquí en " + etiqueta(mes).toLowerCase() + ": <b>" + fmt(total) + "</b>";
+  l.appendChild(tot);
+}
+function pintarEnHoja(enHoja, hoja) {
+  const t = $("enHoja");
+  if (!hoja) { t.innerHTML = "<tbody><tr><td class='pend'>La pestaña de " + etiqueta(mes).toLowerCase() + " todavía no existe; se crea con el primer gasto.</td></tr></tbody>"; return; }
+  let rows = "<thead><tr><th>" + esc(hoja) + "</th><th class='num'>Monto</th></tr></thead><tbody>";
+  [["Ordinarios", enHoja.ordinarios], ["Extraordinarios", enHoja.extraordinarios]].forEach(([tit, items]) => {
+    const sub = items.reduce((a, b) => a + b[1], 0);
+    rows += "<tr><td colspan='2' style='font-weight:700; color:var(--ink); padding-top:0.7rem'>" + tit + "</td></tr>";
+    if (!items.length) rows += "<tr><td colspan='2' style='color:var(--muted); font-style:italic'>Nada todavía.</td></tr>";
+    items.forEach(([c, m]) => { rows += "<tr><td>" + esc(c) + "</td><td class='num'>" + fmt(m) + "</td></tr>"; });
+    rows += "<tr class='total'><td>Subtotal</td><td class='num'>" + fmt(sub) + "</td></tr>";
+  });
+  t.innerHTML = rows + "</tbody>";
+}
+async function anular(r, t) {
+  if (!confirm("¿Quitar " + r.concepto + " por " + fmt(r.monto) + (r.fecha ? " del " + r.fecha : "") + "? Se resta de la pestaña del mes.")) return;
+  t.querySelectorAll("button").forEach(b => b.disabled = true);
+  try {
+    const rr = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify({ accion: "anularEgreso", clave: clave, folio: r.folio }), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    const j = await rr.json(); if (!j.ok) throw new Error(j.error || "error");
+    cargarLista();
+  } catch (e) { alert("No se pudo quitar. Intenta de nuevo."); t.querySelectorAll("button").forEach(b => b.disabled = false); }
+}
+
+if (clave) cargar(); else pedir();
+</script>
+</body>
+</html>

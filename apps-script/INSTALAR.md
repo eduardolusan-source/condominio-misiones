@@ -111,3 +111,42 @@ votación por departamento y los acuerdos.
   la tabla del tema 2 y en `acuerdos.html`.
 - Las preguntas están en el código de `asamblea.html` y `acuerdos.html` (lista `PREGUNTAS`); para
   otra asamblea se cambian ahí.
+
+## Finanzas en vivo y registro de egresos (19 de octubre de 2026)
+
+**Qué cambia al volver a correr `instalar`** (Ejecutar → instalar, y luego publicar
+la nueva versión del script: Implementar → Administrar implementaciones → lápiz →
+Versión: Nueva versión → Implementar; la URL no cambia):
+
+- Config gana `clave_egresos` (nace como `egresos`; cámbiala ahí mismo) y
+  `finanzas_desde` (`2026-10`: desde qué mes finanzas.html lee esta hoja).
+- Nace la pestaña **Egresos**, bitácora de cada gasto registrado desde la página.
+- En la plantilla y en los meses en vivo sin cobros se borran los 7,000 de
+  Administración y 7,000 de Limpieza que venían de ejemplo. Julio, agosto y
+  septiembre no se tocan (tienen cobros de la administración anterior): si esos
+  14,000 no son reales, bórralos a mano.
+- El saldo inicial de cada mes en vivo queda encadenado al saldo final del mes
+  anterior (noviembre toma el cierre de octubre, etc.). Octubre arranca en lo
+  que diga su celda C6.
+- El registro de casa club gana título y encabezados claros (Depto que rentó ·
+  Fecha del evento · Monto cobrado) y, si algún monto quedó en la columna Depto,
+  pasa a Monto; si ese monto estaba además como "extraordinario" de un depto en
+  cobros, se quita de ahí y el depto queda anotado en el registro.
+
+**finanzas.html** pide `accion=finanzas` al script y mezcla lo que responde con
+`js/data.js`: 2025 y enero–junio de 2026 siguen saliendo del archivo; desde
+`finanzas_desde` salen de la hoja. Un mes aparece en cuanto su pestaña tiene
+cobros o gastos. La respuesta se guarda cinco minutos (`?fresh=1` la fuerza) y
+se limpia sola al registrar un egreso.
+
+**egresos.html** (sin enlace en el menú; liga desde la bandeja) pide la clave de
+`clave_egresos` y el nombre de quien registra. Por gasto: mes, tipo (ordinario o
+extraordinario), concepto, a quién se pagó, monto por pago, fechas en un
+calendario del mes, nota y foto o PDF del comprobante. Para el conserje de
+lunes, miércoles y viernes: botón **L · M · V**, quitar los días que no vino y
+monto 600; entra una suma al renglón "Limpieza y conserjería" del mes y una
+fila por día en la bitácora. En la pestaña del mes, los ordinarios se suman al
+renglón de su concepto y los extraordinarios ocupan renglón propio (si no hay
+libre, se inserta dentro de la suma). El comprobante va a la carpeta del mes en
+Drive y su liga a la columna D del renglón. "Quitar" en la lista resta el monto
+de la celda (o limpia el renglón si lo creó) y marca Anulado en la bitácora.

@@ -10,8 +10,15 @@
 (function () {
   "use strict";
 
+  /* Hoja de captura de la mesa directiva, en vivo: el Apps Script responde con
+     las cifras agregadas de cada mes desde octubre de 2026 (accion=finanzas).
+     Lo anterior sigue saliendo de js/data.js. Si el script no responde, se
+     muestra solo js/data.js. */
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+
   const D = MISIONES;
   const TODOS = D.meses;
+  let vivo = null;                       // respuesta del script cuando llega
 
   const mxn = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 });
   const mxn2 = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: 2 });
@@ -23,7 +30,7 @@
   const sum = arr => arr.reduce((a, b) => a + b, 0);
   const prom = arr => arr.length ? sum(arr) / arr.length : 0;
 
-  const ingresosDe = m => m.ingresos.manto + m.ingresos.agua + m.ingresos.elevador + m.ingresos.medidores + m.ingresos.otros;
+  const ingresosDe = m => m.ingresos.manto + m.ingresos.agua + m.ingresos.elevador + m.ingresos.medidores + m.ingresos.otros + (m.ingresos.extra || 0) + (m.ingresos.casaClub || 0);
   const egresosDe = m => m.egresos.ordinarios + m.egresos.extraordinarios;
   const resultadoDe = m => ingresosDe(m) - egresosDe(m);
   const mesMin = m => m.nombre.toLowerCase();
@@ -350,6 +357,8 @@
     if (m.ingresos.elevador) ingRows += "<tr><td>Cuota extraordinaria del elevador</td><td class='num'>" + fmt2(m.ingresos.elevador) + "</td></tr>";
     if (m.ingresos.medidores) ingRows += "<tr><td>Medidores individuales de agua</td><td class='num'>" + fmt2(m.ingresos.medidores) + "</td></tr>";
     if (m.ingresos.otros) ingRows += "<tr><td>Otros ingresos</td><td class='num'>" + fmt2(m.ingresos.otros) + "</td></tr>";
+    if (m.ingresos.extra) ingRows += "<tr><td>Cuotas extraordinarias cobradas</td><td class='num'>" + fmt2(m.ingresos.extra) + "</td></tr>";
+    if (m.ingresos.casaClub) ingRows += "<tr><td>Renta de la casa club</td><td class='num'>" + fmt2(m.ingresos.casaClub) + "</td></tr>";
     document.getElementById("tIngresos").innerHTML =
       "<thead><tr><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>" + ingRows +
       "<tr class='total'><td>Total de ingresos</td><td class='num'>" + fmt2(ing) + "</td></tr></tbody>";
@@ -368,18 +377,21 @@
       ["Gastos ordinarios", m.detalle.ordinarios, m.egresos.ordinarios],
       ["Gastos extraordinarios", m.detalle.extraordinarios, m.egresos.extraordinarios]
     ];
-    let rows = "<thead><tr><th>Concepto</th><th class='num'>Monto</th></tr></thead><tbody>";
+    const conLiga = secciones.some(sec => sec[1].some(it => it[2]));
+    const span = conLiga ? 3 : 2;
+    let rows = "<thead><tr><th>Concepto</th><th class='num'>Monto</th>" + (conLiga ? "<th></th>" : "") + "</tr></thead><tbody>";
     secciones.forEach(([titulo, items, subtotal]) => {
-      rows += "<tr><td colspan='2' style='font-weight:700; color:var(--ink); padding-top:0.9rem'>" + titulo + "</td></tr>";
-      if (!items.length) rows += "<tr><td colspan='2' class='pend'>Sin gastos de este tipo en el mes.</td></tr>";
-      items.forEach(([desc, monto]) => {
-        rows += "<tr><td>" + esc(desc) + "</td><td class='num'>" + fmt2(monto) + "</td></tr>";
+      rows += "<tr><td colspan='" + span + "' style='font-weight:700; color:var(--ink); padding-top:0.9rem'>" + titulo + "</td></tr>";
+      if (!items.length) rows += "<tr><td colspan='" + span + "' class='pend'>Sin gastos de este tipo en el mes.</td></tr>";
+      items.forEach(it => {
+        rows += "<tr><td>" + esc(it[0]) + "</td><td class='num'>" + fmt2(it[1]) + "</td>" +
+          (conLiga ? "<td class='num'>" + (it[2] ? "<a href='" + esc(it[2]).replace(/'/g, "%27") + "' target='_blank' rel='noopener'>comprobante</a>" : "") + "</td>" : "") + "</tr>";
       });
-      rows += "<tr class='total'><td>Subtotal</td><td class='num'>" + fmt2(subtotal) + "</td></tr>";
+      rows += "<tr class='total'><td>Subtotal</td><td class='num'>" + fmt2(subtotal) + "</td>" + (conLiga ? "<td></td>" : "") + "</tr>";
     });
-    rows += "<tr class='total'><td style='font-size:1.02em'>TOTAL DE EGRESOS</td><td class='num' style='font-size:1.02em'>" + fmt2(egr) + "</td></tr></tbody>";
+    rows += "<tr class='total'><td style='font-size:1.02em'>TOTAL DE EGRESOS</td><td class='num' style='font-size:1.02em'>" + fmt2(egr) + "</td>" + (conLiga ? "<td></td>" : "") + "</tr></tbody>";
     document.getElementById("tEgresos").innerHTML = rows;
-    document.getElementById("egresosSub").textContent = m.nombre + " " + anio;
+    document.getElementById("egresosSub").innerHTML = esc(m.nombre) + " " + anio + (m.carpeta ? " · <a href='" + esc(m.carpeta) + "' target='_blank' rel='noopener'>comprobantes del mes en Drive</a>" : "");
   }
 
   /* ---------- Navegación general ↔ detalle ---------- */
@@ -405,7 +417,9 @@
   /* ---------- Render ---------- */
   function renderAnio() {
     setText("tituloGeneral", "Rendición de cuentas " + anio);
-    setText("rangoSub", "Vista general de " + rango() + ", con las cifras de la tabla contable de la administración · " + D.unidades + " unidades · cuota de " + fmt(D.cuota) + ".");
+    setText("rangoSub", "Vista general de " + rango() + (vivo && M.some(m => m.vivo)
+      ? ", con las cifras en vivo de la hoja de captura de la mesa directiva" + (M.some(m => !m.vivo) ? " y, hasta junio, de la tabla contable de la administración anterior" : "")
+      : ", con las cifras de la tabla contable de la administración") + " · " + D.unidades + " unidades · cuota de " + fmt(D.cuota) + ".");
     setText("rangoFijas", "Datos estructurales del condominio (promedios de " + rango() + ").");
     renderAnios();
     renderOverview();
@@ -422,11 +436,54 @@
   renderProyectos();
   renderRevision();
 
-  const h = /^#mes-(\d{4})-(\d{2})$/.exec(location.hash);
-  if (h) {
+  function abrirDesdeHash() {
+    const h = /^#mes-(\d{4})-(\d{2})$/.exec(location.hash);
+    if (!h) return;
     const a = +h[1];
     if (D.anios.indexOf(a) >= 0 && a !== anio) { anio = a; M = TODOS.filter(m => m.anio === anio); renderAnio(); }
     const i = M.findIndex(m => m.id === h[1] + "-" + h[2]);
     if (i >= 0) abrirMes(i);
   }
+  abrirDesdeHash();
+
+  /* ---------- Hoja de captura en vivo ---------- */
+  async function cargarVivo() {
+    if (!SCRIPT_URL) return;
+    const r = await fetch(SCRIPT_URL + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    if (!j || !j.ok) throw new Error((j && j.error) || "sin datos");
+    const meses = (j.meses || []).filter(m => /^\d{4}-\d{2}$/.test(String(m.id || "")));
+    if (!meses.length) throw new Error("la hoja aún no tiene meses capturados");
+    meses.forEach(o => {
+      const m = {
+        id: o.id, anio: parseInt(o.id.slice(0, 4), 10), nombre: o.nombre, corto: o.corto, vivo: true,
+        saldoIni: Number(o.saldoIni) || 0, saldoFin: Number(o.saldoFin) || 0,
+        ingresos: { manto: Number(o.ingresos.manto) || 0, agua: Number(o.ingresos.agua) || 0, elevador: 0, medidores: 0, otros: 0, extra: Number(o.ingresos.extra) || 0, casaClub: Number(o.ingresos.casaClub) || 0 },
+        egresos: { ordinarios: Number(o.egresos.ordinarios) || 0, extraordinarios: Number(o.egresos.extraordinarios) || 0 },
+        cobranza: { pagaron: Number(o.cobranza.pagaron) || 0, pct: Number(o.cobranza.pct) || 0 },
+        detalle: { ordinarios: (o.detalle && o.detalle.ordinarios) || [], extraordinarios: (o.detalle && o.detalle.extraordinarios) || [] },
+        carpeta: o.carpeta || ""
+      };
+      const i = TODOS.findIndex(x => x.id === m.id);
+      if (i >= 0) TODOS[i] = m; else TODOS.push(m);
+    });
+    TODOS.sort((a, b) => a.id.localeCompare(b.id));
+    D.anios = TODOS.map(m => m.anio).filter((a, i, arr) => arr.indexOf(a) === i).sort();
+    if (Array.isArray(j.proyectos)) j.proyectos.forEach(p => {
+      if (!D.proyectos.some(q => q.nombre.toLowerCase() === String(p.nombre).toLowerCase()))
+        D.proyectos.push({ nombre: p.nombre, estado: p.estado + (p.avance != null ? " · avance " + p.avance + "%" : "") + (p.notas ? " · " + p.notas : ""), financiamiento: "Hoja de captura de la mesa directiva", presupuesto: p.presupuesto || null });
+    });
+    vivo = j;
+    const ultimo = meses[meses.length - 1];
+    anio = parseInt(ultimo.id.slice(0, 4), 10);
+    M = TODOS.filter(m => m.anio === anio);
+    mesIdx = M.length - 1;
+    const upd = document.getElementById("updated");
+    if (upd) upd.innerHTML = "🟢 <strong>Datos en vivo desde " + esc(meses[0].nombre.toLowerCase()) + " de " + meses[0].id.slice(0, 4) + ".</strong> La mesa directiva captura cobros y gastos en su hoja y esta página los lee cada vez que se abre (hasta cinco minutos de espera). De 2025 a junio de 2026 las cifras vienen de las tablas contables de Admin-Solutions; julio a septiembre de 2026 siguen pendientes de la administración anterior.";
+    renderAnio();
+    renderProyectos();
+    if (!secDetalle.hidden) { renderChips(); renderMes(); } else abrirDesdeHash();
+  }
+  cargarVivo().catch(e => console.warn("[Misiones] Sin hoja en vivo (" + e.message + "). Se muestra js/data.js."));
 })();

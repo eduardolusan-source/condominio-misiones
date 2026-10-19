@@ -34,7 +34,7 @@ de contacto. No rigen hasta que la asamblea los apruebe.
 ## Finanzas
 
 Misma lógica que los sitios de Lahia y La Valetta: vista general del año (tarjetas, tabla
-mes por mes, gráficas de ingresos/egresos y saldo, composición del gasto ordinario, el agua
+mes por mes (desde octubre de 2026 en vivo desde la hoja de captura de la mesa, vía el Apps Script), gráficas de ingresos/egresos y saldo, composición del gasto ordinario, el agua
 en cifras) y detalle por mes al que se entra tocando una fila de la tabla. Aquí además se
 puede cambiar de año (2025 y 2026).
 
@@ -73,3 +73,7 @@ assets/mark.svg       · marca compacta, favicon
 ```
 
 Sin dependencias, sin build: HTML, CSS y JavaScript planos.
+
+## Egresos de la mesa directiva
+
+`egresos.html` (clave `clave_egresos` de la pestaña Config) registra cada gasto en la pestaña del mes de la hoja de captura, sube el comprobante a Drive y deja bitácora en la pestaña Egresos; `finanzas.html` lo refleja en vivo. Detalles en `apps-script/INSTALAR.md`.

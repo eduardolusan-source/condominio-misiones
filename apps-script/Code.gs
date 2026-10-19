@@ -11,6 +11,13 @@
    - doGet: responde a pago.html qué tiene por pagar un departamento y sus pagos
      anteriores con su estatus.
    - onEdit: cuando cambias el estatus a "Confirmado" pone la fecha sola.
+   - doGet accion=finanzas: finanzas.html. Cifras AGREGADAS por mes leídas de las
+     pestañas mensuales desde el mes de Config "finanzas_desde" (2026-10, cuando la
+     mesa tomó la caja); nunca salen cobros por departamento.
+   - doGet accion=egresos / doPost accion=egreso y anularEgreso: egresos.html, con la
+     clave de Config "clave_egresos". Cada gasto se anota en la sección de egresos
+     ordinarios o extraordinarios de la pestaña del mes, sube su comprobante a la
+     carpeta del mes en Drive y deja renglón en la pestaña "Egresos".
    - doGet accion=cuentas / doPost accion=validar: cuentas.html. Cada depto dice si
      reconoce su adeudo al corte y lo de julio a septiembre (lo cobró la administración
      anterior), y sube comprobantes. Cae en la pestaña "Validaciones"; las imágenes van
@@ -37,6 +44,10 @@ const HOJA_ACUERDOS = "Acuerdos";           // asamblea: acuerdo, responsable y 
 const HOJA_TAREAS = "Tareas";               // reparto de responsabilidades: tarea, qué implica, cada cuánto, quién
 const HOJA_AGUA = "Agua";                   // una fila por depto y mes: lecturas, consumo, cargo, pagado
 const HOJA_RECIBOS = "Recibos agua";        // una fila por mes: recibo CEA, m³ del general, precio por m³
+const HOJA_EGRESOS = "Egresos";             // bitácora de gastos registrados desde egresos.html (lo más nuevo arriba)
+const ENC_EGRESOS = ["Registrado","Mes","Tipo","Concepto","Proveedor","Monto","Fecha de pago","Nota","Comprobante","Quién","Celda","Folio","Estatus"];
+//                    A            B     C      D          E           F       G               H      I             J       K       L       M
+const CACHE_FINANZAS = 300;                 // segundos que finanzas.html ve la misma respuesta; ?fresh=1 la fuerza
 const ENC_AGUA = ["Mes","Depto","Lectura anterior","Lectura actual","Consumo m³","Estimado","Foto","Capturado el","Cargo $","Pagado el","Nota"];
 //                 A     B       C                  D                E           F          G      H              I         J           K
 const ENC_RECIBOS = ["Mes","Monto del recibo CEA","m³ del medidor general (viene en el recibo)","Fecha límite de pago","Precio por m³","Suma de lecturas m³","m³ de áreas comunes","Comunes por depto $","Notas"];
@@ -121,7 +132,9 @@ function instalar() {
       ["casa_club_monto", 500, "Monto sugerido por uso de la casa club"],
       ["adeudos", "pendiente", "Escribe 'mostrar' cuando la hoja de adeudos esté al día; mientras, la página dice 'pendiente'"],
       ["aviso", "", "Texto breve que se muestra arriba del formulario (opcional)"],
-      ["cuenta", "Nubank · Eduardo Luna · cuenta terminación 5488", "Dónde se transfiere, se muestra en la página"]
+      ["cuenta", "Nubank · Eduardo Luna · cuenta terminación 5488", "Dónde se transfiere, se muestra en la página"],
+      ["clave_egresos", "egresos", "Clave de egresos.html (quien registra los gastos de la mesa). Cámbiala si quieres"],
+      ["finanzas_desde", "2026-10", "Primer mes que finanzas.html toma de esta hoja (los anteriores siguen en js/data.js)"]
   ];
   if (!config) {
     config = ss.insertSheet(HOJA_CONFIG);
@@ -136,10 +149,92 @@ function instalar() {
   carpetaRaiz_();
   avisos.push("Carpeta de Drive lista: " + CARPETA);
 
+  // 6. Bitácora de egresos
+  if (!ss.getSheetByName(HOJA_EGRESOS)) { hojaEgresos_(); avisos.push("Pestaña creada: " + HOJA_EGRESOS); }
+
+  // 7. Montos de muestra de la plantilla (Administración 7,000 y Limpieza 7,000) en la
+  //    plantilla y en los meses en vivo que aún no tienen cobros ni otros gastos
+  const desde = String(config_().finanzas_desde || "").trim();
+  [plantilla].concat(ss.getSheets().filter(h => esHojaMes_(h) && (!desde || idDeHojaMes_(h) >= desde))).forEach(h => {
+    if (limpiarMuestras_(h)) avisos.push("Montos de muestra borrados en: " + h.getName());
+  });
+
+  // 9. Registro de casa club: encabezados claros y montos que quedaron en la columna Depto
+  [plantilla].concat(ss.getSheets().filter(h => esHojaMes_(h))).forEach(h => {
+    if (aclararCasaClub_(h)) avisos.push("Casa club aclarado en: " + h.getName());
+    repararCasaClub_(h).forEach(a => avisos.push(a));
+  });
+
+  // 8. Saldo inicial encadenado al saldo final del mes anterior (solo meses en vivo)
+  const vivos = ss.getSheets().filter(h => esHojaMes_(h) && idDeHojaMes_(h) && (!desde || idDeHojaMes_(h) >= desde))
+    .sort((a, b) => idDeHojaMes_(a) < idDeHojaMes_(b) ? -1 : 1);
+  vivos.forEach((h, i) => {
+    if (i === 0) return;
+    const c6 = h.getRange("C6");
+    if (c6.getFormula()) return;
+    const prev = vivos[i - 1];
+    if (idDeHojaMes_(prev) !== mesSiguiente_(idDeHojaMes_(h), -1)) return;   // solo si el anterior es el mes inmediato
+    const ref = /\s/.test(prev.getName()) ? "'" + prev.getName() + "'" : prev.getName();
+    c6.setFormula("=" + ref + "!C18");
+    avisos.push("Saldo inicial de " + h.getName() + " encadenado a " + prev.getName());
+  });
+
   const texto = avisos.length ? avisos.join("\n") : "Todo estaba ya en su lugar; no cambié nada.";
   Logger.log(texto);
   try { SpreadsheetApp.getUi().alert("Instalación lista", texto, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
   return texto;
+}
+
+/* El registro de casa club se entiende solo: título que explica, encabezados que dicen
+   qué va en cada columna y la columna Depto validada como número. Idempotente. */
+function aclararCasaClub_(h) {
+  const titulo = h.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+  if (!titulo) return false;
+  const rT = titulo.getRow(), rEnc = rT + 1;
+  const enc = h.getRange(rEnc, 2, 1, 4).getValues()[0].map(v => String(v).trim());
+  const quiero = ["Depto que rentó", "Fecha del evento", "Monto cobrado ($)", "Observaciones"];
+  const tituloQuiero = "RENTA DE CASA CLUB  ·  un renglón por evento: depto, fecha y monto. El monto se suma solo en el resumen";
+  if (String(titulo.getValue()) === tituloQuiero && enc.join("|") === quiero.join("|")) return false;
+  titulo.setValue(tituloQuiero);
+  h.getRange(rEnc, 2, 1, 4).setValues([quiero]).setFontWeight("bold");
+  h.getRange(rEnc + 1, 2, 5, 1).setNumberFormat("0").setDataValidation(
+    SpreadsheetApp.newDataValidation().requireNumberBetween(1, UNIDADES).setAllowInvalid(true).setHelpText("Número del departamento que rentó (1 a " + UNIDADES + "). El monto va en la columna Monto.").build());
+  h.getRange(rEnc + 1, 3, 5, 1).setNumberFormat("dd/mm/yyyy");
+  h.getRange(rEnc + 1, 4, 5, 1).setNumberFormat("$#,##0.00");
+  return true;
+}
+
+/* Si en el registro de casa club alguien escribió el monto en la columna Depto (sin
+   fecha ni monto), lo pasa a la columna Monto. Si además ese mismo monto quedó como
+   "extraordinario" de un departamento en los cobros, lo quita de ahí y anota el depto
+   en el registro: era el pago de la casa club contado dos veces. Devuelve avisos. */
+function repararCasaClub_(h) {
+  const out = [];
+  const titulo = h.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+  if (!titulo) return out;
+  const r0 = titulo.getRow() + 2;
+  const filas = h.getRange(r0, 2, 5, 3).getValues();           // B depto · C fecha · D monto
+  filas.forEach((f, i) => {
+    const b = Number(f[0]) || 0, d = Number(f[2]) || 0;
+    if (!(b >= 100 && !d)) return;                                // un depto nunca vale 100 o más: es un monto
+    const fila = r0 + i;
+    h.getRange(fila, 4).setValue(b).setNumberFormat("$#,##0.00");
+    h.getRange(fila, 2).clearContent();
+    out.push(h.getName() + ": $" + b + " del registro de casa club pasó de la columna Depto a Monto");
+    // ¿el mismo monto está como extraordinario de un depto? Entonces era este cobro, contado dos veces.
+    const cob = h.createTextFinder("COBROS POR DEPARTAMENTO").matchCase(false).findNext();
+    const tot = h.createTextFinder("TOTAL COBRADO").matchCase(false).findNext();
+    if (!cob || !tot) return;
+    const n = tot.getRow() - cob.getRow() - 2;
+    const vals = h.getRange(cob.getRow() + 2, 2, n, 4).getValues();  // B depto · C manto · D agua · E extra
+    const k = vals.findIndex(v => (Number(v[3]) || 0) === b);
+    if (k < 0) return;
+    const depto = parseInt(String(vals[k][0]).replace(/\D/g, ""), 10);
+    h.getRange(cob.getRow() + 2 + k, 5).clearContent();
+    if (depto) h.getRange(fila, 2).setValue(depto);
+    out.push(h.getName() + ": el extraordinario de $" + b + " del depto " + depto + " era la casa club; se quitó de cobros y el depto quedó en el registro");
+  });
+  return out;
 }
 
 /* Le da a "RENTA DE CASA CLUB" una columna de monto y suma ese monto en el resumen.
@@ -194,6 +289,8 @@ function doGet(e) {
     if (p.accion === "votos") return json_(votos_());
     if (p.accion === "acuerdos") return json_(acuerdos_());
     if (p.accion === "tareas") return json_(tareas_());
+    if (p.accion === "finanzas") return json_(finanzas_(!!p.fresh));
+    if (p.accion === "egresos") return json_(egresosMes_(p.mes, p.clave));
     return json_({ ok: true, servicio: "misiones-pagos" });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -210,6 +307,8 @@ function doPost(e) {
     if (d.accion === "voto") { lock.waitLock(10000); return json_(votar_(d)); }
     if (d.accion === "acuerdo") { lock.waitLock(10000); return json_(guardarAcuerdo_(d)); }
     if (d.accion === "tarea") { lock.waitLock(10000); return json_(guardarTarea_(d)); }
+    if (d.accion === "egreso") { lock.waitLock(10000); return json_(registrarEgreso_(d)); }
+    if (d.accion === "anularEgreso") { lock.waitLock(10000); return json_(anularEgreso_(d)); }
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);
@@ -785,16 +884,7 @@ function resolverDesdeBandeja_(d) {
 /* Suma lo reportado en la pestaña del mes y lo pinta de amarillo. Devuelve la lista
    de celdas tocadas ("Octubre!C44=#d6e2ee=1500;...") para poder confirmarlas o retirarlas. */
 function anotarEnMes_(ss, mes, depto, m, fecha) {
-  const idx = parseInt(mes.split("-")[1], 10) - 1;
-  const anio = parseInt(mes.split("-")[0], 10);
-  const nombre = nombreHojaMes_(idx, anio);
-  let hoja = buscarHojaMes_(ss, nombre);
-  if (!hoja) {
-    hoja = ss.getSheetByName(PLANTILLA).copyTo(ss).setName(nombre);
-    hoja.getRange("C5").setValue(capitalizar_(MESES[idx]) + " " + anio);
-    hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
-    ajustarCasaClub_(hoja);
-  }
+  const hoja = hojaDelMes_(ss, mes);
   const refs = [];
   const pinta = (rg, monto) => {
     const previo = Number(rg.getValue()) || 0;
@@ -853,6 +943,359 @@ function aplicarCeldas_(ss, celdas, modo) {
       }
     }
   });
+}
+
+/* ============================ FINANZAS EN VIVO ============================ */
+
+/* Cifras agregadas por mes para finanzas.html. Lee las pestañas mensuales por sus
+   etiquetas (columna B) desde el mes de Config "finanzas_desde". SOLO salen sumas:
+   nunca cobros por departamento. */
+function finanzas_(fresh) {
+  const cache = CacheService.getScriptCache();
+  if (!fresh) { const c = cache.get("finanzas"); if (c) return JSON.parse(c); }
+  const ss = SpreadsheetApp.getActive();
+  const cfg = config_();
+  const desde = String(cfg.finanzas_desde || "").trim();
+  const meses = [];
+  const proyectos = {};
+  ss.getSheets().forEach(h => {
+    if (!esHojaMes_(h)) return;
+    const id = idDeHojaMes_(h);
+    if (!id || (desde && id < desde)) return;
+    const m = leerMesVivo_(h, id);
+    if (!m.capturado) return;
+    m.proyectos.forEach(p => { proyectos[p.nombre.toLowerCase()] = p; });
+    delete m.proyectos;
+    meses.push(m);
+  });
+  meses.sort((a, b) => a.id < b.id ? -1 : 1);
+  const out = {
+    ok: true, servicio: "misiones-finanzas", generado: new Date().toISOString(),
+    desde: desde, unidades: UNIDADES, cuota: Number(cfg.cuota_mantenimiento) || 1500,
+    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k])
+  };
+  try { cache.put("finanzas", JSON.stringify(out), CACHE_FINANZAS); } catch (e) {}
+  return out;
+}
+
+function leerMesVivo_(h, id) {
+  const FILAS = 120;
+  const vals = h.getRange(1, 2, FILAS, 6).getValues();          // B:G
+  const et = vals.map(f => normEt_(f[0]));
+  const fila = (clave, desde, hasta) => { for (let i = desde || 0; i < Math.min(hasta || FILAS, et.length); i++) if (et[i].indexOf(clave) === 0) return i; return -1; };
+  const fCobros = fila("cobrospordepartamento");
+  const tope = fCobros > 0 ? fCobros : 30;
+  const numRes = clave => { const i = fila(clave, 0, tope); return i < 0 ? 0 : (Number(vals[i][1]) || 0); };
+  const seccion = clave => fila(clave, fCobros > 0 ? fCobros + 1 : 0);
+  const fCasa = seccion("rentadecasaclub"), fOrd = seccion("egresosordinarios"), fExt = seccion("egresosextraordinarios"), fProy = seccion("proyectosencurso");
+  const renglones = (inicio, conTotal) => {
+    const out = [];
+    if (inicio < 0) return out;
+    let vacias = 0;
+    for (let i = inicio + 2; i < et.length; i++) {
+      const e = et[i];
+      if (conTotal && e.indexOf("total") === 0) break;
+      if (!conTotal && (e.indexOf("egresos") === 0 || e.indexOf("pendientes") === 0 || e.indexOf("renta") === 0 || e.indexOf("cobros") === 0)) break;
+      if (!e && !String(vals[i][1]).trim() && !String(vals[i][2]).trim()) { if (++vacias >= 6) break; continue; }
+      vacias = 0;
+      out.push({ fila: i + 1, b: vals[i][0], c: vals[i][1], d: vals[i][2], e: vals[i][3], f: vals[i][4], g: vals[i][5] });
+    }
+    return out;
+  };
+  const cobros = renglones(fCobros, true).filter(r => /^depto/i.test(String(r.b)));
+  const manto = cobros.reduce((a, r) => a + (Number(r.c) || 0), 0);
+  const agua = cobros.reduce((a, r) => a + (Number(r.d) || 0), 0);
+  const extra = cobros.reduce((a, r) => a + (Number(r.e) || 0), 0);
+  const pagaron = cobros.filter(r => (Number(r.c) || 0) > 0).length;
+  const casaClub = renglones(fCasa, true).reduce((a, r) => a + (Number(r.d) || 0), 0);   // B depto · C fecha · D monto
+  const ligas = ligasColumnaD_(h, fOrd, fExt, FILAS);
+  const items = lista => lista.filter(r => String(r.b).trim() && (Number(r.c) || 0) > 0).map(r => {
+    const liga = ligas[r.fila] || "";
+    const it = [String(r.b).trim(), Math.round(Number(r.c) * 100) / 100];
+    if (liga) it.push(liga);
+    return it;
+  });
+  const ordinarios = items(renglones(fOrd, true)), extraordinarios = items(renglones(fExt, true));
+  const totOrd = ordinarios.reduce((a, b) => a + b[1], 0), totExt = extraordinarios.reduce((a, b) => a + b[1], 0);
+  const proyectos = renglones(fProy, false).filter(r => String(r.b).trim()).map(r => ({
+    nombre: String(r.b).trim(), estado: String(r.c || "").trim(), presupuesto: Number(r.d) || null, gastado: Number(r.e) || 0,
+    avance: r.f === "" ? null : Math.round(Number(r.f) * (Number(r.f) <= 1 ? 100 : 1)), notas: String(r.g || "").trim()
+  }));
+  const saldoIni = numRes("saldoinicial");
+  const iFin = fila("saldofinaldelmes", 0, tope);
+  const saldoFin = iFin >= 0 ? (Number(vals[iFin][1]) || 0) : saldoIni + manto + agua + extra + casaClub - totOrd - totExt;
+  const carpeta = /^https?:\/\//.test(String(vals[8] ? vals[8][1] : "")) ? String(vals[8][1]).trim() : "";
+  const mesIdx = parseInt(id.slice(5), 10) - 1;
+  const r2 = v => Math.round(v * 100) / 100;
+  return {
+    id: id, anio: parseInt(id.slice(0, 4), 10), nombre: capitalizar_(MESES[mesIdx]), corto: capitalizar_(MESES[mesIdx].slice(0, 3)),
+    saldoIni: r2(saldoIni), saldoFin: r2(saldoFin),
+    ingresos: { manto: r2(manto), agua: r2(agua), elevador: 0, medidores: 0, otros: 0, extra: r2(extra), casaClub: r2(casaClub) },
+    egresos: { ordinarios: r2(totOrd), extraordinarios: r2(totExt) },
+    cobranza: { pagaron: pagaron, pct: Math.round(pagaron / UNIDADES * 1000) / 10 },
+    detalle: { ordinarios: ordinarios, extraordinarios: extraordinarios },
+    carpeta: carpeta, proyectos: proyectos,
+    capturado: manto > 0 || agua > 0 || extra > 0 || casaClub > 0 || totOrd > 0 || totExt > 0
+  };
+}
+
+/* Ligas en la columna D de las secciones de egresos (hipervínculo, URL escrita o HYPERLINK). */
+function ligasColumnaD_(h, fOrd, fExt, FILAS) {
+  const out = {};
+  const inicio = Math.min(fOrd < 0 ? FILAS : fOrd, fExt < 0 ? FILAS : fExt);
+  if (inicio >= FILAS) return out;
+  const rango = h.getRange(inicio + 1, 4, FILAS - inicio, 1);
+  const ricos = rango.getRichTextValues(), formulas = rango.getFormulas(), valores = rango.getValues();
+  for (let i = 0; i < ricos.length; i++) {
+    let url = ricos[i][0] && ricos[i][0].getLinkUrl();
+    if (!url && ricos[i][0]) { const runs = ricos[i][0].getRuns(); for (let r = 0; r < runs.length && !url; r++) url = runs[r].getLinkUrl(); }
+    if (!url) { const m = /HYPERLINK\(\s*"([^"]+)"/i.exec(formulas[i][0] || ""); if (m) url = m[1]; }
+    if (!url && /^https?:\/\//.test(String(valores[i][0]).trim())) url = String(valores[i][0]).trim();
+    if (url) out[inicio + 1 + i] = url;
+  }
+  return out;
+}
+
+/* "2026-10" de una pestaña mensual: por la fecha de C5 (con 12 h de margen por zona
+   horaria), o por el nombre de la pestaña ("Octubre", "Enero 2027"). */
+function idDeHojaMes_(h) {
+  const v = h.getRange("C5").getValue();
+  if (v instanceof Date) return Utilities.formatDate(new Date(v.getTime() + 12 * 3600 * 1000), "America/Mexico_City", "yyyy-MM");
+  const m = /^([a-záéíóú]+)(?:\s+(\d{4}))?$/i.exec(h.getName().trim());
+  if (!m) return "";
+  const idx = MESES.indexOf(m[1].toLowerCase());
+  if (idx < 0) return "";
+  const anio = m[2] ? parseInt(m[2], 10) : (/(\d{4})/.exec(String(v || "")) ? parseInt(/(\d{4})/.exec(String(v || ""))[1], 10) : ANIO);
+  return anio + "-" + ("0" + (idx + 1)).slice(-2);
+}
+function mesSiguiente_(id, paso) {
+  const y = parseInt(id.slice(0, 4), 10), m = parseInt(id.slice(5), 10) - 1 + (paso || 1);
+  const d = new Date(y, m, 1);
+  return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2);
+}
+/* Busca o crea la pestaña de un mes "2026-10" a partir de la plantilla. */
+function hojaDelMes_(ss, mes) {
+  const idx = parseInt(mes.split("-")[1], 10) - 1;
+  const anio = parseInt(mes.split("-")[0], 10);
+  const nombre = nombreHojaMes_(idx, anio);
+  let hoja = buscarHojaMes_(ss, nombre);
+  if (!hoja) {
+    hoja = ss.getSheetByName(PLANTILLA).copyTo(ss).setName(nombre);
+    hoja.getRange("C5").setValue(capitalizar_(MESES[idx]) + " " + anio);
+    hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
+    ajustarCasaClub_(hoja);
+    limpiarMuestras_(hoja);
+  }
+  return hoja;
+}
+/* Quita los montos de ejemplo de la plantilla (Administración 7,000 y Limpieza 7,000)
+   cuando son lo único que hay en egresos y la pestaña no tiene cobros. */
+function limpiarMuestras_(h) {
+  const sec = seccionEgresos_(h, "ordinario");
+  if (!sec) return false;
+  const filas = h.getRange(sec.inicio, 2, sec.fin - sec.inicio + 1, 2).getValues();
+  const conMonto = filas.map((f, i) => ({ fila: sec.inicio + i, b: normEt_(f[0]), c: Number(f[1]) || 0 })).filter(x => x.c > 0);
+  const esMuestra = conMonto.length === 2 && conMonto.every(x => x.c === 7000 && (x.b.indexOf("administracion") === 0 || x.b.indexOf("limpieza") === 0));
+  if (!esMuestra) return false;
+  const ext = seccionEgresos_(h, "extraordinario");
+  if (ext && h.getRange(ext.inicio, 3, ext.fin - ext.inicio + 1, 1).getValues().some(f => (Number(f[0]) || 0) > 0)) return false;
+  const esPlantilla = h.getName() === PLANTILLA;
+  if (!esPlantilla) {
+    const cob = h.createTextFinder("COBROS POR DEPARTAMENTO").matchCase(false).findNext();
+    const tot = h.createTextFinder("TOTAL COBRADO").matchCase(false).findNext();
+    if (cob && tot && h.getRange(cob.getRow() + 2, 3, Math.max(1, tot.getRow() - cob.getRow() - 2), 3).getValues().some(f => f.some(v => (Number(v) || 0) > 0))) return false;
+  }
+  conMonto.forEach(x => h.getRange(x.fila, 3).clearContent());
+  return true;
+}
+/* Filas de datos de una sección de egresos: { inicio, fin, total } (1-based). */
+function seccionEgresos_(h, tipo) {
+  /* Celda completa: el resumen tiene "(−) Egresos ordinarios" y no es la sección. */
+  const enc = h.createTextFinder(tipo === "extraordinario" ? "EGRESOS EXTRAORDINARIOS" : "EGRESOS ORDINARIOS").matchCase(false).matchEntireCell(true).findNext();
+  if (!enc) return null;
+  const col = h.getRange(enc.getRow() + 1, 2, 40, 1).getValues();
+  for (let i = 1; i < col.length; i++) {
+    if (normEt_(col[i][0]).indexOf("total") === 0) return { inicio: enc.getRow() + 2, fin: enc.getRow() + i, total: enc.getRow() + 1 + i };
+  }
+  return null;
+}
+function normEt_(s) { return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, ""); }
+
+/* ============================ EGRESOS (egresos.html) ============================ */
+
+function claveEgresos_() { return String(config_().clave_egresos || "egresos").trim(); }
+
+function hojaEgresos_() {
+  const ss = SpreadsheetApp.getActive();
+  let h = ss.getSheetByName(HOJA_EGRESOS);
+  if (!h) {
+    h = ss.insertSheet(HOJA_EGRESOS);
+    h.getRange(1, 1, 1, ENC_EGRESOS.length).setValues([ENC_EGRESOS]).setFontWeight("bold").setBackground("#1d3f63").setFontColor("#ffffff");
+    h.setFrozenRows(1);
+    h.setColumnWidth(1, 130); h.setColumnWidth(4, 220); h.setColumnWidth(5, 160); h.setColumnWidth(8, 220); h.setColumnWidth(9, 120);
+    h.getRange("A2:A").setNumberFormat("dd/mm/yyyy hh:mm");
+    h.getRange("B2:B").setNumberFormat("@");
+    h.getRange("F2:F").setNumberFormat("$#,##0.00");
+    h.getRange("G2:G").setNumberFormat("dd/mm/yyyy");
+    h.hideColumns(11);
+    const cf = SpreadsheetApp.newConditionalFormatRule().whenTextEqualTo("Anulado").setBackground("#f8d7da").setRanges([h.getRange("M2:M")]).build();
+    h.setConditionalFormatRules([cf]);
+  }
+  return h;
+}
+
+/* Anota un gasto en la pestaña del mes y en la bitácora. */
+function registrarEgreso_(d) {
+  if (String(d.clave || "") !== claveEgresos_()) return { ok: false, error: "clave" };
+  const mes = String(d.mes || "");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
+  const tipo = d.tipo === "extraordinario" ? "extraordinario" : "ordinario";
+  const concepto = limpiar_(d.concepto, 80);
+  const proveedor = limpiar_(d.proveedor, 60);
+  const monto = Math.round((parseFloat(d.monto) || 0) * 100) / 100;
+  if (!concepto) return { ok: false, error: "concepto" };
+  if (!(monto > 0)) return { ok: false, error: "monto" };
+  const nota = limpiar_(d.nota, 200);
+  const quien = limpiar_(d.quien, 40);
+  const ahora = new Date();
+  /* Varias fechas (el conserje de lunes, miércoles y viernes): el monto es por fecha,
+     la celda del mes recibe la suma y la bitácora guarda un renglón por día. */
+  let fechas = Array.isArray(d.fechas) ? d.fechas : [d.fecha];
+  fechas = fechas.map(x => String(x || "")).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x));
+  fechas = fechas.filter((x, i) => fechas.indexOf(x) === i).sort();
+  if (!fechas.length) fechas = [""];
+  const aFecha = x => { if (!x) return null; const p = x.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); };
+  const fechaPago = aFecha(fechas[0]);
+  const veces = fechas.length;
+  const total = Math.round(monto * veces * 100) / 100;
+
+  const ss = SpreadsheetApp.getActive();
+  const hoja = hojaDelMes_(ss, mes);
+  const sec = seccionEgresos_(hoja, tipo);
+  if (!sec) return { ok: false, error: "No encuentro la sección de egresos en " + hoja.getName() };
+
+  // Comprobante (opcional): imagen o PDF a la carpeta del mes en Drive
+  let url = "";
+  if (d.imagen && String(d.imagen).length > 100) {
+    const ext = /pdf/i.test(String(d.tipoArchivo || "")) ? ".pdf" : ".jpg";
+    const nombre = "Egreso · " + Utilities.formatDate(fechaPago || ahora, "America/Mexico_City", "yyyy-MM-dd") + (veces > 1 ? " (" + veces + " fechas)" : "") + " · " + concepto + (proveedor ? " · " + proveedor : "") + " · $" + total + ext;
+    const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), d.tipoArchivo || "image/jpeg", nombre);
+    url = subcarpeta_(mes).createFile(blob).getUrl();
+  }
+
+  // Dónde anotarlo: en ordinarios, el renglón del mismo concepto (se suma si ya tiene monto);
+  // en extraordinarios, siempre un renglón nuevo. Si no hay renglón libre, se inserta uno dentro de la suma.
+  const etiqueta = concepto + (proveedor ? " · " + proveedor : "");
+  const filas = hoja.getRange(sec.inicio, 2, sec.fin - sec.inicio + 1, 3).getValues();
+  let fila = 0, nueva = false, previo = 0;
+  if (tipo === "ordinario") {
+    const k = normEt_(concepto);
+    for (let i = 0; i < filas.length; i++) {
+      const b = normEt_(filas[i][0]);
+      if (b && (b === k || b.indexOf(k) === 0 || k.indexOf(b) === 0)) { fila = sec.inicio + i; previo = Number(filas[i][1]) || 0; break; }
+    }
+  }
+  if (!fila) {
+    for (let i = 0; i < filas.length; i++) if (!String(filas[i][0]).trim() && !(Number(filas[i][1]) || 0)) { fila = sec.inicio + i; nueva = true; break; }
+  }
+  if (!fila) { hoja.insertRowBefore(sec.fin); fila = sec.fin; nueva = true; }   // dentro del rango de SUM
+  if (nueva || !String(filas[fila - sec.inicio] ? filas[fila - sec.inicio][0] : "").trim()) hoja.getRange(fila, 2).setValue(etiqueta);
+  else if (proveedor && String(hoja.getRange(fila, 2).getValue()).indexOf(proveedor) < 0) hoja.getRange(fila, 2).setValue(String(hoja.getRange(fila, 2).getValue()).trim() + " · " + proveedor);
+  hoja.getRange(fila, 3).setValue(Math.round((previo + total) * 100) / 100).setNumberFormat("$#,##0.00");
+  // La liga del comprobante va en D solo si la celda está vacía; el resto queda en la bitácora y en Drive.
+  if (url && !String(hoja.getRange(fila, 4).getValue() || "").trim()) hoja.getRange(fila, 4).setValue(url);
+
+  const bit = hojaEgresos_();
+  const folios = [];
+  const a1 = hoja.getRange(fila, 3).getA1Notation();
+  fechas.slice().reverse().forEach((fx, k) => {              // al insertar arriba, la primera fecha queda hasta arriba
+    const folio = "E-" + String(siguienteFolioEgreso_()).padStart(4, "0");
+    const celda = hoja.getName() + "!" + a1 + "=" + monto + "=" + (nueva && k === fechas.length - 1 ? "nueva" : "suma");
+    bit.insertRowBefore(2);
+    bit.getRange(2, 1, 1, ENC_EGRESOS.length).setValues([[ahora, mes, tipo, concepto, proveedor, monto, aFecha(fx) || "", nota, url, quien, celda, folio, "Registrado"]]);
+    bit.getRange(2, 1).setNumberFormat("dd/mm/yyyy hh:mm");
+    bit.getRange(2, 2).setNumberFormat("@").setValue(mes);
+    bit.getRange(2, 6).setNumberFormat("$#,##0.00");
+    bit.getRange(2, 7).setNumberFormat("dd/mm/yyyy");
+    folios.unshift(folio);
+  });
+  try { CacheService.getScriptCache().remove("finanzas"); } catch (e) {}
+  return { ok: true, folio: folios.join(", "), folios: folios, veces: veces, total: total, hoja: hoja.getName(), celda: a1, comprobante: url };
+}
+
+/* Deshace un gasto registrado: resta el monto en la celda del mes (o limpia el renglón si lo creó) y marca Anulado. */
+function anularEgreso_(d) {
+  if (String(d.clave || "") !== claveEgresos_()) return { ok: false, error: "clave" };
+  const bit = hojaEgresos_();
+  const n = bit.getLastRow();
+  if (n < 2) return { ok: false, error: "folio" };
+  const datos = bit.getRange(2, 1, n - 1, ENC_EGRESOS.length).getValues();
+  const i = datos.findIndex(f => String(f[11]) === String(d.folio));
+  if (i < 0) return { ok: false, error: "folio" };
+  const f = datos[i];
+  if (String(f[12]) === "Anulado") return { ok: true, folio: d.folio, ya: true };
+  const partes = String(f[10]).split("=");                   // Hoja!C62=monto=nueva|suma
+  const [hojaNombre, a1] = partes[0].split("!");
+  const monto = Number(partes[1]) || Number(f[5]) || 0;
+  const hoja = SpreadsheetApp.getActive().getSheetByName(hojaNombre);
+  if (hoja && a1) {
+    const rg = hoja.getRange(a1);
+    const resto = Math.round(((Number(rg.getValue()) || 0) - monto) * 100) / 100;
+    if (resto > 0) rg.setValue(resto);
+    else {
+      rg.clearContent();
+      if (partes[2] === "nueva") hoja.getRange(rg.getRow(), 2, 1, 3).clearContent();   // B concepto · C monto · D liga
+      else if (f[8] && String(hoja.getRange(rg.getRow(), 4).getValue()).trim() === String(f[8]).trim()) hoja.getRange(rg.getRow(), 4).clearContent();
+    }
+  }
+  bit.getRange(2 + i, 13).setValue("Anulado");
+  try { CacheService.getScriptCache().remove("finanzas"); } catch (e) {}
+  return { ok: true, folio: d.folio };
+}
+
+/* Lo registrado en un mes (bitácora) y lo que la pestaña del mes tiene hoy en egresos. */
+function egresosMes_(mes, clave) {
+  if (String(clave || "") !== claveEgresos_()) return { ok: false, error: "clave" };
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(mes || ""))) return { ok: false, error: "mes" };
+  const ss = SpreadsheetApp.getActive();
+  const bit = hojaEgresos_();
+  const n = bit.getLastRow();
+  const lista = n < 2 ? [] : bit.getRange(2, 1, n - 1, ENC_EGRESOS.length).getValues()
+    .filter(f => mesTexto_(f[1]) === mes && String(f[12]) !== "Anulado")
+    .map(f => ({
+      folio: String(f[11]), registrado: f[0] instanceof Date ? Utilities.formatDate(f[0], "America/Mexico_City", "d/M/yyyy HH:mm") : String(f[0]),
+      tipo: String(f[2]), concepto: String(f[3]), proveedor: String(f[4] || ""), monto: Number(f[5]) || 0,
+      fecha: f[6] instanceof Date ? Utilities.formatDate(f[6], "America/Mexico_City", "d/M/yyyy") : String(f[6] || ""),
+      nota: String(f[7] || ""), comprobante: String(f[8] || ""), quien: String(f[9] || "")
+    }));
+  const idx = parseInt(mes.split("-")[1], 10) - 1, anio = parseInt(mes.split("-")[0], 10);
+  const hoja = buscarHojaMes_(ss, nombreHojaMes_(idx, anio));
+  const enHoja = { ordinarios: [], extraordinarios: [] };
+  if (hoja) {
+    ["ordinario", "extraordinario"].forEach(t => {
+      const sec = seccionEgresos_(hoja, t);
+      if (!sec) return;
+      hoja.getRange(sec.inicio, 2, sec.fin - sec.inicio + 1, 2).getValues().forEach(f => {
+        if (String(f[0]).trim() && (Number(f[1]) || 0) > 0) enHoja[t + "s"].push([String(f[0]).trim(), Math.round(Number(f[1]) * 100) / 100]);
+      });
+    });
+  }
+  const cfg = config_();
+  return { ok: true, mes: mes, hoja: hoja ? hoja.getName() : "", lista: lista, enHoja: enHoja,
+    conceptos: ["Administración", "Agua (recibo del organismo)", "Luz (CFE)", "Limpieza y conserjería", "Jardinería", "Alberca", "Elevador", "Gas", "Papelería y trámites"],
+    urlHoja: ss.getUrl(), aviso: String(cfg.aviso_egresos || "") };
+}
+
+function siguienteFolioEgreso_() {
+  const props = PropertiesService.getScriptProperties();
+  let n = parseInt(props.getProperty("folioEgreso"), 10);
+  if (!(n >= 1)) {
+    n = 1;
+    const h = SpreadsheetApp.getActive().getSheetByName(HOJA_EGRESOS);
+    if (h && h.getLastRow() > 1) h.getRange(2, 12, h.getLastRow() - 1, 1).getValues().forEach(f => { const k = parseInt(String(f[0]).replace(/\D/g, ""), 10); if (k >= n) n = k + 1; });
+  }
+  props.setProperty("folioEgreso", String(n + 1));
+  return n;
 }
 
 /* ============================ AUXILIARES ============================ */
