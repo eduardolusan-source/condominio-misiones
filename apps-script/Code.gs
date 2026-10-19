@@ -1354,7 +1354,7 @@ function egresosMes_(mes, clave) {
   }
   const cfg = config_();
   return { ok: true, mes: mes, hoja: hoja ? hoja.getName() : "", lista: lista, enHoja: enHoja,
-    conceptos: ["Administración", "Agua (recibo del organismo)", "Luz (CFE)", "Limpieza y conserjería", "Jardinería", "Alberca", "Elevador", "Gas", "Papelería y trámites"],
+    conceptos: ["Administración", "Agua (recibo del organismo)", "Luz (CFE)", "Limpieza y conserjería", "Jardinería", "Alberca", "Insumos", "Elevador", "Gas", "Papelería y trámites"],
     urlHoja: ss.getUrl(), aviso: String(cfg.aviso_egresos || "") };
 }
 

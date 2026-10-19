@@ -108,7 +108,7 @@
         <button type="button" data-t="ordinario" class="sel">Gasto ordinario</button>
         <button type="button" data-t="extraordinario">Extraordinario</button>
       </div>
-      <p class="pista" id="tipoPista">Ordinario: lo de todos los meses (conserje, luz, agua, jardín…). Se suma al renglón de ese concepto en la hoja.</p>
+      <p class="pista" id="tipoPista">Ordinario: lo de todos los meses (conserje, luz, agua, jardín…) y los <b>insumos</b> que se compran para lo que sea (focos, cloro, herramienta, material de limpieza). Se suma al renglón de ese concepto en la hoja.</p>
       <div class="chips" id="conceptos"></div>
       <input id="concepto" type="text" maxlength="80" placeholder="Concepto (por ejemplo: Limpieza y conserjería)">
       <input id="proveedor" type="text" maxlength="60" placeholder="A quién se le pagó (opcional)">
@@ -169,7 +169,7 @@ let clave = "", quien = "";
 try { clave = localStorage.getItem("misiones_egresos") || ""; quien = localStorage.getItem("misiones_quien") || ""; } catch (e) {}
 let mes = idMes(hoy), tipo = "ordinario", archivo = null, tipoArchivo = "", enviando = false;
 const fechas = new Set();
-let conceptosBase = ["Administración", "Agua (recibo del organismo)", "Luz (CFE)", "Limpieza y conserjería", "Jardinería", "Alberca"];
+let conceptosBase = ["Administración", "Agua (recibo del organismo)", "Luz (CFE)", "Limpieza y conserjería", "Jardinería", "Alberca", "Insumos"];
 let repetibles = [];
 
 /* --- Acceso --- */
@@ -199,7 +199,7 @@ document.querySelectorAll(".tipo button").forEach(b => b.onclick = () => {
   tipo = b.dataset.t;
   document.querySelectorAll(".tipo button").forEach(x => x.classList.toggle("sel", x === b));
   $("tipoPista").textContent = tipo === "ordinario"
-    ? "Ordinario: lo de todos los meses (conserje, luz, agua, jardín…). Se suma al renglón de ese concepto en la hoja."
+    ? "Ordinario: lo de todos los meses (conserje, luz, agua, jardín…) y los insumos que se compran para lo que sea. Se suma al renglón de ese concepto en la hoja."
     : "Extraordinario: reparaciones, compras y gastos de una vez. Cada uno ocupa su propio renglón en la hoja.";
   pintarConceptos(); actualizar();
 });
