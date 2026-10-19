@@ -172,13 +172,16 @@ function instalar() {
   vivos.forEach((h, i) => {
     if (i === 0) return;
     const c6 = h.getRange("C6");
-    if (c6.getFormula()) return;
     const prev = vivos[i - 1];
     if (idDeHojaMes_(prev) !== mesSiguiente_(idDeHojaMes_(h), -1)) return;   // solo si el anterior es el mes inmediato
     const ref = /\s/.test(prev.getName()) ? "'" + prev.getName() + "'" : prev.getName();
     const fin = prev.createTextFinder("SALDO FINAL DEL MES").matchCase(false).findNext();
-    c6.setFormula("=" + ref + "!C" + (fin ? fin.getRow() : 18));
-    avisos.push("Saldo inicial de " + h.getName() + " encadenado a " + prev.getName());
+    const quiero = "=" + ref + "!C" + (fin ? fin.getRow() : 18);
+    const actual = c6.getFormula();
+    if (actual === quiero) return;
+    if (actual && !/^='?[^'!]+'?!C\d+$/.test(actual)) return;                  // fórmula propia de la Administración: no se toca
+    c6.setFormula(quiero);
+    avisos.push("Saldo inicial de " + h.getName() + " encadenado a " + prev.getName() + (actual ? " (corregido: apuntaba a otro renglón)" : ""));
   });
 
   const texto = avisos.length ? avisos.join("\n") : "Todo estaba ya en su lugar; no cambié nada.";
@@ -204,6 +207,25 @@ function aclararCasaClub_(h) {
   h.getRange(rEnc + 1, 3, 5, 1).setNumberFormat("dd/mm/yyyy");
   h.getRange(rEnc + 1, 4, 5, 1).setNumberFormat("$#,##0.00");
   return true;
+}
+
+/* Corrección de una sola vez (19 de octubre de 2026): en Octubre, el cobro de casa club
+   del depto 2 ($500) se perdió del registro mientras se reparaba la sección. Lo vuelve a
+   poner solo si el renglón sigue con el depto 2 y sin monto. Ejecutar a mano desde el editor. */
+function corregirCasaClubOctubre2026() {
+  const h = buscarHojaMes_(SpreadsheetApp.getActive(), "Octubre");
+  if (!h) throw new Error("No encuentro la pestaña Octubre");
+  const titulo = h.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+  const r = titulo.getRow() + 2;
+  const v = h.getRange(r, 2, 1, 3).getValues()[0];
+  if (Number(v[0]) === 2 && !(Number(v[2]) > 0)) {
+    h.getRange(r, 4).setValue(500).setNumberFormat("$#,##0.00");
+    try { CacheService.getScriptCache().remove("finanzas"); } catch (e) {}
+    Logger.log("Octubre: casa club del depto 2 = $500 restaurado en D" + r);
+    return "restaurado";
+  }
+  Logger.log("Octubre: no hacía falta (B" + r + "=" + v[0] + ", D" + r + "=" + v[2] + ")");
+  return "sin cambios";
 }
 
 /* Deshace lo que deja ajustarCasaClub_ cuando corre dos veces sobre la misma pestaña
