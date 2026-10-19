@@ -1030,21 +1030,35 @@ function finanzas_(fresh) {
   const desde = mesTexto_(cfg.finanzas_desde).trim();
   const meses = [];
   const proyectos = {};
+  /* Caja de la mesa: además de los meses en vivo, los vecinos pagan a la mesa cuotas
+     atrasadas de meses anteriores (agosto, septiembre…) y se anotan en la pestaña del mes
+     que cubren. Ese dinero también está en la cuenta: se suma a la caja. El agua de esos
+     meses no, porque la cobró la administración anterior. */
+  const previos = [];
   ss.getSheets().forEach(h => {
     if (!esHojaMes_(h)) return;
     const id = idDeHojaMes_(h);
-    if (!id || (desde && id < desde)) return;
+    if (!id) return;
     const m = leerMesVivo_(h, id);
+    if (desde && id < desde) {
+      const recibido = Math.round((m.ingresos.manto + m.ingresos.extra + m.ingresos.casaClub) * 100) / 100;
+      if (recibido > 0) previos.push({ id: id, nombre: m.nombre, monto: recibido, manto: m.ingresos.manto, extra: m.ingresos.extra, casaClub: m.ingresos.casaClub, pagaron: m.cobranza.pagaron });
+      return;
+    }
     if (!m.capturado) return;
     m.proyectos.forEach(p => { proyectos[p.nombre.toLowerCase()] = p; });
     delete m.proyectos;
     meses.push(m);
   });
   meses.sort((a, b) => a.id < b.id ? -1 : 1);
+  previos.sort((a, b) => a.id < b.id ? -1 : 1);
+  const totalPrevios = Math.round(previos.reduce((a, p) => a + p.monto, 0) * 100) / 100;
+  const ultimo = meses.length ? meses[meses.length - 1] : null;
   const out = {
     ok: true, servicio: "misiones-finanzas", generado: new Date().toISOString(),
     desde: desde, unidades: UNIDADES, cuota: Number(cfg.cuota_mantenimiento) || 1500,
-    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k])
+    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]),
+    caja: { saldo: Math.round(((ultimo ? ultimo.saldoFin : 0) + totalPrevios) * 100) / 100, ultimoMes: ultimo ? ultimo.id : "", saldoUltimoMes: ultimo ? ultimo.saldoFin : 0, previos: previos, totalPrevios: totalPrevios }
   };
   try { cache.put("finanzas", JSON.stringify(out), CACHE_FINANZAS); } catch (e) {}
   return out;
