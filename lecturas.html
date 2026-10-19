@@ -43,6 +43,16 @@
   .medidor .hecho { margin-top: 0.4rem; font-size: 0.88rem; color: var(--good-text); font-weight: 700; }
   .medidor .hecho a { color: inherit; }
   @media (prefers-color-scheme: dark) { .clave button, .medidor .guardar { color: #0d0d0d; } }
+  .faltan { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; margin: -0.3rem 0 0.9rem; font-size: 0.9rem; color: var(--ink-2); }
+  .faltan button { font: inherit; font-weight: 800; font-size: 0.9rem; min-width: 2.2rem; min-height: 2.2rem; border-radius: 999px; border: 2px solid var(--accent); background: var(--surface); color: var(--accent); cursor: pointer; }
+  .medidor .ant small { display: block; font-size: 0.7rem; font-weight: 600; color: var(--muted); text-align: right; letter-spacing: 0; }
+  .medidor .ant.sinbase { font-size: 0.95rem; color: var(--muted); text-align: left; }
+  .medidor input[type=text]:disabled { background: var(--page); color: var(--ink-2); }
+  .medidor .corregir { font: inherit; font-size: 0.85rem; font-weight: 700; background: none; border: 1.5px solid var(--baseline); border-radius: 999px; padding: 0.2rem 0.7rem; color: var(--ink-2); cursor: pointer; margin-left: 0.5rem; }
+  .ref { background: var(--page); border: 1.5px dashed var(--baseline); border-radius: 12px; padding: 0.6rem 0.8rem; margin-top: 0.6rem; font-size: 0.92rem; color: var(--ink-2); }
+  .ref b { color: var(--ink); }
+  .ref .t { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.2rem; }
+  .ref .fila { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.1rem 0; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -67,7 +77,7 @@
 
 <main class="lect">
   <h1>Lectura de medidores</h1>
-  <p class="lead">Un depto a la vez: toma la foto del medidor, escribe los números negros (sin las carátulas rojas) y guarda. Cada lectura se guarda al momento, así que puedes parar y seguir después. Cuando llegue el recibo de la CEA, captúralo en el primer bloque.</p>
+  <p class="lead">Un depto a la vez: toma la foto del medidor, escribe los números negros (sin las carátulas rojas) y guarda. Cada lectura se guarda al momento, así que puedes parar y seguir después. La <b>lectura anterior</b> es fija: es la última que se guardó. Si un depto no tiene ninguna, la primera que guardes queda como línea base. Cuando llegue el recibo de la CEA, captúralo en el primer bloque.</p>
 
   <div class="clave" id="cajaClave">
     <input id="clave" type="password" placeholder="Clave de lectura" autocomplete="off">
@@ -81,10 +91,14 @@
       <button type="button" id="btnNext" aria-label="Mes siguiente">▶</button>
     </div>
     <div class="avance" id="avance">Cargando…</div>
+    <div class="faltan hidden" id="faltan"></div>
     <div id="aviso" class="notice hidden"></div>
     <div class="medidor" id="recibo">
-      <div class="cab"><h3>Recibo de la CEA del mes</h3><small id="rEstado"></small></div>
-      <p style="margin:.3rem 0 0;color:var(--ink-2);font-size:.9rem">Cuando llegue el recibo del edificio, copia aquí lo que viene impreso. Con esto se calcula el cobro de cada depto.</p>
+      <div class="cab"><h3>Recibo de la CEA · <span id="rMes"></span></h3><small id="rEstado"></small></div>
+      <div class="ref hidden" id="rAnterior"></div>
+      <div class="ref" id="rResumen" style="display:none"></div>
+      <p style="margin:.5rem 0 0;color:var(--ink-2);font-size:.9rem" id="rPista">Cuando llegue el recibo nuevo del edificio, copia aquí lo que viene impreso: monto, m³ y fecha límite. Con esto se calcula el cobro de cada depto. Cada recibo va en el mes en que llega; si llega el mes que entra, pásate a ese mes con ▶.</p>
+      <div id="rForma">
       <div class="num">
         <div><label>Monto total del recibo $</label><input type="text" inputmode="decimal" id="rMonto" placeholder="10,078"></div>
         <div><label>m³ consumidos (del recibo)</label><input type="text" inputmode="decimal" id="rM3" placeholder="110"></div>
@@ -96,6 +110,7 @@
       <div class="acc">
         <label class="foto" id="rFoto">📷 Foto del recibo<input type="file" accept="image/*" capture="environment"></label>
         <button type="button" class="guardar" id="rGuardar" disabled>Guardar recibo</button>
+      </div>
       </div>
       <div class="hecho" id="rHecho"></div>
     </div>
@@ -153,46 +168,49 @@ async function cargar() {
 
 function pintar() {
   $("aviso").classList.add("hidden");
-  $("avance").textContent = datos.capturados + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes) + (datos.recibo && datos.recibo.monto ? " · recibo CEA " + fmtP(datos.recibo.monto) : " · recibo CEA pendiente");
+  pintarAvance();
   const lista = $("lista"); lista.innerHTML = "";
   datos.deptos.forEach(d => {
-    const card = document.createElement("div"); card.className = "medidor" + (d.actual !== null ? " ok" : ""); card.id = "m_" + d.depto;
-    const sinAnterior = d.anterior === null || d.anteriorEditable;
+    const guardada = d.actual !== null;
+    const card = document.createElement("div"); card.className = "medidor" + (guardada ? " ok" : ""); card.id = "m_" + d.depto;
+    const antHtml = d.anterior !== null
+      ? '<div class="ant">' + d.anterior + '<small>' + (d.anteriorEsBase ? "línea base" : "lectura") + (d.anteriorFecha ? " · " + d.anteriorFecha : (d.anteriorMes ? " · " + nombreMes(d.anteriorMes).toLowerCase() : "")) + '</small></div>'
+      : '<div class="ant sinbase">Sin línea base. La lectura que guardes hoy queda como base (consumo 0).</div>';
     card.innerHTML =
       '<div class="cab"><h3>Depto ' + d.depto + '</h3><small>' + (d.promedio !== null ? "promedio " + d.promedio + " m³/mes" : "sin historial") + '</small></div>' +
       '<div class="num">' +
-        (sinAnterior
-          ? '<div><label>Lectura anterior' + (d.anterior === null ? ' (primera vez)' : '') + '</label><input type="text" inputmode="decimal" id="a_' + d.depto + '" placeholder="0000" value="' + (d.anterior !== null ? d.anterior : "") + '"></div>'
-          : '<div><label>Lectura anterior</label><div class="ant">' + d.anterior + '</div></div>') +
-        '<div><label>Lectura de hoy</label><input type="text" inputmode="decimal" id="l_' + d.depto + '" placeholder="0000" value="' + (d.actual !== null ? d.actual : "") + '"></div>' +
+        '<div><label>Lectura anterior</label>' + antHtml + '</div>' +
+        '<div><label>Lectura de hoy</label><input type="text" inputmode="decimal" id="l_' + d.depto + '" placeholder="0000" value="' + (guardada ? d.actual : "") + '"' + (guardada ? " disabled" : "") + '></div>' +
       '</div>' +
       '<div class="cons" id="c_' + d.depto + '"></div>' +
       '<div class="aviso hidden" id="w_' + d.depto + '"></div>' +
-      '<label class="est"><input type="checkbox" id="e_' + d.depto + '"' + (d.estimado ? " checked" : "") + '> No se pudo leer: estimar con el promedio</label>' +
-      '<div class="acc">' +
+      '<label class="est' + (d.anterior === null ? " hidden" : "") + '"><input type="checkbox" id="e_' + d.depto + '"' + (d.estimado ? " checked" : "") + (guardada ? " disabled" : "") + '> No se pudo leer: estimar con el promedio</label>' +
+      '<div class="acc' + (guardada ? " hidden" : "") + '" id="acc_' + d.depto + '">' +
         '<label class="foto' + (d.foto ? " lista" : "") + '" id="f_' + d.depto + '">' + (d.foto ? "📷 Cambiar foto" : "📷 Foto del medidor") + '<input type="file" accept="image/*" capture="environment"></label>' +
         '<button type="button" class="guardar" id="g_' + d.depto + '" disabled>Guardar</button>' +
       '</div>' +
-      '<div class="hecho" id="h_' + d.depto + '">' + (d.actual !== null ? "✓ Guardada" + (d.foto ? ' · <a href="' + d.foto + '" target="_blank" rel="noopener">ver foto</a>' : "") : "") + '</div>';
+      '<div class="hecho" id="h_' + d.depto + '">' + (guardada ? "✓ Guardada" + (d.consumo !== null ? ": " + d.consumo + " m³" : "") + (d.capturadoEl ? " el " + d.capturadoEl : "") + (d.foto ? ' · <a href="' + d.foto + '" target="_blank" rel="noopener">ver foto</a>' : "") + ' <button type="button" class="corregir" id="x_' + d.depto + '">Corregir</button>' : "") + '</div>';
     lista.appendChild(card);
     const inp = $("l_" + d.depto), chk = $("e_" + d.depto);
     const calc = () => {
-      const ant = sinAnterior ? num($("a_" + d.depto).value) : d.anterior;
+      const ant = d.anterior;
       let act = num(inp.value);
       if (chk.checked && ant !== null && d.promedio !== null) { act = Math.round((ant + d.promedio) * 10) / 10; inp.value = act; }
       const c = $("c_" + d.depto), w = $("w_" + d.depto);
       w.classList.add("hidden");
-      if (ant === null || act === null) { c.innerHTML = ""; $("g_" + d.depto).disabled = true; return; }
+      if (act === null) { c.innerHTML = ""; $("g_" + d.depto).disabled = true; return; }
+      if (ant === null) { c.innerHTML = "<span>Queda como línea base</span><b>0 m³</b>"; $("g_" + d.depto).disabled = false; return; }
       let cons = Math.round((act - ant) * 10) / 10;
       if (cons < 0 && act < 1000) { cons = Math.round((act + 10000 - ant) * 10) / 10; w.textContent = "Parece que el medidor dio la vuelta; se cuenta como " + cons + " m³."; w.classList.remove("hidden"); }
-      else if (cons < 0) { w.textContent = "La lectura es menor que la anterior. Revisa los números."; w.classList.remove("hidden"); $("g_" + d.depto).disabled = true; c.innerHTML = ""; return; }
+      else if (cons < 0) { w.textContent = "La lectura es menor que la anterior (" + ant + "). Revisa los números."; w.classList.remove("hidden"); $("g_" + d.depto).disabled = true; c.innerHTML = ""; return; }
       else if (d.promedio !== null && d.promedio > 0 && cons > d.promedio * 3) { w.textContent = "Consumo muy alto contra el promedio (" + d.promedio + " m³). Revisa la foto antes de guardar."; w.classList.remove("hidden"); }
+      else if (cons === 0 && d.promedio !== null && d.promedio > 0) { w.textContent = "Consumo cero: ¿el medidor marca lo mismo que el mes pasado? Si no se pudo leer, usa la casilla de estimar."; w.classList.remove("hidden"); }
       c.innerHTML = "<span>Consumo del mes</span><b>" + cons + " m³</b>";
       $("g_" + d.depto).disabled = false;
     };
     inp.addEventListener("input", calc); chk.addEventListener("change", calc);
-    if (sinAnterior) $("a_" + d.depto).addEventListener("input", calc);
     calc();
+    if (guardada) $("x_" + d.depto).onclick = () => { inp.disabled = false; chk.disabled = false; $("acc_" + d.depto).classList.remove("hidden"); $("x_" + d.depto).remove(); inp.focus(); inp.select(); };
     $("f_" + d.depto).querySelector("input").addEventListener("change", ev => {
       const f = ev.target.files[0]; if (!f) return;
       const img = new Image(); const url = URL.createObjectURL(f);
@@ -206,19 +224,52 @@ function pintar() {
       };
       img.src = url;
     });
-    $("g_" + d.depto).onclick = () => guardar(d, sinAnterior);
+    $("g_" + d.depto).onclick = () => guardar(d);
   });
+}
+
+/* Avance y accesos rápidos a los deptos que faltan */
+function pintarAvance() {
+  const hechos = datos.deptos.filter(d => d.actual !== null).map(d => d.depto);
+  const faltan = datos.deptos.filter(d => d.actual === null).map(d => d.depto);
+  $("avance").textContent = hechos.length + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes) + (datos.recibo && datos.recibo.monto ? " · recibo CEA " + fmtP(datos.recibo.monto) : " · recibo CEA pendiente");
+  const f = $("faltan"); f.innerHTML = "";
+  if (!faltan.length) { f.classList.add("hidden"); return; }
+  f.classList.remove("hidden");
+  f.appendChild(Object.assign(document.createElement("span"), { textContent: "Faltan:" }));
+  faltan.forEach(n => { const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.onclick = () => { const c = $("m_" + n); c.scrollIntoView({ behavior: "smooth", block: "start" }); const i = $("l_" + n); if (i && !i.disabled) setTimeout(() => i.focus(), 400); }; f.appendChild(b); });
 }
 
 /* --- Recibo de la CEA del mes --- */
 let fotoRecibo = "";
 function pintarRecibo() {
-  const r = datos.recibo;
-  $("rMonto").value = r && r.monto ? r.monto : ""; $("rM3").value = r && r.m3 ? r.m3 : ""; $("rLimite").value = r && r.limite ? r.limite : "";
-  $("rEstado").textContent = r && r.monto ? "capturado" : "pendiente";
-  $("recibo").classList.toggle("ok", !!(r && r.monto));
-  $("rHecho").innerHTML = r && r.monto ? "✓ Recibo guardado · precio " + fmtP(r.precio) + " por m³ · comunes " + fmtP(r.comunesDepto) + " por depto" + (r.foto ? ' · <a href="' + r.foto + '" target="_blank" rel="noopener">ver foto</a>' : "") : "";
-  $("rFoto").firstChild.textContent = r && r.foto ? "📷 Cambiar foto" : "📷 Foto del recibo";
+  const r = datos.recibo, a = datos.reciboAnterior;
+  $("rMes").textContent = nombreMes(mes).toLowerCase();
+  const fechaLim = x => x && x.limite ? x.limite.split("-").reverse().join("/") : "";
+  // Recibo anterior, solo de referencia
+  if (a && a.monto) {
+    $("rAnterior").innerHTML = '<span class="t">Recibo anterior · ' + nombreMes(a.mes).toLowerCase() + ' (así quedó)</span>' +
+      '<div class="fila"><span>Monto</span><b>' + fmtP(a.monto) + '</b></div><div class="fila"><span>m³ del recibo</span><b>' + a.m3 + '</b></div>' +
+      (a.limite ? '<div class="fila"><span>Fecha límite</span><b>' + fechaLim(a) + '</b></div>' : "") +
+      '<div class="fila"><span>Precio por m³</span><b>' + fmtP(a.precio) + '</b></div>' + (a.foto ? '<div class="fila"><span></span><a href="' + a.foto + '" target="_blank" rel="noopener">ver foto</a></div>' : "");
+    $("rAnterior").classList.remove("hidden");
+  } else $("rAnterior").classList.add("hidden");
+  // Recibo de este mes: si ya está, resumen cerrado con botón Corregir; si no, el formulario en blanco
+  const hay = !!(r && r.monto);
+  $("rEstado").textContent = hay ? "capturado" : "pendiente";
+  $("recibo").classList.toggle("ok", hay);
+  $("rMonto").value = hay ? r.monto : ""; $("rM3").value = hay ? r.m3 : ""; $("rLimite").value = hay && r.limite ? r.limite : "";
+  if (hay) {
+    $("rResumen").innerHTML = '<span class="t">Recibo de ' + nombreMes(mes).toLowerCase() + ' · guardado</span>' +
+      '<div class="fila"><span>Monto</span><b>' + fmtP(r.monto) + '</b></div><div class="fila"><span>m³ del recibo</span><b>' + r.m3 + '</b></div>' +
+      (r.limite ? '<div class="fila"><span>Fecha límite</span><b>' + fechaLim(r) + '</b></div>' : "") +
+      '<div class="fila"><span>Precio por m³</span><b>' + fmtP(r.precio) + '</b></div><div class="fila"><span>Comunes por depto</span><b>' + fmtP(r.comunesDepto) + '</b></div>' +
+      '<div class="fila"><span>' + (r.foto ? '<a href="' + r.foto + '" target="_blank" rel="noopener">ver foto</a>' : "") + '</span><button type="button" class="corregir" id="rCorregir">Corregir</button></div>';
+    $("rResumen").style.display = ""; $("rForma").classList.add("hidden"); $("rPista").classList.add("hidden");
+    $("rCorregir").onclick = () => { $("rForma").classList.remove("hidden"); $("rResumen").style.display = "none"; $("rPista").classList.remove("hidden"); $("rMonto").focus(); };
+  } else { $("rResumen").style.display = "none"; $("rForma").classList.remove("hidden"); $("rPista").classList.remove("hidden"); }
+  $("rHecho").innerHTML = "";
+  $("rFoto").classList.toggle("lista", !!(r && r.foto)); $("rFoto").firstChild.textContent = r && r.foto ? "📷 Cambiar foto" : "📷 Foto del recibo";
   calcRecibo();
 }
 const fmtP = n => "$" + Number(n || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -246,26 +297,28 @@ $("rGuardar").onclick = async () => {
   try {
     const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
     const j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
-    datos.recibo = { monto: j.monto, m3: j.m3, limite: $("rLimite").value, precio: j.precio, suma: j.suma, comunes: j.comunes, comunesDepto: j.comunesDepto, foto: j.foto || (datos.recibo && datos.recibo.foto) || "" };
+    datos.recibo = { mes: mes, monto: j.monto, m3: j.m3, limite: $("rLimite").value, precio: j.precio, suma: j.suma, comunes: j.comunes, comunesDepto: j.comunesDepto, foto: j.foto || (datos.recibo && datos.recibo.foto) || "" };
     fotoRecibo = ""; pintarRecibo();
-    $("avance").textContent = document.querySelectorAll(".medidor.ok:not(#recibo)").length + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes) + " · recibo CEA " + fmtP(j.monto);
+    pintarAvance();
   } catch (e) { alert("No se guardó el recibo: " + (e.message || e)); }
   btn.textContent = "Guardar recibo"; calcRecibo();
 };
 
-async function guardar(d, sinAnterior) {
+async function guardar(d) {
   const btn = $("g_" + d.depto); btn.disabled = true; btn.textContent = "Guardando…";
   const cuerpo = { accion: "lectura", clave: clave, mes: mes, depto: d.depto, actual: num($("l_" + d.depto).value), estimado: $("e_" + d.depto).checked, imagen: fotos[d.depto] || "", tipo: "image/jpeg" };
-  if (sinAnterior) cuerpo.anterior = num($("a_" + d.depto).value);
   try {
     const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
     const j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
+    d.actual = j.actual; d.consumo = j.consumo; if (j.foto) d.foto = j.foto;
+    if (j.base) { d.anterior = j.anterior; d.anteriorEsBase = true; }
     $("m_" + d.depto).classList.add("ok");
-    $("h_" + d.depto).innerHTML = "✓ Guardada: " + j.consumo + " m³" + (j.foto ? ' · <a href="' + j.foto + '" target="_blank" rel="noopener">ver foto</a>' : "");
+    $("l_" + d.depto).disabled = true; $("e_" + d.depto).disabled = true; $("acc_" + d.depto).classList.add("hidden");
+    $("h_" + d.depto).innerHTML = "✓ Guardada: " + (j.base ? "línea base" : j.consumo + " m³") + (j.foto ? ' · <a href="' + j.foto + '" target="_blank" rel="noopener">ver foto</a>' : "") + ' <button type="button" class="corregir" id="x_' + d.depto + '">Corregir</button>';
+    $("x_" + d.depto).onclick = () => { $("l_" + d.depto).disabled = false; $("e_" + d.depto).disabled = false; $("acc_" + d.depto).classList.remove("hidden"); $("x_" + d.depto).remove(); };
     btn.textContent = "Guardar"; btn.disabled = false;
     delete fotos[d.depto];
-    const n = document.querySelectorAll(".medidor.ok:not(#recibo)").length;
-    $("avance").textContent = n + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes);
+    pintarAvance();
   } catch (e) {
     alert("No se guardó: " + (e.message || e)); btn.textContent = "Guardar"; btn.disabled = false;
   }

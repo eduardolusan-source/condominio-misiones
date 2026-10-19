@@ -739,28 +739,44 @@ function lecturasMes_(mes, clave) {
   if (String(clave || "") !== claveLector_() && String(clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
   const h = hojaAgua_();
   const filas = h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues() : [];
-  const r = { ok: true, mes: mes, deptos: [], capturados: 0, recibo: null, diaLectura: String(config_().dia_lectura || "") };
+  const r = { ok: true, mes: mes, deptos: [], capturados: 0, recibo: null, reciboAnterior: null, diaLectura: String(config_().dia_lectura || "") };
+  const fechaCorta = v => v instanceof Date ? Utilities.formatDate(v, "America/Mexico_City", "d/M/yyyy") : "";
   for (let d = 1; d <= UNIDADES; d++) {
-    const mias = filas.filter(f => Number(f[1]) === d).map(f => ({ mes: mesTexto_(f[0]), ant: f[2], act: f[3], cons: f[4], est: f[5], foto: f[6] }));
+    const mias = filas.filter(f => Number(f[1]) === d).map(f => ({ mes: mesTexto_(f[0]), ant: f[2], act: f[3], cons: f[4], est: f[5], foto: f[6], cap: f[7], nota: String(f[10] || "") }));
     const previas = mias.filter(x => x.mes < mes && x.act !== "" && x.act !== null).sort((a, b) => a.mes < b.mes ? 1 : -1);
     const actual = mias.find(x => x.mes === mes) || null;
     const ult = previas.slice(0, 3).map(x => Number(x.cons)).filter(x => !isNaN(x) && x >= 0);
+    /* La lectura anterior es fija: la última guardada de un mes previo o, si este mes ya
+       tiene renglón, la que quedó ahí (p. ej. la línea base). Nunca se edita desde la página. */
+    const base = previas.length ? previas[0] : (actual && actual.ant !== "" && actual.ant !== null ? actual : null);
     r.deptos.push({
       depto: d,
-      anterior: previas.length ? Number(previas[0].act) : (actual && actual.ant !== "" ? Number(actual.ant) : null),
-      anteriorEditable: !previas.length,
+      anterior: base ? Number(previas.length ? base.act : base.ant) : null,
+      anteriorMes: base ? base.mes : "",
+      anteriorFecha: base ? fechaCorta(base.cap) : "",
+      anteriorEsBase: !previas.length && !!actual && /l[ií]nea de base/i.test(actual.nota),
+      anteriorEditable: false,
       actual: actual && actual.act !== "" ? Number(actual.act) : null,
+      consumo: actual && actual.cons !== "" ? Number(actual.cons) : null,
+      capturadoEl: actual ? fechaCorta(actual.cap) : "",
       estimado: actual ? String(actual.est) === "sí" : false,
       foto: actual ? String(actual.foto || "") : "",
       promedio: ult.length ? Math.round(ult.reduce((a, b) => a + b, 0) / ult.length * 10) / 10 : null
     });
     if (actual && actual.act !== "") r.capturados++;
   }
+  const leeRecibo = fila => {
+    const v = hojaRecibos_().getRange(fila, 1, 1, 9).getValues()[0];
+    return { mes: mesTexto_(v[0]), monto: Number(v[1]) || 0, m3: Number(v[2]) || 0, limite: v[3] instanceof Date ? Utilities.formatDate(v[3], "America/Mexico_City", "yyyy-MM-dd") : "",
+      precio: Number(v[4]) || 0, suma: Number(v[5]) || 0, comunes: Number(v[6]) || 0, comunesDepto: Number(v[7]) || 0, foto: String(v[8] || "").match(/https?:\/\/\S+/) ? String(v[8]).match(/https?:\/\/\S+/)[0] : "" };
+  };
   const fr = filaRecibo_(mes, false);
-  if (fr) {
-    const v = hojaRecibos_().getRange(fr, 2, 1, 8).getValues()[0];
-    r.recibo = { monto: Number(v[0]) || 0, m3: Number(v[1]) || 0, limite: v[2] instanceof Date ? Utilities.formatDate(v[2], "America/Mexico_City", "yyyy-MM-dd") : "",
-      precio: Number(v[3]) || 0, suma: Number(v[4]) || 0, comunes: Number(v[5]) || 0, comunesDepto: Number(v[6]) || 0, foto: String(v[7] || "").match(/https?:\/\/\S+/) ? String(v[7]).match(/https?:\/\/\S+/)[0] : "" };
+  if (fr) r.recibo = leeRecibo(fr);
+  /* El último recibo capturado antes de este mes, para tenerlo a la vista al capturar el nuevo. */
+  const hr = hojaRecibos_();
+  if (hr.getLastRow() > 1) {
+    const meses = hr.getRange(2, 1, hr.getLastRow() - 1, 2).getValues().map((f, i) => ({ mes: mesTexto_(f[0]), monto: Number(f[1]) || 0, fila: i + 2 })).filter(x => x.mes < mes && x.monto > 0).sort((a, b) => a.mes < b.mes ? 1 : -1);
+    if (meses.length) r.reciboAnterior = leeRecibo(meses[0].fila);
   }
   return r;
 }
@@ -805,8 +821,13 @@ function guardarLectura_(d) {
   const h = hojaAgua_();
   const info = lecturasMes_(mes, d.clave).deptos[depto - 1];
   let anterior = info.anterior;
-  if (info.anteriorEditable && d.anterior !== undefined && d.anterior !== "" && d.anterior !== null) anterior = Math.round(parseFloat(d.anterior) * 10) / 10;
-  if (anterior === null || isNaN(anterior)) return { ok: false, error: "falta la lectura anterior" };
+  let esBase = false;
+  if (anterior === null || isNaN(anterior)) {
+    /* Primera lectura del depto: queda como línea base (consumo 0) y de ahí en adelante
+       la lectura anterior es fija. Si viene un valor explícito de base, se respeta. */
+    if (d.anterior !== undefined && d.anterior !== "" && d.anterior !== null) anterior = Math.round(parseFloat(d.anterior) * 10) / 10;
+    else { anterior = actual; esBase = true; }
+  }
   let consumo = Math.round((actual - anterior) * 10) / 10;
   if (consumo < 0 && actual < 1000) consumo = Math.round((actual + 10000 - anterior) * 10) / 10;   // el medidor dio la vuelta
   if (consumo < 0) return { ok: false, error: "la lectura es menor que la anterior" };
@@ -826,9 +847,53 @@ function guardarLectura_(d) {
   if (foto) h.getRange(fila, 7).setValue(foto);
   h.getRange(fila, 8).setValue(ahora).setNumberFormat("dd/mm/yyyy hh:mm");
   h.getRange(fila, 9).setFormula("=IF(AND(ISNUMBER(E" + fila + "),ISNUMBER(VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE))),VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE)*E" + fila + "+VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$H,8,FALSE),\"\")").setNumberFormat("$#,##0.00");
-  if (d.nota) h.getRange(fila, 11).setValue(limpiar_(d.nota, 200));
-  return { ok: true, depto: depto, anterior: anterior, actual: actual, consumo: consumo, foto: foto };
+  if (esBase) h.getRange(fila, 11).setValue("Línea de base del " + Utilities.formatDate(ahora, "America/Mexico_City", "dd/MM/yyyy") + (d.nota ? " · " + limpiar_(d.nota, 150) : ""));
+  else if (d.nota) h.getRange(fila, 11).setValue(limpiar_(d.nota, 200));
+  return { ok: true, depto: depto, anterior: anterior, actual: actual, consumo: consumo, foto: foto, base: esBase };
 }
+/* Líneas base de agua de una sola vez (19 de octubre de 2026): lecturas que Eduardo
+   recabó para los deptos que no tenían ninguna, más la corrección del depto 9. Crea el
+   renglón de 2026-10 con anterior = actual (consumo 0) o ajusta el existente. Idempotente.
+   Ejecutar a mano desde el editor. */
+function lineasBaseOctubre2026() {
+  const base = { 1: 90, 2: 114, 5: 87, 6: 90, 10: 131, 13: 14, 9: 127, 7: 139, 14: 62 };
+  const mes = "2026-10";
+  const h = hojaAgua_();
+  const hoy = new Date();
+  const nota = "Línea de base del 19/10/2026 (dato de Eduardo)";
+  const avisos = [];
+  Object.keys(base).forEach(k => {
+    const depto = parseInt(k, 10), valor = base[k];
+    let fila = filaAgua_(h, mes, depto);
+    if (!fila) {
+      fila = h.getLastRow() + 1;
+      h.getRange(fila, 1).setNumberFormat("@").setValue(mes); h.getRange(fila, 2).setValue(depto);
+      h.getRange(fila, 3, 1, 2).setValues([[valor, valor]]);
+      h.getRange(fila, 5).setFormula("=IF(AND(ISNUMBER(C" + fila + "),ISNUMBER(D" + fila + ")),IF(D" + fila + "<C" + fila + ",D" + fila + "+10000-C" + fila + ",D" + fila + "-C" + fila + "),\"\")");
+      h.getRange(fila, 6).setValue("no");
+      h.getRange(fila, 8).setValue(hoy).setNumberFormat("dd/mm/yyyy hh:mm");
+      h.getRange(fila, 9).setFormula("=IF(AND(ISNUMBER(E" + fila + "),ISNUMBER(VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE))),VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE)*E" + fila + "+VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$H,8,FALSE),\"\")").setNumberFormat("$#,##0.00");
+      h.getRange(fila, 11).setValue(nota);
+      avisos.push("Depto " + depto + ": línea base " + valor + " (renglón nuevo)");
+      return;
+    }
+    const v = h.getRange(fila, 3, 1, 2).getValues()[0];
+    const ant = Number(v[0]), act = Number(v[1]);
+    if (act === valor || (ant === valor && act > valor)) { avisos.push("Depto " + depto + ": ya tenía " + ant + (act !== ant ? "→" + act : "")); return; }   // la cifra más reciente ya es esa
+    if (act > ant && act !== ant) {   // ya hay consumo medido sobre otra base: se cambia solo la base y se anota
+      h.getRange(fila, 3).setValue(valor);
+      h.getRange(fila, 11).setValue(nota + " · antes anterior=" + ant);
+      avisos.push("Depto " + depto + ": base cambiada " + ant + "→" + valor + " (lectura actual " + act + " se conserva)");
+      return;
+    }
+    h.getRange(fila, 3, 1, 2).setValues([[valor, valor]]);
+    h.getRange(fila, 11).setValue(nota + " · antes " + ant + "/" + act);
+    avisos.push("Depto " + depto + ": base ajustada " + ant + "→" + valor);
+  });
+  Logger.log(avisos.join("\n"));
+  return avisos.join("\n");
+}
+
 /* Recibo de agua de un depto, mes por mes, con el reparto del edificio para que se vea cómo se calculó. */
 function aguaDepto_(depto) {
   if (!(depto >= 1 && depto <= UNIDADES)) throw new Error("departamento");
