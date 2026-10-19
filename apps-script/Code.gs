@@ -1030,10 +1030,11 @@ function finanzas_(fresh) {
   const desde = mesTexto_(cfg.finanzas_desde).trim();
   const meses = [];
   const proyectos = {};
-  /* Caja de la mesa: además de los meses en vivo, los vecinos pagan a la mesa cuotas
-     atrasadas de meses anteriores (agosto, septiembre…) y se anotan en la pestaña del mes
-     que cubren. Ese dinero también está en la cuenta: se suma a la caja. El agua de esos
-     meses no, porque la cobró la administración anterior. */
+  /* Cuotas atrasadas: los vecinos pagan a la mesa cuotas de meses anteriores (agosto,
+     septiembre…) y se anotan en la pestaña del mes que cubren; en la caja entran por el
+     saldo inicial del primer mes en vivo, que la mesa ajusta a mano. Aquí solo se informan
+     (manto, extraordinaria y casa club; el agua de esos meses la cobró la administración
+     anterior). La caja es siempre el saldo final del último mes de la hoja. */
   const previos = [];
   ss.getSheets().forEach(h => {
     if (!esHojaMes_(h)) return;
@@ -1058,7 +1059,7 @@ function finanzas_(fresh) {
     ok: true, servicio: "misiones-finanzas", generado: new Date().toISOString(),
     desde: desde, unidades: UNIDADES, cuota: Number(cfg.cuota_mantenimiento) || 1500,
     meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]),
-    caja: { saldo: Math.round(((ultimo ? ultimo.saldoFin : 0) + totalPrevios) * 100) / 100, ultimoMes: ultimo ? ultimo.id : "", saldoUltimoMes: ultimo ? ultimo.saldoFin : 0, previos: previos, totalPrevios: totalPrevios }
+    caja: { saldo: ultimo ? ultimo.saldoFin : 0, ultimoMes: ultimo ? ultimo.id : "", saldoInicialVivo: meses.length ? meses[0].saldoIni : 0, previos: previos, totalPrevios: totalPrevios }
   };
   try { cache.put("finanzas", JSON.stringify(out), CACHE_FINANZAS); } catch (e) {}
   return out;

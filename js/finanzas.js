@@ -101,14 +101,11 @@
     const brecha = D.cuota - porUnidad;
 
     const caja = vivo && vivo.caja && last.vivo && vivo.caja.ultimoMes === last.id ? vivo.caja : null;
-    const cajaTxt = caja && caja.totalPrevios > 0
-      ? fmt2(caja.saldo)
-      : fmt2(last.saldoFin);
-    const cajaNota = caja && caja.totalPrevios > 0
-      ? esc(mesMin(last)) + " " + fmt(caja.saldoUltimoMes) + " + " + fmt(caja.totalPrevios) + " de cuotas atrasadas de " + caja.previos.map(p => esc(p.nombre.toLowerCase())).join(" y ") + " recibidas por la mesa"
+    const cajaNota = caja
+      ? "en la cuenta de la mesa al cierre de " + esc(mesMin(last)) + (caja.totalPrevios > 0 ? " · incluye " + fmt(caja.totalPrevios) + " de cuotas atrasadas de " + caja.previos.map(p => esc(p.nombre.toLowerCase())).join(" y ") + " pagadas a la mesa" : "")
       : "al cierre de " + esc(mesMin(last)) + " · el año inició en " + fmt2(first.saldoIni);
     document.getElementById("overviewCards").innerHTML =
-      statCard("Saldo en caja", cajaTxt, cajaNota) +
+      statCard("Saldo en caja", fmt2(last.saldoFin), cajaNota) +
       statCard("Resultado acumulado " + anio, '<span class="' + (resAcum >= 0 ? "pos" : "neg") + '">' + fmt2(resAcum) + "</span>", "ingresos " + fmt(ingAcum) + " − egresos " + fmt(egrAcum)) +
       statCard("Reserva operativa", '<span class="' + (diasReserva < 30 ? "neg" : "") + '">' + reservaTxt + "</span>", "lo que el saldo cubre del gasto ordinario mensual promedio (" + fmt(ordProm) + ")") +
       statCard("Cobranza " + anio, cobranzaProm.toFixed(1) + "%", "de las cuotas de mantenimiento, por mes facturado · " + M.length + " meses") +
