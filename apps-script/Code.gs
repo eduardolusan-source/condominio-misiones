@@ -154,13 +154,13 @@ function instalar() {
 
   // 7. Montos de muestra de la plantilla (Administración 7,000 y Limpieza 7,000) en la
   //    plantilla y en los meses en vivo que aún no tienen cobros ni otros gastos
-  const desde = String(config_().finanzas_desde || "").trim();
-  [plantilla].concat(ss.getSheets().filter(h => esHojaMes_(h) && (!desde || idDeHojaMes_(h) >= desde))).forEach(h => {
+  const desde = mesTexto_(config_().finanzas_desde).trim();   // Sheets puede volver "2026-10" una fecha; mesTexto_ lo regresa a texto
+  [plantilla].concat(ss.getSheets().filter(h => h !== plantilla && esHojaMes_(h) && (!desde || idDeHojaMes_(h) >= desde))).forEach(h => {
     if (limpiarMuestras_(h)) avisos.push("Montos de muestra borrados en: " + h.getName());
   });
 
   // 9. Registro de casa club: encabezados claros y montos que quedaron en la columna Depto
-  [plantilla].concat(ss.getSheets().filter(h => esHojaMes_(h))).forEach(h => {
+  ss.getSheets().filter(h => esHojaMes_(h)).forEach(h => {                 // la plantilla también tiene la sección
     if (aclararCasaClub_(h)) avisos.push("Casa club aclarado en: " + h.getName());
     repararCasaClub_(h).forEach(a => avisos.push(a));
   });
@@ -955,7 +955,7 @@ function finanzas_(fresh) {
   if (!fresh) { const c = cache.get("finanzas"); if (c) return JSON.parse(c); }
   const ss = SpreadsheetApp.getActive();
   const cfg = config_();
-  const desde = String(cfg.finanzas_desde || "").trim();
+  const desde = mesTexto_(cfg.finanzas_desde).trim();
   const meses = [];
   const proyectos = {};
   ss.getSheets().forEach(h => {
