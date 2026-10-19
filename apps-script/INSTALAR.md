@@ -150,3 +150,10 @@ renglón de su concepto y los extraordinarios ocupan renglón propio (si no hay
 libre, se inserta dentro de la suma). El comprobante va a la carpeta del mes en
 Drive y su liga a la columna D del renglón. "Quitar" en la lista resta el monto
 de la celda (o limpia el renglón si lo creó) y marca Anulado en la bitácora.
+
+## Lecturas de agua (19 de octubre de 2026)
+
+- La **lectura anterior es fija**: la última guardada de un mes previo (con su fecha). No se edita desde la página. Si un depto no tiene ninguna, la primera lectura que se guarde queda como **línea base** (consumo 0, nota "Línea de base del …" en la pestaña Agua).
+- El bloque del recibo muestra el **recibo anterior** (así quedó) como referencia y el del mes en blanco; si el del mes ya está guardado, aparece resumido con botón **Corregir**. Cada recibo va en el mes en que llega.
+- Una lectura guardada queda bloqueada; **Corregir** la abre de nuevo. Arriba, "Faltan: 1, 5…" lleva directo a cada depto pendiente.
+- `lineasBaseOctubre2026()` cargó las bases que recabó Eduardo (1: 90, 2: 114, 5: 87, 6: 90, 10: 131, 13: 14; 9 corregido de 139 a 127). Es de una sola vez e idempotente.
