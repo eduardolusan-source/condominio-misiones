@@ -56,8 +56,19 @@ La clave se guarda en el celular para no pedirla cada vez; "Salir" la borra.
   (Cobros por departamento, o el registro de casa club) y pinta la celda de **amarillo**. En Pagos queda el
   renglón con la captura y estatus *Pendiente*.
 - **Confirmar un pago:** en Pagos, columna *Estatus* → **Confirmado**. La celda del mes recupera su color y
-  se anota la fecha. **Rechazado** retira el monto de la celda del mes. Si lo regresas a *Pendiente*, vuelve
-  a amarillo. Las celdas en amarillo son lo que aún no has cotejado en el banco.
+  se anota la fecha. **Rechazado** retira el monto de la celda del mes y el vecino lo ve en la página como
+  **«no se encontró»**, con la explicación de que la mesa no lo ubicó en el banco. Si lo regresas a
+  *Pendiente* o a *Confirmado*, el monto vuelve a la pestaña del mes (la columna oculta M lo recuerda con el
+  prefijo `retirado|`). Las celdas en amarillo son lo que aún no has cotejado en el banco; si dos reportes
+  tocan la misma celda, sigue amarilla hasta que los dos estén resueltos.
+- **Pruebas y reportes repetidos:** un renglón rechazado se queda a la vista del vecino. Para que desaparezca
+  de la página, bórralo de la pestaña Pagos (un rechazado ya no toca la pestaña del mes). Los tres reportes de
+  prueba del depto 14 del 6 de octubre de 2026 (septiembre, octubre y noviembre, $1,500 cada uno, rechazados)
+  se pueden borrar.
+- **Dos personas de la mesa a la vez:** si alguien ya confirmó o rechazó un pago, la bandeja de la otra avisa
+  "ya lo resolvió alguien más" y recarga; un doble toque no aplica el pago dos veces.
+- **Si la pestaña del mes no tiene el renglón "Depto N"** (o el registro de casa club), el reporte entra igual
+  en Pagos con la nota "⚠ No quedó anotado en la pestaña de …": anótalo a mano al confirmar.
 - **Si cambias algo a mano en la pestaña del mes**, el script no se entera; lo que gobierna el amarillo es el
   estatus en Pagos.
 - **Cambiar la cuota, el extraordinario vigente o poner un aviso:** pestaña Config, columna Valor.
@@ -157,3 +168,14 @@ de la celda (o limpia el renglón si lo creó) y marca Anulado en la bitácora.
 - El bloque del recibo muestra el **recibo anterior** (así quedó) como referencia y el del mes en blanco; si el del mes ya está guardado, aparece resumido con botón **Corregir**. Cada recibo va en el mes en que llega.
 - Una lectura guardada queda bloqueada; **Corregir** la abre de nuevo. Arriba, "Faltan: 1, 5…" lleva directo a cada depto pendiente.
 - `lineasBaseOctubre2026()` cargó las bases que recabó Eduardo (1: 90, 2: 114, 5: 87, 6: 90, 10: 131, 13: 14; 9 corregido de 139 a 127). Es de una sola vez e idempotente.
+
+## Rechazos reversibles y etiqueta «no se encontró» (4 de noviembre de 2026)
+Pegar el `Code.gs` nuevo y publicar nueva versión (paso 6). No hace falta correr `instalar`.
+- La página decía **REVISAR** en los pagos con estatus *Rechazado* (palabra que no existe en la hoja);
+  ahora dice **no se encontró** y explica qué hacer.
+- *Rechazado* ya no borra la columna M: el monto se repone al regresar el renglón a *Pendiente* o *Confirmado*,
+  y rechazar dos veces no resta dos veces.
+- El color original de la celda del mes se guarda bien aunque ya estuviera amarilla por otro reporte, y la
+  celda sigue amarilla mientras quede algún reporte pendiente que la toque.
+- La bandeja no resuelve dos veces el mismo pago ni pisa lo que otra persona de la mesa ya resolvió.
+- Si un reporte no encuentra su celda en la pestaña del mes, lo dice en la nota del renglón de Pagos.

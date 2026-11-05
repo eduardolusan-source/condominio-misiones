@@ -266,9 +266,10 @@ async function cargarEstado(n) {
       j.pagos.forEach(p => {
         const partes = [p.mantenimiento && "mantenimiento", p.agua && "agua", p.extraordinario && "extraordinario", p.casaclub && "casa club"].filter(Boolean).join(", ");
         const cls = p.estatus === "Confirmado" ? "si" : (p.estatus === "Rechazado" ? "no" : "");
-        const txt = p.estatus === "Confirmado" ? "confirmado" : (p.estatus === "Rechazado" ? "revisar" : "en espera");
+        const txt = p.estatus === "Confirmado" ? "confirmado" : (p.estatus === "Rechazado" ? "no se encontró" : "en espera");
         html += '<div class="fila"><span>' + (p.mes ? nombreMes(p.mes) : p.fecha) + " · " + fmt(p.total) + '<br><small style="color:var(--muted)">' + partes + " · reportado el " + p.fecha + '</small></span><span class="badge ' + cls + '">' + txt + "</span></div>";
       });
+      if (j.pagos.some(p => p.estatus === "Rechazado")) html += '<p class="corte"><strong>No se encontró</strong>: la mesa directiva no ubicó ese pago en el banco con esos datos. Si sí lo hiciste, mándale la captura por WhatsApp; si fue un reporte repetido o de prueba, no tienes que hacer nada.</p>';
     }
     caja.innerHTML = html;
   } catch (e) {

@@ -10,7 +10,8 @@
      y agrega un renglón en "Pagos" con estatus "Pendiente".
    - doGet: responde a pago.html qué tiene por pagar un departamento y sus pagos
      anteriores con su estatus.
-   - onEdit: cuando cambias el estatus a "Confirmado" pone la fecha sola.
+   - onEdit: cuando cambias el estatus a "Confirmado" pone la fecha sola. "Rechazado" resta
+     el monto de la pestaña del mes; si lo regresas a Pendiente o Confirmado, el monto vuelve.
    - doGet accion=finanzas: finanzas.html. Cifras AGREGADAS por mes leídas de las
      pestañas mensuales desde el mes de Config "finanzas_desde" (2026-10, cuando la
      mesa tomó la caja); nunca salen cobros por departamento.
@@ -38,6 +39,7 @@ const ESTATUS = ["Pendiente","Confirmado","Rechazado"];
 const ENC_PAGOS = ["Fecha","Depto","Mantenimiento","Agua","Extraordinario","Casa club","Total","Nota","Comprobante","Estatus","Mes","Confirmado el","Celdas del mes","Folio"];
 //                  A       B       C               D      E               F           G       H      I             J         K     L               M (uso interno)  N
 const AMARILLO = "#ffe599";                 // color de lo reportado y aún no confirmado
+const RETIRADO = "retirado|";               // prefijo en la columna M de Pagos cuando el monto ya se restó del mes (pago rechazado)
 const HOJA_VALID = "Validaciones";
 const HOJA_VOTOS = "Votos";                 // asamblea: un voto por depto y pregunta (el último cuenta)
 const HOJA_ACUERDOS = "Acuerdos";           // asamblea: acuerdo, responsable y fecha por tema
@@ -422,10 +424,14 @@ function doPost(e) {
       const subtotal = Math.round((parte.manto + parte.agua + parte.extra + parte.casa) * 100) / 100;
       if (subtotal <= 0) return;
       const celdas = anotarEnMes_(ss, m, depto, parte, ahora);
+      // Si la pestaña del mes no tiene "Depto N" (o el registro de casa club), el monto no quedó
+      // anotado: se avisa en la nota para que la mesa lo anote a mano al confirmar.
+      const aviso = celdas ? "" : "⚠ No quedó anotado en la pestaña de " + capitalizar_(MESES[parseInt(m.slice(5), 10) - 1]) + ": anótalo a mano al confirmar";
+      const notaFila = [notaMulti, aviso].filter(Boolean).join(" · ");
       const folio = "P-" + String(siguienteFolio_()).padStart(4, "0");
       pagos.insertRowBefore(2);                             // lo más nuevo arriba
       const fila = 2;
-      pagos.getRange(fila, 1, 1, ENC_PAGOS.length).setValues([[ahora, depto, parte.manto || "", parte.agua || "", parte.extra || "", parte.casa || "", subtotal, notaMulti, url, "Pendiente", m, "", celdas, folio]]);
+      pagos.getRange(fila, 1, 1, ENC_PAGOS.length).setValues([[ahora, depto, parte.manto || "", parte.agua || "", parte.extra || "", parte.casa || "", subtotal, notaFila, url, "Pendiente", m, "", celdas, folio]]);
       pagos.getRange(fila, 1).setNumberFormat("dd/mm/yyyy hh:mm");
       pagos.getRange(fila, 3, 1, 5).setNumberFormat("$#,##0.00");
       pagos.getRange(fila, 11).setNumberFormat("@").setValue(m);   // como texto, para que "2026-10" no se vuelva fecha
@@ -926,7 +932,7 @@ function marcarAguaPagada_(mes, depto, fecha, folio) {
   if (folio) h.getRange(fila, 11).setValue(("Pago " + folio + " · " + String(h.getRange(fila, 11).getValue() || "")).replace(/ · $/, ""));
 }
 
-/* Al poner "Confirmado" en la columna J de Pagos, anota la fecha en L. */
+/* Al cambiar el estatus en la columna J de Pagos (Confirmado, Rechazado o Pendiente). */
 function onEdit(e) {
   try {
     const rg = e.range, h = rg.getSheet();
@@ -935,24 +941,40 @@ function onEdit(e) {
   } catch (err) {}
 }
 
-/* Aplica un estatus a un renglón de Pagos: fecha de confirmación y color/monto en el mes. */
+/* Aplica un estatus a un renglón de Pagos: fecha de confirmación y color/monto en el mes.
+   La columna M guarda las celdas del mes que tocó el pago. Al rechazar, el monto se resta de la
+   pestaña del mes y M se conserva con el prefijo "retirado|": así, si el pago vuelve a Pendiente
+   o a Confirmado (un rechazo por error), el monto regresa solo; y si se rechaza dos veces, no se
+   resta dos veces. */
 function resolver_(h, fila, estatus) {
   const ss = SpreadsheetApp.getActive();
-  const celdas = String(h.getRange(fila, 13).getValue() || "");
+  if (ESTATUS.indexOf(estatus) < 0) estatus = "Pendiente";   // celda vacía o texto raro: se trata como pendiente
+  let celdas = String(h.getRange(fila, 13).getValue() || "");
+  const retirado = celdas.indexOf(RETIRADO) === 0;
+  if (retirado) celdas = celdas.slice(RETIRADO.length);
+  const f = h.getRange(fila, 1, 1, ENC_PAGOS.length).getValues()[0];
+  const ctx = { fila: fila, depto: Number(f[1]) || 0, fecha: f[0] instanceof Date ? f[0] : new Date() };
+  if (estatus === "Rechazado") {
+    h.getRange(fila, 12).clearContent();
+    if (!retirado && celdas) {
+      aplicarCeldas_(ss, celdas, "retirar", ctx);
+      h.getRange(fila, 13).setValue(RETIRADO + celdas);
+    }
+    return;
+  }
+  if (retirado) {                                           // deja de estar rechazado: el monto vuelve a la pestaña del mes
+    celdas = aplicarCeldas_(ss, celdas, "reponer", ctx);
+    h.getRange(fila, 13).setValue(celdas);
+  }
   if (estatus === "Confirmado") {
     h.getRange(fila, 12).setValue(new Date());
-    aplicarCeldas_(ss, celdas, "confirmar");
+    aplicarCeldas_(ss, celdas, "confirmar", ctx);
     try {                                                   // si el pago trae agua, el recibo de ese mes queda pagado
-      const f = h.getRange(fila, 1, 1, ENC_PAGOS.length).getValues()[0];
       if (Number(f[3]) > 0) marcarAguaPagada_(mesTexto_(f[10]), Number(f[1]), new Date(), String(f[13] || ""));
     } catch (e) {}
-  } else if (estatus === "Rechazado") {
-    h.getRange(fila, 12).clearContent();
-    aplicarCeldas_(ss, celdas, "retirar");
-    h.getRange(fila, 13).clearContent();                   // ya no hay nada que recolorear
   } else {
     h.getRange(fila, 12).clearContent();
-    aplicarCeldas_(ss, celdas, "pendiente");
+    aplicarCeldas_(ss, celdas, "pendiente", ctx);
   }
 }
 
@@ -1008,6 +1030,9 @@ function resolverDesdeBandeja_(d) {
     const pagos = SpreadsheetApp.getActive().getSheetByName(HOJA_PAGOS);
     const fila = filaPorFolio_(pagos, d.folio);
     if (!fila) return { ok: false, error: "folio" };
+    const actual = String(pagos.getRange(fila, 10).getValue() || "Pendiente");
+    if (actual === d.estatus) return { ok: true, folio: d.folio, estatus: actual, repetido: true };   // doble toque: no se aplica dos veces
+    if (actual !== "Pendiente") return { ok: false, error: "resuelto", estatus: actual };          // otra persona de la mesa ya lo resolvió
     pagos.getRange(fila, 10).setValue(d.estatus);
     resolver_(pagos, fila, d.estatus);
     return { ok: true, folio: d.folio, estatus: d.estatus };
@@ -1019,13 +1044,21 @@ function resolverDesdeBandeja_(d) {
 /* ====================== ESCRITURA EN LA PESTAÑA DEL MES ====================== */
 
 /* Suma lo reportado en la pestaña del mes y lo pinta de amarillo. Devuelve la lista
-   de celdas tocadas ("Octubre!C44=#d6e2ee=1500;...") para poder confirmarlas o retirarlas. */
+   de celdas tocadas ("Octubre!C44=#fbfbf0=1500;...") para poder confirmarlas o retirarlas.
+   Si la celda ya estaba amarilla por otro pago pendiente, guarda el color de verdad (el que
+   registró ese otro pago), no el amarillo. */
 function anotarEnMes_(ss, mes, depto, m, fecha) {
   const hoja = hojaDelMes_(ss, mes);
   const refs = [];
+  let mapa = null;
   const pinta = (rg, monto) => {
     const previo = Number(rg.getValue()) || 0;
-    refs.push(hoja.getName() + "!" + rg.getA1Notation() + "=" + (rg.getBackground() || "#ffffff") + "=" + monto);
+    let color = String(rg.getBackground() || "#ffffff").toLowerCase();
+    if (color === AMARILLO) {
+      mapa = mapa || mapaCeldas_(ss, 0);
+      color = mapa.colores[hoja.getName() + "!" + rg.getA1Notation()] || "#ffffff";
+    }
+    refs.push(hoja.getName() + "!" + rg.getA1Notation() + "=" + color + "=" + monto);
     rg.setValue(previo + monto).setBackground(AMARILLO);
   };
   // Cobros por departamento: C mantenimiento · D agua · E extraordinario
@@ -1038,15 +1071,8 @@ function anotarEnMes_(ss, mes, depto, m, fecha) {
   }
   // Renta de casa club: B depto · C fecha · D monto · E observaciones
   if (m.casa) {
-    const t = hoja.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
-    if (t) {
-      const rEnc = t.getRow() + 1, filas = 5;
-      let libre = 0;
-      for (let r = rEnc + 1; r <= rEnc + filas; r++) {
-        const v = hoja.getRange(r, 2, 1, 3).getValues()[0];
-        if (!v[0] && !v[2]) { libre = r; break; }
-      }
-      if (!libre) { hoja.insertRowBefore(rEnc + filas); libre = rEnc + filas; }   // dentro del rango de la suma
+    const libre = filaCasaClubLibre_(hoja);
+    if (libre) {
       hoja.getRange(libre, 2).setValue(depto);
       hoja.getRange(libre, 3).setValue(fecha).setNumberFormat("dd/mm/yyyy");
       pinta(hoja.getRange(libre, 4), m.casa);
@@ -1056,30 +1082,94 @@ function anotarEnMes_(ss, mes, depto, m, fecha) {
   return refs.join(";");
 }
 
-/* modo "confirmar": color original · "pendiente": amarillo · "retirar": resta el monto y color original */
-function aplicarCeldas_(ss, celdas, modo) {
-  if (!celdas) return;
+/* Primer renglón libre del registro de casa club (B depto · C fecha · D monto); si los cinco
+   están ocupados, inserta uno dentro del rango de la suma. 0 si la pestaña no tiene el registro. */
+function filaCasaClubLibre_(hoja) {
+  const t = hoja.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+  if (!t) return 0;
+  const rEnc = t.getRow() + 1, filas = 5;
+  for (let r = rEnc + 1; r <= rEnc + filas; r++) {
+    const v = hoja.getRange(r, 2, 1, 3).getValues()[0];
+    if (!v[0] && !v[2]) return r;
+  }
+  hoja.insertRowBefore(rEnc + filas);
+  return rEnc + filas;
+}
+/* ¿La celda es el monto de un renglón del registro de casa club? */
+function esCeldaCasaClub_(hoja, rg) {
+  const enc = hoja.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
+  return !!enc && rg.getColumn() === 4 && rg.getRow() > enc.getRow() + 1 && rg.getRow() <= enc.getRow() + 1 + 6;
+}
+
+/* Un barrido de la columna M de Pagos: qué celdas del mes tiene tocadas algún OTRO pago
+   Pendiente (esas siguen amarillas aunque este pago ya se haya resuelto) y el color original
+   que se registró de cada celda (el renglón más viejo, que va abajo, es el que manda). */
+function mapaCeldas_(ss, filaExcluida) {
+  const out = { pendientes: {}, colores: {} };
+  const pagos = ss.getSheetByName(HOJA_PAGOS);
+  if (!pagos || pagos.getLastRow() < 2) return out;
+  const vals = pagos.getRange(2, 10, pagos.getLastRow() - 1, 4).getValues();   // J estatus · K · L · M celdas
+  vals.forEach((f, i) => {
+    let celdas = String(f[3] || "");
+    const retirado = celdas.indexOf(RETIRADO) === 0;
+    if (retirado) celdas = celdas.slice(RETIRADO.length);
+    if (!celdas) return;
+    const pendiente = !retirado && i + 2 !== filaExcluida && String(f[0] || "Pendiente") === "Pendiente";
+    celdas.split(";").forEach(ref => {
+      const p = ref.split("=");
+      if (p.length < 3) return;
+      if (String(p[1]).toLowerCase() !== AMARILLO) out.colores[p[0]] = p[1];
+      if (pendiente) out.pendientes[p[0]] = true;
+    });
+  });
+  return out;
+}
+
+/* modo "confirmar": color original · "pendiente": amarillo · "retirar": resta el monto y color
+   original · "reponer": vuelve a sumar el monto (un pago que deja de estar rechazado) y amarillo.
+   Si otro pago Pendiente toca la misma celda, la celda sigue amarilla aunque este ya esté
+   resuelto: el amarillo quiere decir "aquí falta algo por cotejar". Devuelve la lista de celdas
+   (en "reponer" puede cambiar el renglón de casa club). */
+function aplicarCeldas_(ss, celdas, modo, ctx) {
+  if (!celdas) return celdas;
+  ctx = ctx || {};
+  const mapa = modo === "confirmar" || modo === "retirar" ? mapaCeldas_(ss, ctx.fila || 0) : null;
+  const salida = [];
   celdas.split(";").forEach(ref => {
     const partes = ref.split("=");
     if (partes.length < 3) return;
     const [hojaNombre, a1] = partes[0].split("!");
     const color = partes[1], monto = Number(partes[2]) || 0;
     const hoja = ss.getSheetByName(hojaNombre);
-    if (!hoja) return;
-    const rg = hoja.getRange(a1);
-    if (modo === "pendiente") { rg.setBackground(AMARILLO); return; }
-    rg.setBackground(color === "#ffffff" ? null : color);
+    if (!hoja) { salida.push(ref); return; }
+    let rg = hoja.getRange(a1);
+    if (modo === "pendiente") { rg.setBackground(AMARILLO); salida.push(ref); return; }
+    if (modo === "reponer") {
+      if (esCeldaCasaClub_(hoja, rg)) {                     // su renglón pudo quedar libre (y ocupado por otro) al retirarlo
+        const dueno = hoja.getRange(rg.getRow(), 2).getValue();
+        if (dueno && Number(dueno) !== Number(ctx.depto)) { const libre = filaCasaClubLibre_(hoja); if (libre) rg = hoja.getRange(libre, 4); }
+        if (!hoja.getRange(rg.getRow(), 2).getValue()) {
+          hoja.getRange(rg.getRow(), 2).setValue(ctx.depto || "");
+          hoja.getRange(rg.getRow(), 3).setValue(ctx.fecha || new Date()).setNumberFormat("dd/mm/yyyy");
+        }
+      }
+      rg.setValue(Math.round(((Number(rg.getValue()) || 0) + monto) * 100) / 100).setBackground(AMARILLO);
+      salida.push(hojaNombre + "!" + rg.getA1Notation() + "=" + color + "=" + monto);
+      return;
+    }
+    salida.push(ref);
+    const original = String(color).toLowerCase() === AMARILLO ? (mapa.colores[partes[0]] || "#ffffff") : color;   // registros viejos pudieron guardar el amarillo
+    rg.setBackground(mapa.pendientes[partes[0]] ? AMARILLO : (original === "#ffffff" ? null : original));
     if (modo === "retirar") {
       const resto = Math.round(((Number(rg.getValue()) || 0) - monto) * 100) / 100;
       if (resto > 0) rg.setValue(resto);
       else {
         rg.clearContent();
-        // en el registro de casa club, limpia también depto y fecha del renglón
-        const enc = hoja.createTextFinder("RENTA DE CASA CLUB").matchCase(false).findNext();
-        if (enc && rg.getColumn() === 4 && rg.getRow() > enc.getRow() + 1 && rg.getRow() <= enc.getRow() + 1 + 6) hoja.getRange(rg.getRow(), 2, 1, 2).clearContent();
+        if (esCeldaCasaClub_(hoja, rg)) hoja.getRange(rg.getRow(), 2, 1, 2).clearContent();   // también depto y fecha del renglón
       }
     }
   });
+  return salida.join(";");
 }
 
 /* ============================ FINANZAS EN VIVO ============================ */
