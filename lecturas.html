@@ -53,6 +53,24 @@
   .ref b { color: var(--ink); }
   .ref .t { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 0.2rem; }
   .ref .fila { display: flex; justify-content: space-between; gap: 0.6rem; padding: 0.1rem 0; }
+  .ref .fila small { font-weight: 500; color: var(--muted); }
+  /* Tinaco: barrita fija y tarjeta que se llena con cada medidor */
+  .tq-fija { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--page) 90%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); padding: 0.55rem 0.3rem; margin: 0 -0.3rem 0.7rem; border-bottom: 1px solid var(--grid); }
+  .tq-card { background: var(--surface); border: 2px solid var(--border); border-radius: 14px; padding: 0.8rem 0.9rem 0.9rem; margin-bottom: 0.9rem; box-shadow: var(--shadow); }
+  .tq-card h3 { margin: 0; font-size: 1.2rem; display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+  .tq-card h3 small { color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+  .tq-dibujo { max-width: 380px; margin: 0.2rem auto 0; }
+  .tq-ley { display: grid; grid-template-columns: 1fr auto; gap: 0.2rem 0.8rem; font-size: 0.95rem; color: var(--ink-2); margin: 0.3rem 0 0.6rem; }
+  .tq-ley b { color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+  .tq-estado { border-radius: 12px; padding: 0.65rem 0.8rem; font-size: 0.97rem; font-weight: 700; line-height: 1.35; background: var(--accent-soft); color: var(--ink); }
+  .tq-estado small { display: block; font-weight: 500; font-size: 0.9rem; margin-top: 0.3rem; }
+  .tq-estado.bien { background: #dff3e4; color: #1d5a2a; }
+  .tq-estado.ajuste { background: #fff1d6; color: #6e4a00; }
+  .tq-estado.des { background: #ffe6d5; color: #8a3a06; }
+  @media (prefers-color-scheme: dark) { .tq-estado.bien { background: #1d3a26; color: #b8f0c6; } .tq-estado.ajuste { background: #3d2e0c; color: #ffd88a; } .tq-estado.des { background: #45230d; color: #ffc59e; } }
+  .medidor.general { border-color: var(--accent); background: linear-gradient(180deg, var(--accent-soft), var(--surface) 75%); }
+  .medidor .pista-g { font-size: 0.88rem; color: var(--ink-2); margin: 0.4rem 0 0; line-height: 1.35; }
+  .faltan button.g { width: auto; padding: 0 0.7rem; }
   .hidden { display: none !important; }
 </style>
 </head>
@@ -90,6 +108,7 @@
       <div class="mes" id="mesTxt"></div>
       <button type="button" id="btnNext" aria-label="Mes siguiente">▶</button>
     </div>
+    <div class="tq-fija hidden" id="tqFija" aria-live="polite"></div>
     <div class="avance" id="avance">Cargando…</div>
     <div class="faltan hidden" id="faltan"></div>
     <div id="aviso" class="notice hidden"></div>
@@ -114,10 +133,12 @@
       </div>
       <div class="hecho" id="rHecho"></div>
     </div>
+    <div class="tq-card hidden" id="tqCard"></div>
     <div id="lista"></div>
   </div>
 </main>
 
+<script src="js/tinaco.js?v=20261109"></script>
 <script>
 /* ===== CONFIGURACIÓN ===== */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
@@ -133,6 +154,10 @@ const hoy = new Date();
 const idMes = f => f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0");
 function nombreMes(id) { const [y, m] = id.split("-"); return NOMBRES_MES[+m - 1].replace(/^./, c => c.toUpperCase()) + " " + y; }
 function moverMes(k) { const [y, m] = mes.split("-"); mes = idMes(new Date(+y, +m - 1 + k, 1)); cargar(); }
+
+/* La barrita del tinaco se pega justo debajo del encabezado del sitio, que también se queda fijo. */
+function pegarBarra() { const h = document.querySelector(".site-header"); if (h && getComputedStyle(h).position === "sticky") $("tqFija").style.top = h.offsetHeight + "px"; }
+addEventListener("resize", pegarBarra); pegarBarra();
 
 try { clave = localStorage.getItem("misiones_clave_lector") || ""; mes = localStorage.getItem("misiones_mes_lectura") || idMes(hoy); } catch (e) { mes = idMes(hoy); }
 if (clave) { $("clave").value = clave; entrar(); }
@@ -152,6 +177,7 @@ async function cargar() {
   $("mesTxt").textContent = nombreMes(mes);
   try { localStorage.setItem("misiones_mes_lectura", mes); } catch (e) {}
   $("avance").textContent = "Cargando…"; $("lista").innerHTML = "";
+  delete $("tqCard").dataset.visto; $("tqCard").classList.add("hidden"); $("tqFija").classList.add("hidden");
   try {
     const r = await fetch(SCRIPT_URL + "?accion=lecturas&mes=" + mes + "&clave=" + encodeURIComponent(clave) + "&t=" + Date.now());
     const j = await r.json();
@@ -170,21 +196,23 @@ function pintar() {
   $("aviso").classList.add("hidden");
   pintarAvance();
   const lista = $("lista"); lista.innerHTML = "";
-  datos.deptos.forEach(d => {
+  (datos.general ? [datos.general] : []).concat(datos.deptos).forEach(d => {   // el medidor general (depto 0) va primero
+    const gen = d.depto === 0;
     const guardada = d.actual !== null;
-    const card = document.createElement("div"); card.className = "medidor" + (guardada ? " ok" : ""); card.id = "m_" + d.depto;
+    const card = document.createElement("div"); card.className = "medidor" + (gen ? " general" : "") + (guardada ? " ok" : ""); card.id = "m_" + d.depto;
     const antHtml = d.anterior !== null
       ? '<div class="ant">' + d.anterior + '<small>' + (d.anteriorEsBase ? "línea base" : "lectura") + (d.anteriorFecha ? " · " + d.anteriorFecha : (d.anteriorMes ? " · " + nombreMes(d.anteriorMes).toLowerCase() : "")) + '</small></div>'
       : '<div class="ant sinbase">Sin línea base. La lectura que guardes hoy queda como base (consumo 0).</div>';
     card.innerHTML =
-      '<div class="cab"><h3>Depto ' + d.depto + '</h3><small>' + (d.promedio !== null ? "promedio " + d.promedio + " m³/mes" : "sin historial") + '</small></div>' +
+      '<div class="cab"><h3>' + (gen ? "Medidor general" : "Depto " + d.depto) + '</h3><small>' + (gen ? "de la CEA" : (d.promedio !== null ? "promedio " + d.promedio + " m³/mes" : "sin historial")) + '</small></div>' +
+      (gen ? '<p class="pista-g">Es el de la CEA, no. 25306677. Léelo el mismo día que los 16 deptos: con él se sabe de qué tamaño es el tinaco del mes y cuánta agua se fue en áreas comunes.</p>' : '') +
       '<div class="num">' +
         '<div><label>Lectura anterior</label>' + antHtml + '</div>' +
         '<div><label>Lectura de hoy</label><input type="text" inputmode="decimal" id="l_' + d.depto + '" placeholder="0000" value="' + (guardada ? d.actual : "") + '"' + (guardada ? " disabled" : "") + '></div>' +
       '</div>' +
       '<div class="cons" id="c_' + d.depto + '"></div>' +
       '<div class="aviso hidden" id="w_' + d.depto + '"></div>' +
-      '<label class="est' + (d.anterior === null ? " hidden" : "") + '"><input type="checkbox" id="e_' + d.depto + '"' + (d.estimado ? " checked" : "") + (guardada ? " disabled" : "") + '> No se pudo leer: estimar con el promedio</label>' +
+      '<label class="est' + (d.anterior === null || gen ? " hidden" : "") + '"><input type="checkbox" id="e_' + d.depto + '"' + (d.estimado ? " checked" : "") + (guardada ? " disabled" : "") + '> No se pudo leer: estimar con el promedio</label>' +
       '<div class="acc' + (guardada ? " hidden" : "") + '" id="acc_' + d.depto + '">' +
         '<label class="foto' + (d.foto ? " lista" : "") + '" id="f_' + d.depto + '">' + (d.foto ? "📷 Cambiar foto" : "📷 Foto del medidor") + '<input type="file" accept="image/*" capture="environment"></label>' +
         '<button type="button" class="guardar" id="g_' + d.depto + '" disabled>Guardar</button>' +
@@ -226,18 +254,60 @@ function pintar() {
     });
     $("g_" + d.depto).onclick = () => guardar(d);
   });
+  pintarTinaco();
 }
 
 /* Avance y accesos rápidos a los deptos que faltan */
 function pintarAvance() {
   const hechos = datos.deptos.filter(d => d.actual !== null).map(d => d.depto);
   const faltan = datos.deptos.filter(d => d.actual === null).map(d => d.depto);
-  $("avance").textContent = hechos.length + " de " + UNIDADES + " medidores capturados · " + nombreMes(mes) + (datos.recibo && datos.recibo.monto ? " · recibo CEA " + fmtP(datos.recibo.monto) : " · recibo CEA pendiente");
+  const gen = datos.general;
+  $("avance").textContent = hechos.length + " de " + UNIDADES + " deptos" + (gen ? (gen.actual !== null ? " · general ✓" : " · falta el general") : "") + " · " + nombreMes(mes) + (datos.recibo && datos.recibo.monto ? " · recibo CEA " + fmtP(datos.recibo.monto) : " · recibo CEA pendiente");
   const f = $("faltan"); f.innerHTML = "";
-  if (!faltan.length) { f.classList.add("hidden"); return; }
+  const chips = (gen && gen.actual === null ? [0] : []).concat(faltan);
+  if (!chips.length) { f.classList.add("hidden"); return; }
   f.classList.remove("hidden");
   f.appendChild(Object.assign(document.createElement("span"), { textContent: "Faltan:" }));
-  faltan.forEach(n => { const b = document.createElement("button"); b.type = "button"; b.textContent = n; b.onclick = () => { const c = $("m_" + n); c.scrollIntoView({ behavior: "smooth", block: "start" }); const i = $("l_" + n); if (i && !i.disabled) setTimeout(() => i.focus(), 400); }; f.appendChild(b); });
+  chips.forEach(n => { const b = document.createElement("button"); b.type = "button"; b.textContent = n === 0 ? "General" : n; if (n === 0) b.className = "g"; b.onclick = () => { const c = $("m_" + n); c.scrollIntoView({ behavior: "smooth", block: "start" }); const i = $("l_" + n); if (i && !i.disabled) setTimeout(() => i.focus(), 400); }; f.appendChild(b); });
+}
+
+/* --- Tinaco del mes: se llena con cada depto guardado; si se desborda, lo dice ---
+   Tamaño: lo que marcó el medidor general desde su lectura anterior (los mismos días que los
+   deptos) o, si no se leyó, los m³ del recibo. Arriba se aparta el mínimo de áreas comunes. */
+const m3 = v => (Math.round(v * 10) / 10).toLocaleString("es-MX") + " m³";
+const porc = v => (Math.round(v * 1000) / 10).toLocaleString("es-MX") + " %";
+function pintarTinaco(nuevo) {
+  if (!window.Tinaco || !datos) return;
+  const card = $("tqCard"), fija = $("tqFija");
+  const hechos = datos.deptos.filter(d => d.actual !== null);
+  const S = Math.round(hechos.reduce((a, d) => a + (Number(d.consumo) || 0), 0) * 10) / 10;
+  const g = datos.general;
+  const gm3 = g && g.actual !== null && !g.anteriorEsBase && Number(g.consumo) > 0 ? Number(g.consumo) : 0;
+  const rm3 = datos.recibo && datos.recibo.m3 > 0 ? Number(datos.recibo.m3) : 0;
+  const T = gm3 || rm3, fuente = gm3 ? "general" : (rm3 ? "recibo" : "");
+  const R = datos.minComunes !== undefined && datos.minComunes !== null ? Number(datos.minComunes) : 5;
+  const faltan = UNIDADES - hechos.length;
+  const pct = T && S > 0 ? Math.max(0, Math.min(1, (T - R) / S)) : 1;
+  let clase = "va", estado = "", detalle = "";
+  if (!T) estado = "Guarda el medidor general o el recibo de la CEA para saber de qué tamaño es el tinaco.";
+  else if (S > T + 0.05) {
+    clase = "des"; estado = "Se desborda por " + m3(S - T) + (faltan ? ", y aún faltan " + faltan + (faltan === 1 ? " depto" : " deptos") : "") + ".";
+    detalle = "Las lecturas contarán al " + porc(pct) + " para dejarle " + m3(R) + " a las áreas comunes: al que más gastó se le quitan más m³. " +
+      (fuente === "recibo" ? "El recibo cobra el agua de un mes antes que estas lecturas; con el medidor general leído el mismo día la comparación es pareja." : "Si no esperabas que se pasara, revisa las fotos de los que marcan más.");
+  } else if (S > T - R + 0.05) {
+    clase = "ajuste"; estado = "Casi lleno: para dejarle " + m3(R) + " a las áreas comunes, las lecturas contarán al " + porc(pct) + ".";
+  } else if (faltan) estado = "Van " + m3(S) + " de " + m3(T) + " · " + (faltan === 1 ? "falta 1 depto." : "faltan " + faltan + " deptos.");
+  else { clase = "bien"; estado = "✓ Cuadra: los 16 caben y quedan " + m3(T - S) + " para áreas comunes, que se dividen entre los 16."; }
+  fija.innerHTML = Tinaco.barra({ total: T, suma: S, comunes: R });
+  card.innerHTML = '<h3>Tinaco del mes <small>' + (fuente === "general" ? "según el medidor general" : fuente === "recibo" ? "según el recibo" : "") + '</small></h3>' +
+    '<div class="tq-dibujo">' + Tinaco.svg({ modo: "llenado", total: T, comunes: T ? R : 0, capas: hechos.map(d => ({ n: d.depto, v: Number(d.consumo) || 0 })),
+      numeros: true, nueva: nuevo, subir: nuevo === undefined && !card.dataset.visto, titulo: T ? "Cabe: " + m3(T) : "", aria: estado }) + '</div>' +
+    '<div class="tq-ley"><span>Los 16 deptos · ' + hechos.length + ' guardados</span><b>' + m3(S) + '</b>' +
+    '<span>Mínimo de áreas comunes</span><b>' + m3(R) + '</b>' +
+    (T ? '<span>Tamaño del tinaco · ' + (fuente === "general" ? "medidor general" : "recibo de la CEA") + '</span><b>' + m3(T) + '</b>' : "") + '</div>' +
+    '<div class="tq-estado ' + clase + '">' + estado + (detalle ? "<small>" + detalle + "</small>" : "") + '</div>';
+  card.dataset.visto = "1";
+  card.classList.remove("hidden"); fija.classList.remove("hidden");
 }
 
 /* --- Recibo de la CEA del mes --- */
@@ -251,7 +321,8 @@ function pintarRecibo() {
     $("rAnterior").innerHTML = '<span class="t">Recibo anterior · ' + nombreMes(a.mes).toLowerCase() + ' (así quedó)</span>' +
       '<div class="fila"><span>Monto</span><b>' + fmtP(a.monto) + '</b></div><div class="fila"><span>m³ del recibo</span><b>' + a.m3 + '</b></div>' +
       (a.limite ? '<div class="fila"><span>Fecha límite</span><b>' + fechaLim(a) + '</b></div>' : "") +
-      '<div class="fila"><span>Precio por m³</span><b>' + fmtP(a.precio) + '</b></div>' + (a.foto ? '<div class="fila"><span></span><a href="' + a.foto + '" target="_blank" rel="noopener">ver foto</a></div>' : "");
+      '<div class="fila"><span>Precio por m³ medido</span><b>' + fmtP(a.precioMedido || a.precio) + '</b></div>' +
+      (a.comunesDepto ? '<div class="fila"><span>Áreas comunes por depto</span><b>' + fmtP(a.comunesDepto) + '</b></div>' : '') + (a.foto ? '<div class="fila"><span></span><a href="' + a.foto + '" target="_blank" rel="noopener">ver foto</a></div>' : "");
     $("rAnterior").classList.remove("hidden");
   } else $("rAnterior").classList.add("hidden");
   // Recibo de este mes: si ya está, resumen cerrado con botón Corregir; si no, el formulario en blanco
@@ -263,7 +334,9 @@ function pintarRecibo() {
     $("rResumen").innerHTML = '<span class="t">Recibo de ' + nombreMes(mes).toLowerCase() + ' · guardado</span>' +
       '<div class="fila"><span>Monto</span><b>' + fmtP(r.monto) + '</b></div><div class="fila"><span>m³ del recibo</span><b>' + r.m3 + '</b></div>' +
       (r.limite ? '<div class="fila"><span>Fecha límite</span><b>' + fechaLim(r) + '</b></div>' : "") +
-      '<div class="fila"><span>Precio por m³</span><b>' + fmtP(r.precio) + '</b></div><div class="fila"><span>Comunes por depto</span><b>' + fmtP(r.comunesDepto) + '</b></div>' +
+      '<div class="fila"><span>Precio por m³ medido</span><b>' + fmtP(r.precioMedido || r.precio) + '</b></div>' +
+      '<div class="fila"><span>Áreas comunes por depto' + (r.comunes !== null && r.comunes !== undefined ? ' <small>(' + (Math.round(r.comunes * 10) / 10) + ' m³ ÷ 16)</small>' : '') + '</span><b>' + fmtP(r.comunesDepto) + '</b></div>' +
+      (r.factor !== undefined && r.factor < 0.9995 ? '<div class="fila"><span>Las lecturas cuentan al</span><b>' + (Math.round(r.factor * 1000) / 10) + ' %</b></div>' : '') +
       '<div class="fila"><span>' + (r.foto ? '<a href="' + r.foto + '" target="_blank" rel="noopener">ver foto</a>' : "") + '</span><button type="button" class="corregir" id="rCorregir">Corregir</button></div>';
     $("rResumen").style.display = ""; $("rForma").classList.add("hidden"); $("rPista").classList.add("hidden");
     $("rCorregir").onclick = () => { $("rForma").classList.remove("hidden"); $("rResumen").style.display = "none"; $("rPista").classList.remove("hidden"); $("rMonto").focus(); };
@@ -297,9 +370,10 @@ $("rGuardar").onclick = async () => {
   try {
     const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
     const j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
-    datos.recibo = { mes: mes, monto: j.monto, m3: j.m3, limite: $("rLimite").value, precio: j.precio, suma: j.suma, comunes: j.comunes, comunesDepto: j.comunesDepto, foto: j.foto || (datos.recibo && datos.recibo.foto) || "" };
+    datos.recibo = Object.assign({ mes: mes }, j, { limite: $("rLimite").value, foto: j.foto || (datos.recibo && datos.recibo.foto) || "" });
+    if (j.minComunes !== undefined && j.minComunes !== null) datos.minComunes = j.minComunes;
     fotoRecibo = ""; pintarRecibo();
-    pintarAvance();
+    pintarAvance(); pintarTinaco();
   } catch (e) { alert("No se guardó el recibo: " + (e.message || e)); }
   btn.textContent = "Guardar recibo"; calcRecibo();
 };
@@ -318,7 +392,7 @@ async function guardar(d) {
     $("x_" + d.depto).onclick = () => { $("l_" + d.depto).disabled = false; $("e_" + d.depto).disabled = false; $("acc_" + d.depto).classList.remove("hidden"); $("x_" + d.depto).remove(); };
     btn.textContent = "Guardar"; btn.disabled = false;
     delete fotos[d.depto];
-    pintarAvance();
+    pintarAvance(); pintarTinaco(d.depto);
   } catch (e) {
     alert("No se guardó: " + (e.message || e)); btn.textContent = "Guardar"; btn.disabled = false;
   }

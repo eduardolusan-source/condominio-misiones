@@ -179,3 +179,35 @@ Pegar el `Code.gs` nuevo y publicar nueva versión (paso 6). No hace falta corre
   celda sigue amarilla mientras quede algún reporte pendiente que la toque.
 - La bandeja no resuelve dos veces el mismo pago ni pisa lo que otra persona de la mesa ya resolvió.
 - Si un reporte no encuentra su celda en la pestaña del mes, lo dice en la nota del renglón de Pagos.
+
+## Agua: áreas comunes, medidor general y tinaco (9 de noviembre de 2026)
+Pegar el `Code.gs` nuevo y publicar nueva versión (paso 6). No hace falta correr `instalar`: la primera vez
+que alguien abra `lecturas.html` o `agua.html`, el script pone al día las pestañas de agua. Para ver qué hizo,
+córrelo a mano desde el editor: `actualizarAgua()`.
+- **Por qué:** la CEA cobra con un mes de atraso (el recibo de octubre de 2026 cobró del 6 de agosto al 4 de
+  septiembre), así que los m³ del recibo casi nunca son de los mismos días que nuestras lecturas. En noviembre
+  los 16 sumaron 48 m³ contra 41 del recibo: las áreas comunes salían negativas y los deptos vacíos (3 y 16)
+  quedaban en $0.
+- **Mínimo de áreas comunes:** Config `comunes_min_m3` (nace en 5). Cada recibo lo copia a su columna J de
+  Recibos agua al crearse; para un mes en particular se cambia ahí. Las áreas comunes nunca bajan de ese mínimo
+  y las pagan los 16 por igual, aunque el depto esté vacío.
+- **Ajuste proporcional:** si los 16 más el mínimo no caben en el tinaco, cada lectura cuenta al mismo
+  porcentaje (columna M): al que más gastó se le quitan más m³. El cargo de cada depto es
+  m³ × precio por m³ medido (redondeado) + áreas comunes (redondeadas), para que el ticket se compruebe con
+  calculadora; por eso los 16 suman el recibo con diferencia de centavos.
+- **Medidor general (CEA, no. 25306677):** primera tarjeta de `lecturas.html`. En la pestaña Agua va con
+  Depto = `General`: no paga y no entra en la suma de los 16. Su primera lectura es la línea base; desde el
+  mes siguiente, lo que marque es el tamaño del tinaco en lugar de los m³ del recibo, y las áreas comunes
+  salen medidas (tinaco − suma de los 16). Conviene leerlo el mismo día que los deptos.
+- **Recibos agua, columnas nuevas:** J mínimo de áreas comunes (azul, se captura), K m³ del medidor general,
+  L m³ del tinaco (K si hay, si no C), M ajuste de lecturas, N precio por m³ medido. E ahora es B ÷ L;
+  G = mín(L, máx(L − F, J)); H = E × G ÷ 16. Cargo en Agua (columna I) = ROUND(consumo × ROUND(N, 2), 2) + ROUND(H, 2).
+- **Páginas:** `lecturas.html` trae una barrita fija y la tarjeta «Tinaco del mes», que se llena con cada
+  lectura guardada (le cae una gota), marca la franja del mínimo de áreas comunes y avisa en naranja si se
+  desborda. `agua.html` es un ticket por depto (los números del medidor, una gota por m³, litros y garrafones,
+  tu agua, áreas comunes, total y sello de PAGADO / POR PAGAR) más el tinaco del edificio con su capa
+  resaltada y la explicación del mes; `agua.html?depto=9` abre directo el 9. Las dos usan `js/tinaco.js` y
+  funcionan también con el script anterior mientras se publica el nuevo.
+- **Probado** con las fórmulas reales calculadas en LibreOffice sobre la hoja exportada: noviembre con 5 m³ deja
+  a los deptos 3 y 16 en $79.07, al 9 en $2,166.54 (11 × $189.77 + $79.07) y el edificio junta $10,374.08;
+  octubre no cambia (16 × $670.13).

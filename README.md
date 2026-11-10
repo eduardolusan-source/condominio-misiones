@@ -15,6 +15,8 @@ Publicado con GitHub Pages: https://eduardolusan-source.github.io/condominio-mis
 | `areas-comunes.html` | Qué es área común, y reglas por espacio (acceso, salón, alberca, estacionamiento, elevador, jardines, agua, residuos) |
 | `pendientes.html` | Protocolización de la mesa directiva (acuerdo de asamblea), minuta del 10 de agosto de 2026 y seguimiento de los 12 acuerdos. Antes se llamaba "Mesa directiva"; `mesa-directiva.html` redirige aquí |
 | `finanzas.html` | Rendición de cuentas 2025 y enero–junio 2026. **Acceso abierto, sin clave.** |
+| `agua.html` | Mi recibo de agua: un ticket por depto (lectura del medidor, su agua, su parte de áreas comunes, total y sello de pagado), el tinaco del edificio con su capa resaltada y los recibos anteriores |
+| `lecturas.html` | Para quien lee los medidores (con clave): los 16 deptos y el medidor general de la CEA, el recibo del mes y el tinaco que se llena con cada lectura y avisa si se desborda. Reglas del reparto en `apps-script/INSTALAR.md` |
 
 ## Origen de la información
 

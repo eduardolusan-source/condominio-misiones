@@ -19,6 +19,9 @@
      clave de Config "clave_egresos". Cada gasto se anota en la sección de egresos
      ordinarios o extraordinarios de la pestaña del mes, sube su comprobante a la
      carpeta del mes en Drive y deja renglón en la pestaña "Egresos".
+   - doGet accion=lecturas / doPost accion=lectura y recibo: lecturas.html (clave de Config
+     clave_lector): los 16 medidores, el medidor general y el recibo de la CEA. doGet
+     accion=agua: agua.html, el ticket de cada depto. Cómo se reparte: sección AGUA.
    - doGet accion=cuentas / doPost accion=validar: cuentas.html. Cada depto dice si
      reconoce su adeudo al corte y lo de julio a septiembre (lo cobró la administración
      anterior), y sube comprobantes. Cae en la pestaña "Validaciones"; las imágenes van
@@ -52,8 +55,11 @@ const ENC_EGRESOS = ["Registrado","Mes","Tipo","Concepto","Proveedor","Monto","F
 const CACHE_FINANZAS = 300;                 // segundos que finanzas.html ve la misma respuesta; ?fresh=1 la fuerza
 const ENC_AGUA = ["Mes","Depto","Lectura anterior","Lectura actual","Consumo m³","Estimado","Foto","Capturado el","Cargo $","Pagado el","Nota"];
 //                 A     B       C                  D                E           F          G      H              I         J           K
-const ENC_RECIBOS = ["Mes","Monto del recibo CEA","m³ del medidor general (viene en el recibo)","Fecha límite de pago","Precio por m³","Suma de lecturas m³","m³ de áreas comunes","Comunes por depto $","Notas"];
-//                    A     B                      C                                            D                      E               F                     G                     H                     I
+const ENC_RECIBOS = ["Mes","Monto del recibo CEA","m³ del recibo (los imprime la CEA)","Fecha límite de pago","Precio por m³ del tinaco","Suma de lecturas de los 16 deptos m³","m³ de áreas comunes","Áreas comunes por depto $","Notas","Mínimo de áreas comunes m³","m³ del medidor general (nuestra lectura)","m³ del tinaco (base del reparto)","Ajuste de lecturas","Precio por m³ medido $"];
+//                    A     B                      C                                     D                       E                          F                                       G                     H                            I        J                             K                                          L                                    M                     N
+const GENERAL = "General";                  // columna Depto de la pestaña Agua para el medidor general de la CEA (no. 25306677)
+const COMUNES_MIN = 5;                      // m³ mínimos de áreas comunes cuando Config no dice otra cosa (acuerdo de la mesa, nov 2026)
+const AGUA_VERSION = "2";                   // sube cuando cambian las fórmulas del agua; la primera consulta las pone al día
 const ENC_VALID = ["Fecha","Depto","Concepto","Respuesta","Monto pagado a la admin. anterior","Nota","Comprobantes","Folio","Nota general"];
 /* Lo que tocaba pagar de julio a septiembre de 2026, cobrado por la administración anterior. */
 const CONCEPTOS_PREVIOS = [
@@ -153,6 +159,9 @@ function instalar() {
 
   // 6. Bitácora de egresos
   if (!ss.getSheetByName(HOJA_EGRESOS)) { hojaEgresos_(); avisos.push("Pestaña creada: " + HOJA_EGRESOS); }
+
+  // 6b. Agua: mínimo de áreas comunes, medidor general y fórmulas del reparto
+  actualizarAgua_().forEach(a => avisos.push(a));
 
   // 7. Montos de muestra de la plantilla (Administración 7,000 y Limpieza 7,000) en la
   //    plantilla y en los meses en vivo que aún no tienen cobros ni otros gastos
@@ -358,8 +367,8 @@ function doGet(e) {
     if (p.accion === "pendientes") return json_(pendientes_(p.clave));
     if (p.accion === "imagen") return json_(imagen_(p.clave, p.folio));
     if (p.accion === "cuentas") return json_(cuentasDepto_(parseInt(p.depto, 10)));
-    if (p.accion === "lecturas") return json_(lecturasMes_(p.mes, p.clave));
-    if (p.accion === "agua") return json_(aguaDepto_(parseInt(p.depto, 10)));
+    if (p.accion === "lecturas") { asegurarAgua_(true); return json_(lecturasMes_(p.mes, p.clave)); }
+    if (p.accion === "agua") { asegurarAgua_(true); return json_(aguaDepto_(parseInt(p.depto, 10))); }
     if (p.accion === "votos") return json_(votos_());
     if (p.accion === "acuerdos") return json_(acuerdos_());
     if (p.accion === "tareas") return json_(tareas_());
@@ -376,8 +385,8 @@ function doPost(e) {
   try {
     const d = JSON.parse(e.postData.contents || "{}");
     if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
-    if (d.accion === "lectura") { lock.waitLock(10000); return json_(guardarLectura_(d)); }
-    if (d.accion === "recibo") { lock.waitLock(10000); return json_(guardarRecibo_(d)); }
+    if (d.accion === "lectura") { lock.waitLock(10000); asegurarAgua_(false); return json_(guardarLectura_(d)); }
+    if (d.accion === "recibo") { lock.waitLock(10000); asegurarAgua_(false); return json_(guardarRecibo_(d)); }
     if (d.accion === "voto") { lock.waitLock(10000); return json_(votar_(d)); }
     if (d.accion === "acuerdo") { lock.waitLock(10000); return json_(guardarAcuerdo_(d)); }
     if (d.accion === "tarea") { lock.waitLock(10000); return json_(guardarTarea_(d)); }
@@ -674,7 +683,20 @@ function tareas_() {
   return r;
 }
 
-/* ============================ AGUA: lecturas, recibo y cargos ============================ */
+/* ============================ AGUA: lecturas, recibo y cargos ============================
+   Cómo se reparte cada recibo de la CEA (pestaña "Recibos agua", una fila por mes):
+   - El TINACO del mes (L) son los m³ del medidor general que leemos nosotros el mismo día
+     que los 16 deptos (K: renglón "General" de la pestaña Agua) o, si ese mes no se leyó, los
+     m³ que trae impresos el recibo (C). Ojo: la CEA cobra con un mes de atraso (el recibo de
+     octubre de 2026 cobró del 6 de agosto al 4 de septiembre), así que C casi nunca es de los
+     mismos días que nuestras lecturas; por eso conviene leer también el general.
+   - ÁREAS COMUNES (G): lo que el tinaco tiene de más sobre la suma de los 16 (F), nunca menos
+     que el mínimo J (Config comunes_min_m3: 5 m³ desde noviembre de 2026; se cambia por mes
+     escribiendo en J). Las pagan los 16 por igual, aunque el depto esté vacío.
+   - AJUSTE (M): si los 16 más el mínimo no caben en el tinaco, cada lectura cuenta al mismo
+     porcentaje; así, al que más gastó es al que más m³ se le quitan.
+   - Cada depto paga sus m³ × N (precio por m³ medido = recibo ÷ tinaco × ajuste) + H (sus
+     áreas comunes). Los 16 cargos suman el monto del recibo (± centavos de redondeo). */
 
 function hojaAgua_() {
   const ss = SpreadsheetApp.getActive();
@@ -695,10 +717,21 @@ function hojaRecibos_() {
   h.setFrozenRows(1);
   h.setColumnWidths(2, 3, 160); h.setColumnWidth(9, 300);
   h.getRange("A2:A200").setNumberFormat("@");
-  h.getRange("B2:B200").setBackground("#dbe9ff"); h.getRange("C2:C200").setBackground("#dbe9ff"); h.getRange("D2:D200").setBackground("#dbe9ff");
+  ["B", "C", "D", "J"].forEach(c => h.getRange(c + "2:" + c + "200").setBackground("#dbe9ff"));   // en azul lo que se captura
   return h;
 }
-/* Fila del mes en Recibos agua; si no existe, la crea con sus fórmulas y deja en azul lo que captura Eduardo. */
+/* Depto de un renglón de Agua: 0 = medidor general, 1–16 = deptos, NaN = otra cosa. */
+function claveDepto_(v) {
+  if (/^\s*gen/i.test(String(v))) return 0;
+  return v === "" || v === null ? NaN : Number(v);
+}
+/* m³ mínimos de áreas comunes (Config comunes_min_m3); si no está o no es número, 5. */
+function comunesMin_() {
+  const v = config_().comunes_min_m3;
+  const n = parseFloat(String(v === undefined || v === null ? "" : v).replace(",", "."));
+  return isNaN(n) || n < 0 ? COMUNES_MIN : n;
+}
+/* Fila del mes en Recibos agua; si no existe, la crea con sus fórmulas y el mínimo de comunes. */
 function filaRecibo_(mes, crear) {
   const h = hojaRecibos_();
   const n = h.getLastRow();
@@ -711,23 +744,40 @@ function filaRecibo_(mes, crear) {
   h.getRange(r, 1).setNumberFormat("@").setValue(mes);
   h.getRange(r, 2).setNumberFormat("$#,##0.00");
   h.getRange(r, 4).setNumberFormat("dd/mm/yyyy");
+  h.getRange(r, 10).setValue(comunesMin_());
   formulasRecibo_(h, r);
   return r;
 }
-/* Fórmulas del mes. Si la suma de lecturas supera los m³ del recibo (lecturas que abarcan más
-   días que el recibo, o medidor general sin dato), el recibo se reparte en proporción directa
-   al consumo, sin comunes. En todos los casos la suma de los 16 cargos es el monto del recibo. */
+/* Fórmulas de la fila r de Recibos agua (el reparto se explica arriba). */
 function formulasRecibo_(h, r) {
-  h.getRange(r, 5).setFormula('=IF(B' + r + '>0,IF(AND(C' + r + '>0,C' + r + '-F' + r + '>=0),B' + r + '/C' + r + ',IF(F' + r + '>0,B' + r + '/F' + r + ',"")),"")').setNumberFormat("$#,##0.00");
-  h.getRange(r, 6).setFormula("=SUMIF('" + HOJA_AGUA + "'!$A:$A,A" + r + ",'" + HOJA_AGUA + "'!$E:$E)");
-  h.getRange(r, 7).setFormula('=IF(C' + r + '>0,C' + r + '-F' + r + ',"")');
-  h.getRange(r, 8).setFormula('=IF(AND(ISNUMBER(E' + r + '),ISNUMBER(G' + r + '),G' + r + '>0),E' + r + '*G' + r + '/' + UNIDADES + ',0)').setNumberFormat("$#,##0.00");
+  const A = "'" + HOJA_AGUA + "'!";
+  const pon = (col, f, formato) => { const c = h.getRange(r, col).setFormula(f); if (formato) c.setNumberFormat(formato); };
+  pon(6,  "=SUMIFS(" + A + "$E:$E," + A + "$A:$A,A" + r + "," + A + "$B:$B,\"<>" + GENERAL + "\")", "0.0");     // F suma de los 16
+  pon(11, "=SUMIFS(" + A + "$E:$E," + A + "$A:$A,A" + r + "," + A + "$B:$B,\"" + GENERAL + "\")", "0.0");       // K medidor general
+  pon(12, "=IF(N(K" + r + ")>0,K" + r + ",IF(N(C" + r + ")>0,C" + r + ",F" + r + "))", "0.0");                       // L tinaco
+  pon(7,  "=IF(N(L" + r + ")>0,MIN(L" + r + ",MAX(L" + r + "-F" + r + ",N(J" + r + "))),\"\")", "0.0");            // G comunes
+  pon(13, "=IF(AND(ISNUMBER(G" + r + "),N(F" + r + ")>0),MIN(1,(L" + r + "-G" + r + ")/F" + r + "),1)", "0.0%");   // M ajuste
+  pon(5,  "=IF(AND(N(B" + r + ")>0,N(L" + r + ")>0),B" + r + "/L" + r + ",\"\")", "$#,##0.00");                    // E precio del tinaco
+  pon(14, "=IF(ISNUMBER(E" + r + "),E" + r + "*M" + r + ",\"\")", "$#,##0.00");                                     // N precio por m³ medido
+  pon(8,  "=IF(AND(ISNUMBER(E" + r + "),ISNUMBER(G" + r + ")),E" + r + "*G" + r + "/" + UNIDADES + ",0)", "$#,##0.00"); // H comunes por depto
+}
+/* Cargo de un depto (fila de Agua): sus m³ × precio por m³ medido + su parte de áreas comunes.
+   Precio y comunes van redondeados a centavos para que el ticket de agua.html se pueda comprobar
+   con calculadora (11 m³ × $189.77 + $79.07); por eso los 16 pueden sumar unos centavos de más o de menos. */
+function formulaCargo_(fila) {
+  const R = "'" + HOJA_RECIBOS + "'!";
+  const n = "VLOOKUP(A" + fila + "," + R + "$A:$N,14,FALSE)";
+  const c = "VLOOKUP(A" + fila + "," + R + "$A:$H,8,FALSE)";
+  return "=IF(AND(ISNUMBER(E" + fila + "),ISNUMBER(" + n + ")),ROUND(E" + fila + "*ROUND(" + n + ",2),2)+ROUND(" + c + ",2),\"\")";
+}
+function formulaConsumo_(fila) {   // si corriges C o D en la hoja, el consumo se recalcula; si el medidor dio la vuelta, suma 10,000
+  return "=IF(AND(ISNUMBER(C" + fila + "),ISNUMBER(D" + fila + ")),IF(D" + fila + "<C" + fila + ",D" + fila + "+10000-C" + fila + ",D" + fila + "-C" + fila + "),\"\")";
 }
 function filaAgua_(h, mes, depto) {
   const n = h.getLastRow();
   if (n < 2) return 0;
   const vals = h.getRange(2, 1, n - 1, 2).getValues();
-  for (let i = 0; i < vals.length; i++) if (mesTexto_(vals[i][0]) === mes && Number(vals[i][1]) === depto) return i + 2;
+  for (let i = 0; i < vals.length; i++) if (mesTexto_(vals[i][0]) === mes && claveDepto_(vals[i][1]) === depto) return i + 2;
   return 0;
 }
 function claveLector_() {
@@ -738,24 +788,37 @@ function claveLector_() {
   if (h) h.getRange(h.getLastRow() + 1, 1, 2, 3).setValues([["clave_lector", "agua", "Clave de lecturas.html para quien lee los medidores. CÁMBIALA."], ["dia_lectura", "", "Día del mes en que se leen los medidores (por definir)"]]);
   return "agua";
 }
-/* Todo lo que la página de lecturas necesita para un mes: por depto, la lectura anterior,
-   lo ya capturado este mes y el promedio de consumo de los últimos tres meses. */
+/* Una fila de Recibos agua (sus 14 valores) como la ven las páginas. */
+function leeRecibo_(v) {
+  const num = x => x === "" || x === null || x === undefined || isNaN(Number(x)) ? null : Number(x);
+  const foto = String(v[8] || "").match(/https?:\/\/\S+/);
+  return {
+    mes: mesTexto_(v[0]), monto: Number(v[1]) || 0, m3: Number(v[2]) || 0,
+    limite: v[3] instanceof Date ? Utilities.formatDate(v[3], "America/Mexico_City", "yyyy-MM-dd") : "",
+    precio: Number(v[4]) || 0, suma: Number(v[5]) || 0, comunes: num(v[6]), comunesDepto: Number(v[7]) || 0,
+    foto: foto ? foto[0] : "", minComunes: num(v[9]), general: Number(v[10]) || 0, base: Number(v[11]) || 0,
+    factor: num(v[12]) === null ? 1 : Number(v[12]), precioMedido: Number(v[13]) || 0
+  };
+}
+/* Todo lo que la página de lecturas necesita para un mes: por medidor (16 deptos y el general),
+   la lectura anterior, lo ya capturado este mes y el promedio de los últimos tres meses. */
 function lecturasMes_(mes, clave) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(mes || ""))) throw new Error("mes");
   if (String(clave || "") !== claveLector_() && String(clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
   const h = hojaAgua_();
   const filas = h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues() : [];
-  const r = { ok: true, mes: mes, deptos: [], capturados: 0, recibo: null, reciboAnterior: null, diaLectura: String(config_().dia_lectura || "") };
+  const r = { ok: true, version: Number(AGUA_VERSION), mes: mes, deptos: [], capturados: 0, general: null, recibo: null, reciboAnterior: null,
+    minComunes: comunesMin_(), diaLectura: String(config_().dia_lectura || "") };
   const fechaCorta = v => v instanceof Date ? Utilities.formatDate(v, "America/Mexico_City", "d/M/yyyy") : "";
-  for (let d = 1; d <= UNIDADES; d++) {
-    const mias = filas.filter(f => Number(f[1]) === d).map(f => ({ mes: mesTexto_(f[0]), ant: f[2], act: f[3], cons: f[4], est: f[5], foto: f[6], cap: f[7], nota: String(f[10] || "") }));
+  const medidor = d => {
+    const mias = filas.filter(f => claveDepto_(f[1]) === d).map(f => ({ mes: mesTexto_(f[0]), ant: f[2], act: f[3], cons: f[4], est: f[5], foto: f[6], cap: f[7], nota: String(f[10] || "") }));
     const previas = mias.filter(x => x.mes < mes && x.act !== "" && x.act !== null).sort((a, b) => a.mes < b.mes ? 1 : -1);
     const actual = mias.find(x => x.mes === mes) || null;
     const ult = previas.slice(0, 3).map(x => Number(x.cons)).filter(x => !isNaN(x) && x >= 0);
     /* La lectura anterior es fija: la última guardada de un mes previo o, si este mes ya
        tiene renglón, la que quedó ahí (p. ej. la línea base). Nunca se edita desde la página. */
     const base = previas.length ? previas[0] : (actual && actual.ant !== "" && actual.ant !== null ? actual : null);
-    r.deptos.push({
+    return {
       depto: d,
       anterior: base ? Number(previas.length ? base.act : base.ant) : null,
       anteriorMes: base ? base.mes : "",
@@ -768,26 +831,23 @@ function lecturasMes_(mes, clave) {
       estimado: actual ? String(actual.est) === "sí" : false,
       foto: actual ? String(actual.foto || "") : "",
       promedio: ult.length ? Math.round(ult.reduce((a, b) => a + b, 0) / ult.length * 10) / 10 : null
-    });
-    if (actual && actual.act !== "") r.capturados++;
-  }
-  const leeRecibo = fila => {
-    const v = hojaRecibos_().getRange(fila, 1, 1, 9).getValues()[0];
-    return { mes: mesTexto_(v[0]), monto: Number(v[1]) || 0, m3: Number(v[2]) || 0, limite: v[3] instanceof Date ? Utilities.formatDate(v[3], "America/Mexico_City", "yyyy-MM-dd") : "",
-      precio: Number(v[4]) || 0, suma: Number(v[5]) || 0, comunes: Number(v[6]) || 0, comunesDepto: Number(v[7]) || 0, foto: String(v[8] || "").match(/https?:\/\/\S+/) ? String(v[8]).match(/https?:\/\/\S+/)[0] : "" };
+    };
   };
-  const fr = filaRecibo_(mes, false);
-  if (fr) r.recibo = leeRecibo(fr);
-  /* El último recibo capturado antes de este mes, para tenerlo a la vista al capturar el nuevo. */
+  for (let d = 1; d <= UNIDADES; d++) { const x = medidor(d); r.deptos.push(x); if (x.actual !== null) r.capturados++; }
+  r.general = medidor(0);
   const hr = hojaRecibos_();
+  const fr = filaRecibo_(mes, false);
+  if (fr) r.recibo = leeRecibo_(hr.getRange(fr, 1, 1, ENC_RECIBOS.length).getValues()[0]);
+  if (r.recibo && r.recibo.minComunes !== null) r.minComunes = r.recibo.minComunes;
+  /* El último recibo capturado antes de este mes, para tenerlo a la vista al capturar el nuevo. */
   if (hr.getLastRow() > 1) {
     const meses = hr.getRange(2, 1, hr.getLastRow() - 1, 2).getValues().map((f, i) => ({ mes: mesTexto_(f[0]), monto: Number(f[1]) || 0, fila: i + 2 })).filter(x => x.mes < mes && x.monto > 0).sort((a, b) => a.mes < b.mes ? 1 : -1);
-    if (meses.length) r.reciboAnterior = leeRecibo(meses[0].fila);
+    if (meses.length) r.reciboAnterior = leeRecibo_(hr.getRange(meses[0].fila, 1, 1, ENC_RECIBOS.length).getValues()[0]);
   }
   return r;
 }
 /* El recibo de la CEA del mes, capturado por la misma persona que lee los medidores:
-   monto, m³ del medidor general (impresos en el recibo), fecha límite y foto. */
+   monto, m³ (impresos en el recibo), fecha límite y foto. */
 function guardarRecibo_(d) {
   if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
   const mes = String(d.mes || "");
@@ -798,6 +858,7 @@ function guardarRecibo_(d) {
   if (!(m3 > 0)) return { ok: false, error: "m3" };
   const h = hojaRecibos_();
   const fila = filaRecibo_(mes, true);
+  if (h.getRange(fila, 10).getValue() === "") h.getRange(fila, 10).setValue(comunesMin_());
   formulasRecibo_(h, fila);                                 // por si la fila venía de una versión anterior
   h.getRange(fila, 2, 1, 2).setValues([[monto, m3]]);
   if (/^\d{4}-\d{2}-\d{2}$/.test(String(d.limite || ""))) {
@@ -809,27 +870,29 @@ function guardarRecibo_(d) {
     const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), d.tipo || "image/jpeg", mes + " · Recibo CEA $" + monto + ".jpg");
     foto = subcarpeta_("Agua " + mes).createFile(blob).getUrl();
   }
-  const nota = "Capturado el " + Utilities.formatDate(new Date(), "America/Mexico_City", "dd/MM/yyyy HH:mm") + (foto ? " · " + foto : "");
-  h.getRange(fila, 9).setValue(nota);
+  const previa = String(h.getRange(fila, 9).getValue() || "").match(/https?:\/\/\S+/);   // al corregir sin foto nueva, se queda la de antes
+  const url = foto || (previa ? previa[0] : "");
+  h.getRange(fila, 9).setValue("Capturado el " + Utilities.formatDate(new Date(), "America/Mexico_City", "dd/MM/yyyy HH:mm") + (url ? " · " + url : ""));
   SpreadsheetApp.flush();
-  const v = h.getRange(fila, 5, 1, 4).getValues()[0];
-  return { ok: true, mes: mes, monto: monto, m3: m3, precio: Number(v[0]) || 0, suma: Number(v[1]) || 0, comunes: Number(v[2]) || 0, comunesDepto: Number(v[3]) || 0, foto: foto };
+  return Object.assign({ ok: true }, leeRecibo_(h.getRange(fila, 1, 1, ENC_RECIBOS.length).getValues()[0]));
 }
-/* Guarda la lectura de un depto (número y foto). La fila del mes en Recibos agua se crea sola. */
+/* Guarda la lectura de un medidor (número y foto): depto 1–16 o 0 = medidor general.
+   La fila del mes en Recibos agua se crea sola. */
 function guardarLectura_(d) {
   if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
   const mes = String(d.mes || "");
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
-  const depto = parseInt(d.depto, 10);
-  if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
+  const depto = /^\s*gen/i.test(String(d.depto)) ? 0 : parseInt(d.depto, 10);
+  if (!(depto >= 0 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
   const actual = Math.round(parseFloat(d.actual) * 10) / 10;
   if (!(actual >= 0)) return { ok: false, error: "lectura" };
   const h = hojaAgua_();
-  const info = lecturasMes_(mes, d.clave).deptos[depto - 1];
+  const datos = lecturasMes_(mes, d.clave);
+  const info = depto === 0 ? datos.general : datos.deptos[depto - 1];
   let anterior = info.anterior;
   let esBase = false;
   if (anterior === null || isNaN(anterior)) {
-    /* Primera lectura del depto: queda como línea base (consumo 0) y de ahí en adelante
+    /* Primera lectura del medidor: queda como línea base (consumo 0) y de ahí en adelante
        la lectura anterior es fija. Si viene un valor explícito de base, se respeta. */
     if (d.anterior !== undefined && d.anterior !== "" && d.anterior !== null) anterior = Math.round(parseFloat(d.anterior) * 10) / 10;
     else { anterior = actual; esBase = true; }
@@ -840,19 +903,20 @@ function guardarLectura_(d) {
   const ahora = new Date();
   let foto = "";
   if (d.imagen && String(d.imagen).length > 100) {
-    const nombre = mes + " · Depto " + (depto < 10 ? "0" : "") + depto + " · lectura " + actual + ".jpg";
-    const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), d.tipo || "image/jpeg", nombre);
+    const quien = depto === 0 ? "Medidor general" : "Depto " + (depto < 10 ? "0" : "") + depto;
+    const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), d.tipo || "image/jpeg", mes + " · " + quien + " · lectura " + actual + ".jpg");
     foto = subcarpeta_("Agua " + mes).createFile(blob).getUrl();
   }
   filaRecibo_(mes, true);
   let fila = filaAgua_(h, mes, depto);
-  if (!fila) { fila = h.getLastRow() + 1; h.getRange(fila, 1).setNumberFormat("@").setValue(mes); h.getRange(fila, 2).setValue(depto); }
+  if (!fila) { fila = h.getLastRow() + 1; h.getRange(fila, 1).setNumberFormat("@").setValue(mes); h.getRange(fila, 2).setValue(depto === 0 ? GENERAL : depto); }
   h.getRange(fila, 3, 1, 2).setValues([[anterior, actual]]);
-  h.getRange(fila, 5).setFormula("=IF(AND(ISNUMBER(C" + fila + "),ISNUMBER(D" + fila + ")),IF(D" + fila + "<C" + fila + ",D" + fila + "+10000-C" + fila + ",D" + fila + "-C" + fila + "),\"\")");   // si corriges C o D en la hoja, el consumo se recalcula
-  h.getRange(fila, 6).setValue(d.estimado ? "sí" : "no");
+  h.getRange(fila, 5).setFormula(formulaConsumo_(fila));
+  h.getRange(fila, 6).setValue(d.estimado && depto > 0 ? "sí" : "no");
   if (foto) h.getRange(fila, 7).setValue(foto);
   h.getRange(fila, 8).setValue(ahora).setNumberFormat("dd/mm/yyyy hh:mm");
-  h.getRange(fila, 9).setFormula("=IF(AND(ISNUMBER(E" + fila + "),ISNUMBER(VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE))),VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE)*E" + fila + "+VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$H,8,FALSE),\"\")").setNumberFormat("$#,##0.00");
+  if (depto === 0) h.getRange(fila, 9).clearContent();       // el general no paga: es el tamaño del tinaco
+  else h.getRange(fila, 9).setFormula(formulaCargo_(fila)).setNumberFormat("$#,##0.00");
   if (esBase) h.getRange(fila, 11).setValue("Línea de base del " + Utilities.formatDate(ahora, "America/Mexico_City", "dd/MM/yyyy") + (d.nota ? " · " + limpiar_(d.nota, 150) : ""));
   else if (d.nota) h.getRange(fila, 11).setValue(limpiar_(d.nota, 200));
   return { ok: true, depto: depto, anterior: anterior, actual: actual, consumo: consumo, foto: foto, base: esBase };
@@ -875,10 +939,10 @@ function lineasBaseOctubre2026() {
       fila = h.getLastRow() + 1;
       h.getRange(fila, 1).setNumberFormat("@").setValue(mes); h.getRange(fila, 2).setValue(depto);
       h.getRange(fila, 3, 1, 2).setValues([[valor, valor]]);
-      h.getRange(fila, 5).setFormula("=IF(AND(ISNUMBER(C" + fila + "),ISNUMBER(D" + fila + ")),IF(D" + fila + "<C" + fila + ",D" + fila + "+10000-C" + fila + ",D" + fila + "-C" + fila + "),\"\")");
+      h.getRange(fila, 5).setFormula(formulaConsumo_(fila));
       h.getRange(fila, 6).setValue("no");
       h.getRange(fila, 8).setValue(hoy).setNumberFormat("dd/mm/yyyy hh:mm");
-      h.getRange(fila, 9).setFormula("=IF(AND(ISNUMBER(E" + fila + "),ISNUMBER(VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE))),VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$E,5,FALSE)*E" + fila + "+VLOOKUP(A" + fila + ",'" + HOJA_RECIBOS + "'!$A:$H,8,FALSE),\"\")").setNumberFormat("$#,##0.00");
+      h.getRange(fila, 9).setFormula(formulaCargo_(fila)).setNumberFormat("$#,##0.00");
       h.getRange(fila, 11).setValue(nota);
       avisos.push("Depto " + depto + ": línea base " + valor + " (renglón nuevo)");
       return;
@@ -900,25 +964,32 @@ function lineasBaseOctubre2026() {
   return avisos.join("\n");
 }
 
-/* Recibo de agua de un depto, mes por mes, con el reparto del edificio para que se vea cómo se calculó. */
+/* Recibo de agua de un depto, mes por mes, con el reparto del edificio para que se vea cómo
+   se calculó: el recibo con su tinaco, áreas comunes y ajuste, y el consumo de los 16 (solo
+   por número de depto) para dibujar el tinaco. */
 function aguaDepto_(depto) {
   if (!(depto >= 1 && depto <= UNIDADES)) throw new Error("departamento");
   const ss = SpreadsheetApp.getActive();
   const h = ss.getSheetByName(HOJA_AGUA), hr = ss.getSheetByName(HOJA_RECIBOS);
-  const r = { ok: true, depto: depto, meses: [], diaLectura: String(config_().dia_lectura || "") };
+  const r = { ok: true, version: Number(AGUA_VERSION), depto: depto, meses: [], minComunes: comunesMin_(), diaLectura: String(config_().dia_lectura || "") };
   if (!h || h.getLastRow() < 2) return r;
   const recibos = {};
-  if (hr && hr.getLastRow() > 1) hr.getRange(2, 1, hr.getLastRow() - 1, 8).getValues().forEach(f => {
-    recibos[mesTexto_(f[0])] = { monto: Number(f[1]) || 0, m3: Number(f[2]) || 0, limite: f[3] instanceof Date ? Utilities.formatDate(f[3], "America/Mexico_City", "d/MM/yyyy") : String(f[3] || ""),
-      precio: Number(f[4]) || 0, suma: Number(f[5]) || 0, comunes: Number(f[6]) || 0, comunesDepto: Number(f[7]) || 0 };
+  if (hr && hr.getLastRow() > 1) hr.getRange(2, 1, hr.getLastRow() - 1, ENC_RECIBOS.length).getValues().forEach(f => { const x = leeRecibo_(f); if (x.mes) recibos[x.mes] = x; });
+  const fecha = v => v instanceof Date ? Utilities.formatDate(v, "America/Mexico_City", "d/MM/yyyy") : (v ? String(v) : "");
+  const filas = h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues();
+  const edificio = {};
+  filas.forEach(f => {
+    const k = claveDepto_(f[1]), mes = mesTexto_(f[0]);
+    if (!(k >= 1 && k <= UNIDADES) || !mes) return;
+    if (!edificio[mes]) edificio[mes] = Array(UNIDADES).fill(null);
+    edificio[mes][k - 1] = f[4] === "" ? null : Number(f[4]);
   });
-  h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues().forEach(f => {
-    if (Number(f[1]) !== depto) return;
+  filas.forEach(f => {
+    if (claveDepto_(f[1]) !== depto) return;
     const mes = mesTexto_(f[0]);
-    const rec = recibos[mes] || null;
     r.meses.push({ mes: mes, anterior: Number(f[2]), actual: Number(f[3]), consumo: Number(f[4]) || 0, estimado: String(f[5]) === "sí",
-      cargo: f[8] === "" ? null : Number(f[8]), pagado: f[9] instanceof Date ? Utilities.formatDate(f[9], "America/Mexico_City", "d/MM/yyyy") : (f[9] ? String(f[9]) : ""),
-      nota: String(f[10] || ""), recibo: rec });
+      capturado: fecha(f[7]), cargo: f[8] === "" ? null : Number(f[8]), pagado: fecha(f[9]),
+      nota: String(f[10] || ""), recibo: recibos[mes] || null, edificio: edificio[mes] || null });
   });
   r.meses.sort((a, b) => a.mes < b.mes ? 1 : -1);
   return r;
@@ -930,6 +1001,60 @@ function marcarAguaPagada_(mes, depto, fecha, folio) {
   if (!fila) return;
   h.getRange(fila, 10).setValue(fecha).setNumberFormat("dd/mm/yyyy");
   if (folio) h.getRange(fila, 11).setValue(("Pago " + folio + " · " + String(h.getRange(fila, 11).getValue() || "")).replace(/ · $/, ""));
+}
+
+/* Pone al día las pestañas de agua cuando cambian las fórmulas (AGUA_VERSION): encabezados y
+   fórmulas de Recibos agua (el mínimo de comunes J se llena con el de Config donde esté
+   vacío), la fórmula del cargo en cada renglón de Agua (el general no paga) y la clave
+   comunes_min_m3 en Config. Idempotente. La primera consulta de lecturas.html o agua.html
+   después de publicar la nueva versión lo corre sola; también se puede correr a mano. */
+function actualizarAgua() {
+  const t = actualizarAgua_().join("\n") || "El agua ya estaba al día.";
+  Logger.log(t);
+  try { SpreadsheetApp.getUi().alert("Agua", t, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) {}
+  return t;
+}
+function asegurarAgua_(conCandado) {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty("agua_version") === AGUA_VERSION) return;
+  if (!conCandado) { actualizarAgua_(); return; }           // doPost ya tiene el candado
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) return;
+  try { if (props.getProperty("agua_version") !== AGUA_VERSION) actualizarAgua_(); } finally { lock.releaseLock(); }
+}
+function actualizarAgua_() {
+  const avisos = [];
+  const ss = SpreadsheetApp.getActive();
+  const cfg = ss.getSheetByName(HOJA_CONFIG);
+  if (cfg) {
+    const claves = cfg.getRange(1, 1, Math.max(cfg.getLastRow(), 1), 1).getValues().map(f => String(f[0]).trim());
+    if (claves.indexOf("comunes_min_m3") < 0) {
+      cfg.appendRow(["comunes_min_m3", COMUNES_MIN, "m³ mínimos de áreas comunes (riego, fuente, limpieza) que pagan los 16 deptos por igual cada mes, aunque estén vacíos. Para un mes en particular se cambia en Recibos agua, columna J"]);
+      avisos.push("Config: agregado comunes_min_m3 = " + COMUNES_MIN);
+    }
+  }
+  const hr = hojaRecibos_();
+  hr.getRange(1, 1, 1, ENC_RECIBOS.length).setValues([ENC_RECIBOS]).setFontWeight("bold").setBackground("#d9e2ec").setWrap(true);
+  hr.getRange("J1:J200").setBackground("#dbe9ff");
+  hr.getRange(1, 10).setBackground("#dbe9ff");
+  const min = comunesMin_();
+  for (let r = 2; r <= hr.getLastRow(); r++) {
+    const mes = mesTexto_(hr.getRange(r, 1).getValue());
+    if (!/^\d{4}-\d{2}$/.test(mes)) continue;
+    if (hr.getRange(r, 10).getValue() === "") { hr.getRange(r, 10).setValue(min); avisos.push("Recibos agua " + mes + ": mínimo de áreas comunes " + min + " m³"); }
+    formulasRecibo_(hr, r);
+  }
+  const h = hojaAgua_();
+  let n = 0;
+  if (h.getLastRow() > 1) h.getRange(2, 1, h.getLastRow() - 1, 2).getValues().forEach((f, i) => {
+    const fila = i + 2, k = claveDepto_(f[1]);
+    if (!mesTexto_(f[0])) return;
+    if (k === 0) h.getRange(fila, 9).clearContent();
+    else if (k >= 1 && k <= UNIDADES) { h.getRange(fila, 9).setFormula(formulaCargo_(fila)).setNumberFormat("$#,##0.00"); n++; }
+  });
+  if (n) avisos.push("Agua: cargo recalculado en " + n + " renglones");
+  PropertiesService.getScriptProperties().setProperty("agua_version", AGUA_VERSION);
+  return avisos;
 }
 
 /* Al cambiar el estatus en la columna J de Pagos (Confirmado, Rechazado o Pendiente). */
