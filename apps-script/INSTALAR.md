@@ -79,6 +79,8 @@ La clave se guarda en el celular para no pedirla cada vez; "Salir" la borra.
   La URL no cambia.
 
 ## 6. Actualizar el script cuando cambie `Code.gs` (por ejemplo, para `cuentas.html`)
+**Ojo con `CLAVE_ADMIN`:** en el editor tiene la clave real de la bandeja; el repo trae `"cambia-esta-clave"`.
+Al pegar un `Code.gs` nuevo, conserva la línea `const CLAVE_ADMIN = …` que ya estaba en el editor.
 La dirección `/exec` no cambia si editas la implementación existente:
 1. **Extensiones → Apps Script**, pegar el `Code.gs` nuevo completo y guardar.
 2. **Implementar → Administrar implementaciones** → lápiz de la implementación activa →
@@ -181,9 +183,9 @@ Pegar el `Code.gs` nuevo y publicar nueva versión (paso 6). No hace falta corre
 - Si un reporte no encuentra su celda en la pestaña del mes, lo dice en la nota del renglón de Pagos.
 
 ## Agua: áreas comunes, medidor general y tinaco (9 de noviembre de 2026)
-Pegar el `Code.gs` nuevo y publicar nueva versión (paso 6). No hace falta correr `instalar`: la primera vez
-que alguien abra `lecturas.html` o `agua.html`, el script pone al día las pestañas de agua. Para ver qué hizo,
-córrelo a mano desde el editor: `actualizarAgua()`.
+**Publicado el 9 de noviembre de 2026 como versión 17** de la misma implementación (la URL `/exec` no cambió),
+conservando la `CLAVE_ADMIN` del editor. La primera consulta puso al día las pestañas de agua; para volver a
+correrlo a mano: `actualizarAgua()`.
 - **Por qué:** la CEA cobra con un mes de atraso (el recibo de octubre de 2026 cobró del 6 de agosto al 4 de
   septiembre), así que los m³ del recibo casi nunca son de los mismos días que nuestras lecturas. En noviembre
   los 16 sumaron 48 m³ contra 41 del recibo: las áreas comunes salían negativas y los deptos vacíos (3 y 16)
@@ -205,8 +207,11 @@ córrelo a mano desde el editor: `actualizarAgua()`.
 - **Páginas:** `lecturas.html` trae una barrita fija y la tarjeta «Tinaco del mes», que se llena con cada
   lectura guardada (le cae una gota), marca la franja del mínimo de áreas comunes y avisa en naranja si se
   desborda. `agua.html` es un ticket por depto (los números del medidor, una gota por m³, litros y garrafones,
-  tu agua, áreas comunes, total y sello de PAGADO / POR PAGAR) más el tinaco del edificio con su capa
-  resaltada y la explicación del mes; `agua.html?depto=9` abre directo el 9. Las dos usan `js/tinaco.js` y
+  tu agua, áreas comunes con su monto total —5 m³ = $1,265.12 entre los 16—, total y sello de PAGADO /
+  POR PAGAR) más el tinaco del edificio con su capa resaltada, sin textos de explicación; `agua.html?depto=9`
+  abre directo el 9. El ticket se titula con el mes del agua, no el de la lectura: la lectura del 9 de
+  noviembre es el «Agua de octubre». Solo salen los meses cobrados con lecturas (la primera lectura de cada
+  medidor no se muestra), y los anteriores aparecen abajo conforme se acumulan. Las dos usan `js/tinaco.js` y
   funcionan también con el script anterior mientras se publica el nuevo.
 - **Probado** con las fórmulas reales calculadas en LibreOffice sobre la hoja exportada: noviembre con 5 m³ deja
   a los deptos 3 y 16 en $79.07, al 9 en $2,166.54 (11 × $189.77 + $79.07) y el edificio junta $10,374.08;
