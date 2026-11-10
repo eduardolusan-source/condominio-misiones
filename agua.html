@@ -61,7 +61,6 @@
   .tk-gotas .mas { font-weight: 800; font-size: 0.9rem; color: var(--tk-agua); margin-left: 0.25rem; }
   .tk-litros { margin: 0.2rem 0 0; font-size: 1rem; line-height: 1.4; }
   .tk-litros b { font-size: 1.2rem; }
-  .tk-prom { margin: 0.35rem 0 0; font-size: 0.92rem; color: var(--tk-tenue); line-height: 1.4; }
   .tk-corte { border-top: 2px dashed var(--tk-linea); margin: 1.1rem -0.3rem 0.6rem; }
   .tk-linea { display: grid; grid-template-columns: 2.3rem 1fr auto; gap: 0.7rem; align-items: center; padding: 0.5rem 0; }
   .tk-ic { width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center; }
@@ -90,8 +89,7 @@
 
   /* ---------- El tinaco del edificio ---------- */
   .edif { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.1rem 1rem; box-shadow: var(--shadow); margin: 1.6rem 0 1rem; }
-  .edif h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 1.45rem; margin: 0; }
-  .edif .sub { color: var(--ink-2); font-size: 0.95rem; margin: 0.15rem 0 0.3rem; line-height: 1.4; }
+  .edif h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 1.45rem; margin: 0 0 0.3rem; }
   .edif .tq-dibujo { max-width: 390px; margin: 0 auto; }
   .edif-ley { list-style: none; padding: 0; margin: 0.4rem 0 0.8rem; display: grid; gap: 0.4rem; }
   .edif-ley li { display: grid; grid-template-columns: 14px 1fr auto; gap: 0.6rem; align-items: center; font-size: 0.97rem; color: var(--ink-2); }
@@ -100,8 +98,6 @@
   .edif-ley i { width: 14px; height: 14px; border-radius: 4px; display: block; }
   .edif-ley i.tu { background: #1f6fc5; } .edif-ley i.otros { background: #86c2f0; } .edif-ley i.com { background: #6cc28c; }
   @media (prefers-color-scheme: dark) { .edif-ley i.tu { background: #8cc4f4; } .edif-ley i.otros { background: #2f6ca5; } .edif-ley i.com { background: #3f8f5c; } }
-  .expl { background: var(--page); border-radius: 12px; padding: 0.8rem 0.95rem; font-size: 0.97rem; color: var(--ink-2); line-height: 1.5; margin: 0; }
-  .expl b { color: var(--ink); }
   .edif details { margin-top: 0.8rem; }
   .edif summary { cursor: pointer; font-weight: 700; color: var(--accent); font-size: 0.97rem; }
   .cuentas { width: 100%; border-collapse: collapse; margin-top: 0.5rem; font-size: 0.93rem; }
@@ -109,7 +105,7 @@
   .cuentas td:last-child { text-align: right; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; padding-left: 0.8rem; }
   .cuentas tr:last-child td { border-bottom: none; }
 
-  /* ---------- Recibos anteriores ---------- */
+  /* ---------- Recibos anteriores (solo los meses que se cobraron con lecturas) ---------- */
   .hist-tit { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: 1.3rem; margin: 1.8rem 0 0.6rem; }
   .hist { display: grid; gap: 0.6rem; }
   .hist details { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
@@ -147,7 +143,7 @@
 
 <main class="agua">
   <h1>Mi recibo de agua</h1>
-  <p class="lead">Toca tu departamento. Tu recibo es lo que marcó tu medidor más tu parte de las áreas comunes (riego, fuente y limpieza), que pagan los 16 deptos por igual.</p>
+  <p class="lead">Toca tu departamento.</p>
   <div class="deptos" id="deptos"></div>
   <div id="contenido"></div>
 </main>
@@ -164,9 +160,10 @@ const r2 = x => Number(Math.round(Number(x + "e2")) + "e-2");          // como R
 const fmt = n => "$" + Number(n || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt0 = n => "$" + Math.round(Number(n || 0)).toLocaleString("es-MX");
 const m3 = v => (Math.round(v * 10) / 10).toLocaleString("es-MX") + " m³";
-const porc = v => (Math.round(v * 1000) / 10).toLocaleString("es-MX") + " %";
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 function nombreMes(id) { const [y, m] = id.split("-"); return NOMBRES_MES[+m - 1].replace(/^./, c => c.toUpperCase()) + " " + y; }
+/* La lectura de un mes cobra el agua del mes anterior: la del 9 de noviembre es el agua de octubre. */
+function mesDelAgua(id) { const [y, m] = id.split("-").map(Number); const d = new Date(y, m - 2, 1); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0"); }
 function fechaLarga(s) {                                  // "2026-11-24" o "24/11/2026" → "24 de noviembre"
   let p = String(s || "").split(/[-/]/);
   if (p.length !== 3) return "";
@@ -211,10 +208,11 @@ function ticket(m, prev) {
   const sello = m.pagado ? '<div class="tk-sello pagado mono">PAGADO<small>' + fechaCorta(m.pagado) + (folio ? " · " + folio : "") + '</small></div>'
     : hay ? '<div class="tk-sello porpagar mono">POR PAGAR</div>'
     : '<div class="tk-sello espera mono">EN ESPERA<small>del recibo CEA</small></div>';
-  let h = '<article class="tk" aria-label="Recibo de agua de ' + nombreMes(m.mes).toLowerCase() + ', depto ' + depto + '">';
+  const mesAgua = mesDelAgua(m.mes);
+  let h = '<article class="tk" aria-label="Recibo del agua de ' + nombreMes(mesAgua).toLowerCase() + ', depto ' + depto + '">';
   h += '<header class="tk-cab"><img class="tk-logo" src="assets/mark.svg" alt=""><div class="tk-org mono">Las Misiones<span>Recibo de agua</span></div>' +
     '<div class="tk-depto mono"><small>DEPTO</small><b>' + depto + '</b></div></header>';
-  h += '<div class="tk-mes">' + nombreMes(m.mes) + '</div>';
+  h += '<div class="tk-mes">Agua de ' + NOMBRES_MES[+mesAgua.split("-")[1] - 1] + '</div>';
   h += '<div class="tk-periodo">' + (base ? "Primera lectura del medidor" : "Lectura del " + (m.capturado || "mes")) + '</div>' + sello;
 
   // Medidor: de dónde a dónde, y cuánta agua es eso
@@ -228,17 +226,6 @@ function ticket(m, prev) {
     h += '<div class="tk-gotas" aria-hidden="true">' + GOTA.repeat(Math.min(n, 24)) + (n > 24 ? '<span class="mas">+' + (n - 24) + '</span>' : '') + '</div>';
     h += '<p class="tk-litros">' + (m.consumo > 0 ? '<b>' + m3(m.consumo) + '</b> = ' + Math.round(m.consumo * 1000).toLocaleString("es-MX") + ' litros, como ' + Math.round(m.consumo * 50).toLocaleString("es-MX") + ' garrafones'
       : '<b>0 m³</b> · tu medidor no se movió') + '</p>';
-    const otros = (m.edificio || []).filter(x => x !== null && x !== undefined);
-    if (otros.length > 1) {
-      const prom = otros.reduce((a, b) => a + b, 0) / otros.length;
-      let t;
-      if (!(m.consumo > 0)) t = "Este mes solo pagas tu parte de las áreas comunes.";
-      else if (m.consumo < prom - 0.25) t = "Gastaste menos que el promedio del edificio (" + m3(prom) + "). ¡Gracias por cuidar el agua!";
-      else if (m.consumo <= prom + 0.25) t = "Gastaste lo mismo que el promedio del edificio (" + m3(prom) + ").";
-      else if (m.consumo >= prom * 2.5) t = "El promedio del edificio fue " + m3(prom) + ". ¿Sabías? Un excusado que gotea puede tirar cientos de litros al día; vale la pena revisarlo.";
-      else t = "El promedio del edificio fue " + m3(prom) + ".";
-      h += '<p class="tk-prom">' + t + '</p>';
-    }
   }
 
   if (!hay) {
@@ -252,7 +239,7 @@ function ticket(m, prev) {
       h += '<div class="tk-linea"><span class="tk-ic com">' + HOJA + '</span><span class="tk-txt"><b>Parte pareja del recibo</b><small>primer mes con medidores: el recibo se dividió entre los 16</small></span><span class="tk-monto">' + fmt(m.cargo) + '</span></div>';
     } else {
       h += '<div class="tk-linea"><span class="tk-ic agua">' + GOTA + '</span><span class="tk-txt"><b>Tu agua</b><small>' + (m.consumo > 0 ? m3(m.consumo) + " × " + fmt(precio) : "tu medidor no se movió") + '</small></span><span class="tk-monto">' + fmt(agua) + '</span></div>';
-      h += '<div class="tk-linea"><span class="tk-ic com">' + HOJA + '</span><span class="tk-txt"><b>Áreas comunes</b><small>riego, fuente y limpieza · ' + (rec.comunes > 0 ? m3(rec.comunes) + " entre 16" : "1/16") + '</small></span><span class="tk-monto">' + fmt(com) + '</span></div>';
+      h += '<div class="tk-linea"><span class="tk-ic com">' + HOJA + '</span><span class="tk-txt"><b>Áreas comunes</b><small>' + (rec.comunes > 0 ? m3(rec.comunes) + " = " + fmt(r2(com * UNIDADES)) + " entre los 16" : "entre los 16") + '</small></span><span class="tk-monto">' + fmt(com) + '</span></div>';
       const pa = m.cargo > 0 ? agua / m.cargo : 0;
       h += '<div class="tk-barra" aria-hidden="true"><i class="a" style="flex:' + Math.max(agua, 0) + '"></i><i class="c" style="flex:' + Math.max(com, 0) + '"></i></div>' +
         '<div class="tk-barra-txt"><span>agua ' + Math.round(pa * 100) + ' %</span><span>áreas comunes ' + (100 - Math.round(pa * 100)) + ' %</span></div>';
@@ -260,23 +247,9 @@ function ticket(m, prev) {
     h += '<div class="tk-corte doble"></div><div class="tk-total"><span class="mono">Total</span><strong>' + fmt(m.cargo) + '</strong></div>';
     h += '<div class="tk-limite">' + (m.pagado ? "Pagado el <b>" + esc(m.pagado) + "</b>. ¡Gracias!" : (rec.limite ? "Paga antes del <b>" + fechaLarga(rec.limite) + "</b>" : "")) + '</div>';
   }
-  h += '<div class="tk-codigo" aria-hidden="true"></div><div class="tk-pie mono">AGUA·' + m.mes + '·D' + String(depto).padStart(2, "0") +
+  h += '<div class="tk-codigo" aria-hidden="true"></div><div class="tk-pie mono">AGUA·' + mesAgua + '·D' + String(depto).padStart(2, "0") +
     (rec && rec.monto ? '<br>Recibo CEA ' + fmt0(rec.monto) + ' · ' + m3(rec.m3) + ' · repartido entre 16' : '') + '</div>';
   return h + '</article>';
-}
-
-/* ---------- Por qué salió así: el recibo del edificio en palabras ---------- */
-function explica(rec) {
-  const T = rec.base, F = rec.suma, G = rec.comunes, pct = rec.factor;
-  if (!(F > 0)) return "Este mes se tomó la <b>primera lectura</b> de cada medidor: es el punto de partida. Como todavía no había consumo que medir, el recibo se repartió igual entre los 16 deptos.";
-  const pagan = ", que pagan los 16 por igual <b>aunque el depto esté vacío</b>: el edificio gasta agua en jardín, fuente y limpieza, y el recibo trae cargos fijos.";
-  const resto = " El resto se reparte según lo que marcó cada medidor: <b>" + fmt(r2(rec.precioMedido)) + " por m³</b>.";
-  if (rec.general > 0) {
-    if (pct < 0.9995) return "Los 16 medidores sumaron " + m3(F) + ", casi todo lo que marcó el medidor general (" + m3(T) + "). Para que las áreas comunes no queden en cero se apartan <b>" + m3(G) + "</b> (el mínimo)" + pagan + resto + " Cada lectura cuenta al " + porc(pct) + ".";
-    return "El medidor general marcó " + m3(T) + " en los mismos días que los 16 medidores, que sumaron " + m3(F) + ". La diferencia, <b>" + m3(G) + "</b>, se fue en las áreas comunes" + pagan + resto;
-  }
-  if (pct < 0.9995) return "La CEA cobra con <b>un mes de atraso</b>: este recibo es por el agua de un mes antes que nuestras lecturas, por eso no cuadran exacto (los 16 medidores suman " + m3(F) + " y el recibo trae " + m3(T) + "). Para repartirlo se apartan <b>" + m3(G) + "</b> para las áreas comunes" + pagan + resto;
-  return "Los 16 medidores sumaron " + m3(F) + " y el recibo trae " + m3(T) + ". La diferencia, <b>" + m3(G) + "</b>, es de las áreas comunes" + pagan + resto;
 }
 
 /* ---------- El tinaco del edificio: el recibo lleno, con tu parte resaltada ---------- */
@@ -290,7 +263,7 @@ function edificio(m) {
   const mio = capas[depto - 1].v, otros = capas.reduce((a, c) => a + c.v, 0) - mio;
   const dibujo = Tinaco.svg({ modo: "reparto", capas: capas, comunes: comTot, resaltar: depto, etiquetaTu: "Tu agua", fmt: fmt0, subir: true,
     titulo: "Recibo CEA: " + fmt0(rec.monto), aria: "El recibo de " + fmt(rec.monto) + " como un tinaco lleno: tu agua " + fmt(mio) + ", la de los otros 15 deptos " + fmt(otros) + " y áreas comunes " + fmt(comTot) + "." });
-  let h = '<section class="edif"><h2>El tinaco del edificio</h2><p class="sub">El recibo de la CEA es el tinaco lleno. Cada capa azul es el agua de un depto; la verde, la de las áreas comunes.</p>';
+  let h = '<section class="edif"><h2>El tinaco del edificio</h2>';
   h += '<div class="tq-dibujo">' + dibujo + '</div><ul class="edif-ley">';
   if (parejo) h += '<li><i class="com"></i><span>Reparto parejo: el recibo entre 16</span><b>' + fmt(m.cargo) + ' c/u</b></li>';
   else {
@@ -298,17 +271,15 @@ function edificio(m) {
     h += '<li><i class="otros"></i><span>El agua de los otros 15 deptos</span><b>' + fmt(otros) + '</b></li>';
     h += '<li><i class="com"></i><span>Áreas comunes<small>' + m3(rec.comunes) + ' · tú pones ' + fmt(H) + '</small></span><b>' + fmt(comTot) + '</b></li>';
   }
-  h += '</ul><p class="expl">' + explica(rec) + '</p>';
-  h += '<details><summary>Ver todas las cuentas del mes</summary><table class="cuentas">' +
+  h += '</ul>';
+  h += '<details><summary>Ver las cuentas del mes</summary><table class="cuentas">' +
     '<tr><td>Recibo de la CEA' + (rec.limite ? ' · vence el ' + fechaLarga(rec.limite) : '') + '</td><td>' + fmt(rec.monto) + '</td></tr>' +
-    '<tr><td>m³ que trae el recibo</td><td>' + m3(rec.m3) + '</td></tr>' +
-    '<tr><td>Medidor general (lo leemos el mismo día que los deptos)</td><td>' + (rec.general > 0 ? m3(rec.general) : "sin lectura") + '</td></tr>' +
-    '<tr><td>Tamaño del tinaco para repartir</td><td>' + m3(rec.base) + '</td></tr>' +
+    '<tr><td>m³ del recibo</td><td>' + m3(rec.m3) + '</td></tr>' +
+    (rec.general > 0 ? '<tr><td>Medidor general</td><td>' + m3(rec.general) + '</td></tr>' : '') +
     '<tr><td>Suma de los 16 medidores</td><td>' + m3(rec.suma) + '</td></tr>' +
-    '<tr><td>Áreas comunes' + (rec.minComunes !== null && rec.minComunes !== undefined ? ' (mínimo ' + m3(rec.minComunes) + ')' : '') + '</td><td>' + m3(rec.comunes) + '</td></tr>' +
-    (rec.factor < 0.9995 ? '<tr><td>Cada lectura cuenta al</td><td>' + porc(rec.factor) + '</td></tr>' : '') +
-    '<tr><td>Precio por m³ medido</td><td>' + fmt(N) + '</td></tr>' +
-    '<tr><td>Áreas comunes por depto</td><td>' + fmt(parejo ? m.cargo : H) + '</td></tr></table></details>';
+    '<tr><td>Áreas comunes</td><td>' + m3(rec.comunes) + ' = ' + fmt(comTot) + '</td></tr>' +
+    '<tr><td>Áreas comunes por depto</td><td>' + fmt(parejo ? m.cargo : H) + '</td></tr>' +
+    '<tr><td>Precio por m³</td><td>' + fmt(N) + '</td></tr></table></details>';
   return h + '</section>';
 }
 
@@ -316,8 +287,7 @@ function edificio(m) {
 function anterior(m, prev) {
   const rec = normaliza(m.recibo), hay = m.cargo !== null && rec && rec.monto > 0;
   const sello = m.pagado ? '<span class="mini-sello pagado mono">PAGADO</span>' : hay ? '<span class="mini-sello porpagar mono">POR PAGAR</span>' : '<span class="mini-sello espera mono">EN ESPERA</span>';
-  const base = /l[ií]nea de base/i.test(m.nota) && !(m.consumo > 0);
-  return '<details><summary><span class="hm">' + nombreMes(m.mes) + '<small>' + (base ? "primera lectura" : m3(m.consumo)) + '</small></span>' +
+  return '<details><summary><span class="hm">Agua de ' + nombreMes(mesDelAgua(m.mes)).toLowerCase() + '<small>' + m3(m.consumo) + '</small></span>' +
     '<span class="hmonto">' + (hay ? fmt(m.cargo) : "—") + '</span>' + sello + '</summary><div class="tk-envoltura">' + ticket(m, prev) + '</div></details>';
 }
 
@@ -330,13 +300,17 @@ async function cargar(n) {
     if (!j.ok) throw new Error(j.error);
     if (!j.meses) throw new Error("servicio");
     if (n !== depto) return;                             // tocaron otro depto mientras cargaba
-    if (!j.meses.length) { c.innerHTML = '<p class="pista">Todavía no hay lecturas registradas para el depto ' + n + '.' + (j.diaLectura ? ' Los medidores se leen el día ' + j.diaLectura + ' de cada mes.' : '') + '</p>'; return; }
-    const m = j.meses[0];
+    /* Solo los meses con lecturas: el primero de cada medidor es su punto de partida y no se cobra. */
+    const conDatos = x => x.recibo ? Number(x.recibo.suma) > 0 : !(/l[ií]nea de base/i.test(x.nota) && !(x.consumo > 0));
+    const meses = j.meses.filter(conDatos);
+    const previo = x => j.meses[j.meses.indexOf(x) + 1];
+    if (!meses.length) { c.innerHTML = '<p class="pista">Todavía no hay recibos de agua para el depto ' + n + '.</p>'; return; }
+    const m = meses[0];
     const rec = normaliza(m.recibo);
-    let h = '<div class="tk-envoltura">' + ticket(m, j.meses[1]) + '</div>';
+    let h = '<div class="tk-envoltura">' + ticket(m, previo(m)) + '</div>';
     if (m.cargo !== null && rec && rec.monto > 0 && !m.pagado) h += '<a class="btn primary pagar" href="pago.html?agua=' + r2(m.cargo) + '&mes=' + m.mes + '">Registrar mi pago de ' + fmt(m.cargo) + '</a>';
     h += edificio(m);
-    if (j.meses.length > 1) h += '<h2 class="hist-tit">Tus recibos anteriores</h2><div class="hist">' + j.meses.slice(1).map((x, i) => anterior(x, j.meses[i + 2])).join("") + '</div>';
+    if (meses.length > 1) h += '<h2 class="hist-tit">Tus recibos anteriores</h2><div class="hist">' + meses.slice(1).map(x => anterior(x, previo(x))).join("") + '</div>';
     c.innerHTML = h;
   } catch (e) {
     c.innerHTML = '<p class="pista">' + (String(e.message) === "servicio" ? "El servicio todavía no tiene activa la consulta de agua." : "No se pudo consultar. Intenta de nuevo.") + '</p>';
