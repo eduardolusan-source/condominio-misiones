@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Guía de la mesa directiva · Las Misiones</title>
+<link rel="icon" href="assets/mark.svg">
+<style>
+:root {
+  --page: #f6f5f0; --surface: #fff; --ink: #141413; --ink-2: #55534d; --muted: #8b887f; --line: rgba(20,20,19,.12);
+  --accent: #1d3f63; --accent-ink: #fff; --soft: #e7eef6; --warn: #9a5b00; --warn-soft: #fff4dc; --ring: #e8590c;
+  --win: #ffffff; --win-bar: #f1f3f4; --win-ink: #202124; --win-line: #dadce0; --sel: #e8f0fe; --azul: #1a73e8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --page: #111110; --surface: #1c1c1b; --ink: #f4f3ee; --ink-2: #c4c2b8; --muted: #8b887f; --line: rgba(255,255,255,.12); --accent: #6cc6ad; --accent-ink: #0d0d0d; --soft: #1d2b27; --warn: #f2b14c; --warn-soft: #2d2410; }
+}
+:root[data-theme="dark"] { --page: #111110; --surface: #1c1c1b; --ink: #f4f3ee; --ink-2: #c4c2b8; --line: rgba(255,255,255,.12); --accent: #6cc6ad; --accent-ink: #0d0d0d; --soft: #1d2b27; --warn: #f2b14c; --warn-soft: #2d2410; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 20px 16px 60px; }
+h1 { font-size: clamp(1.6rem, 6vw, 2.3rem); line-height: 1.1; margin: 8px 0 6px; }
+.lead { color: var(--ink-2); margin: 0 0 18px; }
+.indice { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 22px; padding: 0; list-style: none; }
+.indice a { display: inline-block; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: .35rem .8rem; font-size: .88rem; font-weight: 600; }
+.fase { margin: 30px 0 10px; font-size: .8rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.paso { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px; margin: 0 0 14px; scroll-margin-top: 12px; }
+.paso h2 { display: flex; gap: 10px; align-items: baseline; font-size: 1.15rem; margin: 0 0 6px; }
+.paso h2 .n { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: inline-grid; place-items: center; font-size: .95rem; }
+.paso p { margin: 6px 0; color: var(--ink-2); }
+.paso p b { color: var(--ink); }
+.ojo { background: var(--warn-soft); border-radius: 12px; padding: 10px 12px; font-size: .92rem; margin-top: 10px; }
+.ojo b { color: var(--warn); }
+.tip { background: var(--soft); border-radius: 12px; padding: 10px 12px; font-size: .92rem; margin-top: 10px; }
+
+/* Pantallas dibujadas: siempre claras, como se ven en la compu */
+.pantalla { margin: 12px 0 4px; border-radius: 12px; overflow: hidden; border: 1px solid var(--win-line); background: var(--win); color: var(--win-ink); font: 13px/1.4 Arial, Helvetica, sans-serif; box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+.pantalla .barra { background: var(--win-bar); padding: 7px 10px; display: flex; gap: 6px; align-items: center; border-bottom: 1px solid var(--win-line); }
+.pantalla .barra i { width: 9px; height: 9px; border-radius: 50%; background: #d0d0d0; display: inline-block; }
+.pantalla .barra span { margin-left: 8px; background: #fff; border-radius: 999px; padding: 2px 10px; color: #5f6368; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.pantalla .cuerpo { padding: 12px; position: relative; min-height: 120px; }
+.menu { display: flex; gap: 2px; flex-wrap: wrap; padding: 4px 0 8px; border-bottom: 1px solid var(--win-line); margin-bottom: 8px; }
+.menu > span { padding: 3px 7px; border-radius: 4px; }
+.desple { position: relative; display: inline-block; background: #fff; border: 1px solid var(--win-line); border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.15); padding: 6px 0; min-width: 230px; margin: 4px 0 0 0; }
+.desple div { padding: 6px 14px; white-space: nowrap; }
+.desple hr { border: 0; border-top: 1px solid var(--win-line); margin: 4px 0; }
+.dialogo { background: #fff; border-radius: 10px; box-shadow: 0 6px 28px rgba(0,0,0,.25); padding: 14px 16px; max-width: 380px; margin: 4px auto; border: 1px solid var(--win-line); }
+.dialogo h4 { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+.dialogo p { color: #3c4043 !important; margin: 4px 0 !important; font-size: 12.5px; }
+.gbtn { display: inline-block; border-radius: 6px; padding: 6px 12px; font-weight: 600; font-size: 12.5px; margin: 8px 6px 0 0; border: 1px solid var(--win-line); color: var(--azul); background: #fff; }
+.gbtn.azul { background: var(--azul); color: #fff; border-color: var(--azul); }
+.liga { color: var(--azul); text-decoration: underline; }
+.marca { outline: 3px solid var(--ring); outline-offset: 2px; border-radius: 6px; position: relative; animation: latido 1.6s ease-in-out infinite; }
+@keyframes latido { 50% { outline-color: rgba(232, 89, 12, .35); } }
+@media (prefers-reduced-motion: reduce) { .marca { animation: none; } }
+.celdas { display: grid; grid-template-columns: 22px 1.8fr 1fr 1fr; font-size: 12px; border-top: 1px solid var(--win-line); border-left: 1px solid var(--win-line); }
+.celdas > div { border-right: 1px solid var(--win-line); border-bottom: 1px solid var(--win-line); padding: 3px 6px; min-height: 22px; white-space: nowrap; overflow: hidden; }
+.celdas .h { background: #f8f9fa; color: #5f6368; text-align: center; }
+.celdas .az { background: #ddebf7; }
+.celdas .g { background: #eee; font-weight: 700; }
+.pestanas { display: flex; gap: 2px; margin-top: 8px; font-size: 11.5px; overflow: hidden; }
+.pestanas span { padding: 4px 10px; background: #f1f3f4; border-radius: 4px 4px 0 0; white-space: nowrap; }
+.pestanas span.on { background: #fff; border: 1px solid var(--win-line); border-bottom: 0; color: #188038; font-weight: 700; }
+.campo-g { border: 1px solid var(--win-line); border-radius: 6px; padding: 6px 10px; margin: 6px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; word-break: break-all; }
+.campo-g small { color: #5f6368; display: block; font-size: 11px; }
+.zona { border: 2px dashed #9aa0a6; border-radius: 10px; padding: 18px; text-align: center; color: #5f6368; margin: 8px 0; }
+.wa { background: #e7ffdb; border-radius: 8px; padding: 8px 10px; max-width: 300px; font-size: 12.5px; white-space: pre-line; }
+footer { color: var(--muted); font-size: .85rem; margin-top: 30px; }
+a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <p style="margin:0"><a href="index.html">← Volver al sitio</a></p>
+  <h1>Guía de la mesa directiva</h1>
+  <p class="lead">La rutina de cada mes en Las Misiones, con las pantallas dibujadas. Lo marcado en naranja es donde das clic. Todo pasa en la hoja de captura (menú <b>Condominio</b>) y en cuatro páginas del sitio: bandeja, egresos, lecturas e infografía.</p>
+  <ul class="indice">
+    <li><a href="#pagos">1 · Pagos</a></li><li><a href="#gastos">2 · Gastos</a></li><li><a href="#agua">3 · Agua</a></li><li><a href="#semaforo">4 · Semáforo</a></li>
+    <li><a href="#reporte">5 · Día 10</a></li><li><a href="#mes">6 · Mes nuevo</a></li><li><a href="#claves">Claves</a></li><li><a href="#version">Actualizar el script</a></li>
+  </ul>
+
+  <div class="fase">Durante el mes</div>
+
+  <section class="paso" id="pagos">
+    <h2><span class="n">1</span>Confirma los pagos en la bandeja</h2>
+    <p>Los vecinos reportan su pago en <b>Registrar pago</b>. Te llega a la <b>bandeja</b> (bandeja.html, con la clave de la bandeja). Revisa el comprobante contra el banco y toca <b>Confirmar</b> o <b>Rechazar</b>.</p>
+    <div class="pantalla"><div class="barra"><i></i><i></i><i></i><span>…/condominio-misiones/bandeja.html</span></div><div class="cuerpo">
+      <div class="dialogo" style="max-width:none"><h4>Depto 7 · $1,500 mantenimiento de noviembre</h4><p>Reportado el 3 de noviembre · comprobante 📎</p><span class="gbtn azul marca">Confirmar</span><span class="gbtn">Rechazar</span></div>
+    </div></div>
+    <p>Al confirmar, el monto entra solo a la pestaña del mes. Si rechazas, se resta. El semáforo te avisa de pagos con más de una semana sin revisar.</p>
+  </section>
+
+  <section class="paso" id="gastos">
+    <h2><span class="n">2</span>Registra cada gasto con su comprobante</h2>
+    <p>En <b>egresos.html</b> (clave de egresos): concepto, proveedor, monto, fecha y foto de la factura o transferencia. Cae en la sección de egresos del mes y el comprobante queda en Drive, ligado en el sitio.</p>
+    <div class="pantalla"><div class="barra"><i></i><i></i><i></i><span>…/condominio-misiones/egresos.html</span></div><div class="cuerpo">
+      <div class="campo-g"><span><small>Tipo</small>Ordinario</span></div><div class="campo-g"><span><small>Concepto · proveedor</small>Limpieza · Conserjería López</span></div><div class="campo-g"><span><small>Monto</small>$7,200</span></div>
+      <span class="gbtn">📎 Comprobante</span><span class="gbtn azul marca">Registrar gasto</span>
+    </div></div>
+    <div class="ojo"><b>Nunca escribas montos «de ejemplo».</b> Lo que está en la hoja se publica. El semáforo avisa si encuentra «Administración $7,000» u otro monto de la plantilla.</div>
+  </section>
+
+  <section class="paso" id="agua">
+    <h2><span class="n">3</span>Lecturas del agua y recibo de la CEA</h2>
+    <p>El día de lectura, quien lee los medidores entra a <b>lecturas.html</b> (clave de lecturas) y captura los 16 medidores y el general, con foto. Cuando llega el recibo de la CEA, se captura en la misma página: monto, m³ y fecha límite.</p>
+    <div class="pantalla"><div class="barra"><i></i><i></i><i></i><span>…/condominio-misiones/lecturas.html</span></div><div class="cuerpo">
+      <div class="celdas" style="grid-template-columns:22px 1fr 1fr 1fr">
+        <div class="h"></div><div class="h">Depto</div><div class="h">Anterior</div><div class="h">Actual</div>
+        <div class="h">1</div><div>Depto 1</div><div>1,204</div><div class="az marca">1,213</div>
+        <div class="h">2</div><div>Depto 2</div><div>988</div><div class="az"></div>
+      </div>
+      <p style="margin:8px 0 0"><span class="gbtn azul marca">Guardar recibo CEA</span></p>
+    </div></div>
+    <p>Con las lecturas y el recibo, cada depto ve su cargo en <b>Agua</b>. El semáforo avisa si falta alguna lectura, si una lectura es menor que la anterior o si un consumo es más del triple del promedio (posible fuga).</p>
+  </section>
+
+  <div class="fase">Antes de compartir cifras</div>
+
+  <section class="paso" id="semaforo">
+    <h2><span class="n">4</span>Condominio → Revisar que todo cuadre</h2>
+    <p>En la hoja, menú <b>Condominio</b>. Te dice en verde, amarillo o rojo si hay algo que corregir. Lo que dice es privado: solo lo ve la mesa.</p>
+    <div class="pantalla"><div class="barra"><i></i><i></i><i></i><span>Misiones-2026-Captura</span></div><div class="cuerpo">
+      <div class="menu"><span>Archivo</span><span>Editar</span><span>Ver</span><span>Insertar</span><span>Formato</span><span>Datos</span><span>Herramientas</span><span>Extensiones</span><span>Ayuda</span><span class="marca"><b>Condominio</b></span></div>
+      <div class="desple"><div class="marca">Revisar que todo cuadre</div><hr><div>Probar el reporte (solo a mí)</div><div>Enviar ahora el reporte del mes anterior</div><hr><div>Preparar la pestaña del mes siguiente</div><div>Revisar gastos de ejemplo de la plantilla</div><hr><div>Cambiar la clave de la bandeja de pagos…</div><div>Ver la dirección del servicio</div><div>Instalar o reparar la programación (día 10)</div></div>
+      <div class="dialogo" style="margin-top:10px"><h4>⚠️ Hay cosas por revisar</h4><p>• Agua 2026-11 · depto 2: consumió 60 m³, más del triple del promedio. ¿Fuga o lectura mal tomada?</p><p>• 1 pago reportado lleva más de una semana sin confirmar en la bandeja.</p><span class="gbtn azul">Aceptar</span></div>
+    </div></div>
+  </section>
+
+  <section class="paso" id="reporte">
+    <h2><span class="n">5</span>El día 10: el kit llega solo</h2>
+    <p>A las 9 de la mañana, los vecinos de la pestaña <b>Correos</b> reciben el PDF del mes anterior (copia oculta) y a ti te llega el <b>kit</b>: el semáforo arriba, el mensaje para WhatsApp con un botón y los botones de infografías.</p>
+    <div class="pantalla"><div class="barra"><i></i><i></i><i></i><span>Correo · Kit de octubre 2026 para WhatsApp</span></div><div class="cuerpo">
+      <p style="background:#e3f2e6;border-radius:8px;padding:6px 8px;margin:0 0 8px">✅ Todo cuadra en la hoja.</p>
+      <span class="gbtn marca" style="background:#25d366;color:#fff;border-color:#25d366">Abrir WhatsApp con el mensaje escrito</span>
+      <p style="margin:6px 0 0"><span class="gbtn" style="background:#1d3f63;color:#fff">🏢 Cierre de octubre</span><span class="gbtn" style="background:#3fae5a;color:#fff">📈 Avance del mes</span><span class="gbtn" style="background:#2f7fb5;color:#fff">💧 ¿Alcanzó para el agua?</span></p>
+    </div></div>
+    <p>En el celular: toca el botón verde, elige el grupo y envía. Luego abre una infografía y toca <b>Compartir a WhatsApp</b>.</p>
+    <div class="tip">¿El mes no estaba capturado? No se envía nada a los vecinos y te llega un aviso. Cuando esté listo: <b>Condominio → Enviar ahora el reporte del mes anterior</b>. ¿Quieres revisar antes de que salga? En Config pon <b>reporte_envio</b> = pausa.</div>
+  </section>
+
+  <section class="paso" id="mes">
+    <h2><span class="n">6</span>El mes nuevo se prepara solo</h2>
+    <p>El envío del día 10 deja lista la pestaña del mes siguiente, en blanco y con su saldo inicial encadenado (también de diciembre a enero: desde 2027 las pestañas se llaman «Enero 2027»). Si la necesitas antes: <b>Condominio → Preparar la pestaña del mes siguiente</b>.</p>
+    <div class="ojo"><b>No dupliques pestañas a mano.</b> Una copia del mes anterior arrastra sus montos y el semáforo la marca en rojo.</div>
+  </section>
+
+  <div class="fase">De vez en cuando</div>
+
+  <section class="paso" id="claves">
+    <h2><span class="n">🔑</span>Las claves</h2>
+    <p>Hay tres, todas en la pestaña <b>Config</b> de la hoja: <b>clave_admin</b> (bandeja de pagos), <b>clave_egresos</b> (egresos.html) y <b>clave_lector</b> (lecturas.html). Cámbialas cuando cambie la mesa. La de la bandeja se cambia desde el menú: <b>Condominio → Cambiar la clave de la bandeja de pagos…</b></p>
+    <div class="tip">Como ya no viven en el código, pegar una versión nueva del script no las borra.</div>
+  </section>
+
+  <section class="paso" id="version">
+    <h2><span class="n">↻</span>Actualizar el script sin romper el sitio</h2>
+    <p>Pega el código nuevo en Extensiones → Apps Script, guarda y luego: <b>Implementar → Administrar implementaciones → ✏️ → Versión: Nueva versión → Implementar</b>. La dirección no cambia y el sitio sigue leyendo la hoja.</p>
+    <div class="pantalla"><div class="barra"><i></i><i></i><i></i><span>Administrar implementaciones</span></div><div class="cuerpo">
+      <div class="dialogo" style="max-width:none"><h4>Administrar implementaciones <span class="marca" style="float:right;padding:0 4px">✏️</span></h4><div class="campo-g marca"><span><small>Versión</small>Nueva versión</span>▾</div><span class="gbtn azul marca">Implementar</span></div>
+    </div></div>
+    <div class="ojo"><b>No uses «Nueva implementación»:</b> crea otra dirección y las páginas dejarían de funcionar.</div>
+  </section>
+
+  <footer>Las Misiones Residencial · Guía para la mesa directiva · <a href="ayuda.html">Ayuda para vecinos</a> · <a href="privacidad.html">Aviso de privacidad</a></footer>
+</main>
+</body>
+</html>

@@ -29,7 +29,7 @@
 */
 
 const CLAVE        = "misiones";            // la misma que en pago.html; solo frena envíos ajenos
-const CLAVE_ADMIN  = "cambia-esta-clave";    // la de bandeja.html: con ella se confirman y rechazan pagos. CÁMBIALA.
+const CLAVE_ADMIN  = "cambia-esta-clave";    // SOLO de respaldo: la clave real de bandeja.html vive en Config → clave_admin (menú Condominio → Cambiar la clave…)
 const CARPETA      = "Misiones · Comprobantes";
 const HOJA_PAGOS   = "Pagos";
 const HOJA_CONFIG  = "Config";
@@ -804,7 +804,7 @@ function leeRecibo_(v) {
    la lectura anterior, lo ya capturado este mes y el promedio de los últimos tres meses. */
 function lecturasMes_(mes, clave) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(mes || ""))) throw new Error("mes");
-  if (String(clave || "") !== claveLector_() && String(clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (String(clave || "") !== claveLector_() && String(clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const h = hojaAgua_();
   const filas = h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues() : [];
   const r = { ok: true, version: Number(AGUA_VERSION), mes: mes, deptos: [], capturados: 0, general: null, recibo: null, reciboAnterior: null,
@@ -849,7 +849,7 @@ function lecturasMes_(mes, clave) {
 /* El recibo de la CEA del mes, capturado por la misma persona que lee los medidores:
    monto, m³ (impresos en el recibo), fecha límite y foto. */
 function guardarRecibo_(d) {
-  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const mes = String(d.mes || "");
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
   const monto = Math.round((parseFloat(d.monto) || 0) * 100) / 100;
@@ -879,7 +879,7 @@ function guardarRecibo_(d) {
 /* Guarda la lectura de un medidor (número y foto): depto 1–16 o 0 = medidor general.
    La fila del mes en Recibos agua se crea sola. */
 function guardarLectura_(d) {
-  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const mes = String(d.mes || "");
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
   const depto = /^\s*gen/i.test(String(d.depto)) ? 0 : parseInt(d.depto, 10);
@@ -1113,7 +1113,7 @@ function filaPorFolio_(pagos, folio) {
 }
 
 function pendientes_(clave) {
-  if (clave !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (clave !== claveAdmin_()) return { ok: false, error: "clave" };
   const ss = SpreadsheetApp.getActive();
   const pagos = ss.getSheetByName(HOJA_PAGOS);
   const r = { ok: true, pendientes: [], hoja: ss.getUrl() + "#gid=" + pagos.getSheetId(), total: 0 };
@@ -1135,7 +1135,7 @@ function pendientes_(clave) {
 
 /* Devuelve la captura de un pago en base64 (los archivos de Drive son privados). */
 function imagen_(clave, folio) {
-  if (clave !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (clave !== claveAdmin_()) return { ok: false, error: "clave" };
   const pagos = SpreadsheetApp.getActive().getSheetByName(HOJA_PAGOS);
   const fila = filaPorFolio_(pagos, folio);
   if (!fila) return { ok: false, error: "folio" };
@@ -1147,7 +1147,7 @@ function imagen_(clave, folio) {
 }
 
 function resolverDesdeBandeja_(d) {
-  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (d.claveAdmin !== claveAdmin_()) return { ok: false, error: "clave" };
   if (ESTATUS.indexOf(d.estatus) < 0) return { ok: false, error: "estatus" };
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -1339,9 +1339,17 @@ function finanzas_(fresh) {
      salen sumas y conteos (lo anterior a finanzas_desde es de la administración
      anterior y no entra en esta cuenta). */
   const cuotaMes = Number(cfg.cuota_mantenimiento) || 1500;
+  /* Meses futuros (alguien pagó diciembre por adelantado en noviembre): no se publican
+     como mes ni cobran cuota a nadie; sus pagos cuentan como adelanto del mes en curso. */
+  const hoyId = Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM");
+  const futuros = [];
+  for (let i = meses.length - 1; i >= 0; i--) if (meses[i].id > hoyId) futuros.unshift(meses.splice(i, 1)[0]);
   const saldos = {};
-  meses.forEach(m => {
+  meses.forEach((m, i) => {
     m.pagosPorUnidad.forEach(([depto, pagado]) => { saldos[depto] = (saldos[depto] || 0) + pagado - cuotaMes; });
+    if (i === meses.length - 1) futuros.forEach(f => f.pagosPorUnidad.forEach(([depto, pagado]) => { saldos[depto] = (saldos[depto] || 0) + pagado; }));
+    m.enCurso = m.id === hoyId;
+    m.esperado = UNIDADES * cuotaMes;
     const vals = Object.keys(saldos).map(k => saldos[k]);
     const neg = vals.filter(v => v < -0.5), pos = vals.filter(v => v > 0.5);
     m.mora = {
@@ -1374,7 +1382,8 @@ function finanzas_(fresh) {
   const out = {
     ok: true, servicio: "misiones-finanzas", generado: new Date().toISOString(),
     desde: desde, unidades: UNIDADES, cuota: Number(cfg.cuota_mantenimiento) || 1500,
-    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]), aguaCobro: aguaCobro,
+    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]), aguaCobro: aguaCobro, hoy: hoyId,
+    pagosFuturos: futuros.map(f => ({ id: f.id, nombre: f.nombre, manto: f.ingresos.manto, pagaron: f.cobranza.pagaron })),
     caja: { saldo: ultimo ? ultimo.saldoFin : 0, ultimoMes: ultimo ? ultimo.id : "", saldoInicialVivo: meses.length ? meses[0].saldoIni : 0, previos: previos, totalPrevios: totalPrevios }
   };
   try { cache.put("finanzas", JSON.stringify(out), CACHE_FINANZAS); } catch (e) {}
@@ -1489,8 +1498,37 @@ function hojaDelMes_(ss, mes) {
     hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
     ajustarCasaClub_(hoja);
     limpiarMuestras_(hoja);
+    encadenarSaldo_(ss, hoja);                                        // también de diciembre a enero
+    const sig = buscarHojaMes_(ss, nombreHojaMes_((idx + 1) % 12, idx === 11 ? anio + 1 : anio));
+    if (sig) encadenarSaldo_(ss, sig);                                // si el mes siguiente ya existía, ahora apunta a éste
   }
   return hoja;
+}
+
+/* Saldo inicial (C6) = saldo final del mes inmediato anterior, aunque sea de otro año.
+   Respeta una fórmula propia de la mesa y no toca meses de la administración anterior. */
+function encadenarSaldo_(ss, h) {
+  const id = idDeHojaMes_(h);
+  const desde = mesTexto_(config_().finanzas_desde).trim();
+  if (!id || (desde && id <= desde)) return false;
+  const idPrev = mesSiguiente_(id, -1);
+  const prev = ss.getSheets().find(x => esHojaMes_(x) && idDeHojaMes_(x) === idPrev);
+  if (!prev) return false;
+  const ref = /\s/.test(prev.getName()) ? "'" + prev.getName() + "'" : prev.getName();
+  const fin = prev.createTextFinder("SALDO FINAL DEL MES").matchCase(false).findNext();
+  const quiero = "=" + ref + "!C" + (fin ? fin.getRow() : 18);
+  const c6 = h.getRange("C6"), actual = c6.getFormula();
+  if (actual === quiero || (actual && !/^='?[^'!]+'?!C\d+$/.test(actual))) return false;
+  c6.setFormula(quiero);
+  return true;
+}
+
+/* Deja lista la pestaña del mes siguiente al de hoy (en blanco y encadenada). La llama el
+   envío del día 10 y el menú; así enero existe antes de que alguien pague enero. */
+function prepararMesSiguiente() {
+  const sig = mesSiguiente_(Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM"), 1);
+  hojaDelMes_(SpreadsheetApp.getActive(), sig);
+  return sig;
 }
 /* Quita los montos de ejemplo de la plantilla (Administración 7,000 y Limpieza 7,000)
    cuando son lo único que hay en egresos y la pestaña no tiene cobros. */
