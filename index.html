@@ -14,8 +14,7 @@
   .ac { display: flex; flex-direction: column; gap: .1rem; min-height: 108px; padding: .9rem 1rem; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; transition: transform .15s, border-color .15s; }
   .ac:hover { transform: translateY(-2px); border-color: var(--accent); }
   .ac span { font-size: 1.7rem; line-height: 1; margin-bottom: .35rem; } .ac b { font-size: 1.02rem; } .ac small { color: var(--ink-2); font-size: .82rem; }
-  .ac.prim { background: var(--accent); border-color: var(--accent); color: #fff; } .ac.prim small { color: rgba(255,255,255,.85); }
-  @media (prefers-color-scheme: dark) { .ac.prim { color: #0d0d0d; } .ac.prim small { color: rgba(0,0,0,.7); } }
+  .ac { position: relative; } .ac::after { content: "›"; position: absolute; right: .9rem; bottom: .55rem; font-size: 1.5rem; line-height: 1; color: var(--muted); }
   .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; }
   @media (min-width: 760px) { .kpis { grid-template-columns: repeat(4, 1fr); } }
   .kpi { position: relative; overflow: hidden; padding: .9rem 1rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); text-decoration: none; color: var(--ink); }
@@ -58,7 +57,7 @@
 <main class="wrap">
   <h2 class="section-title" style="margin-top:.4rem">¿Qué necesitas?</h2>
   <div class="acc">
-    <a class="ac prim" href="mi-depto.html"><span>🏠</span><b>Mi depto</b><small>lo que debo, mes por mes</small></a>
+    <a class="ac" href="mi-depto.html"><span>🏠</span><b>Mi depto</b><small>lo que debo, mes por mes</small></a>
     <a class="ac" href="pago.html"><span>💳</span><b>Registrar un pago</b><small>sube tu comprobante</small></a>
     <a class="ac" href="agua.html"><span>💧</span><b>Mi recibo de agua</b><small>lectura y cargo del mes</small></a>
     <a class="ac" href="finanzas.html"><span>📊</span><b>Las cuentas</b><small>en qué se gasta tu cuota</small></a>
