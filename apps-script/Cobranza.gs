@@ -70,7 +70,7 @@ function adeudos_() {
     const enRevision = (m.pagos || []).filter(p => /pendiente/i.test(String(p.estatus || ""))).reduce((a, p) => a + (Number(p.total) || 0), 0);
     const mesesAtraso = m.debeManto > 0.5 ? Math.ceil(m.debeManto / cuota - 0.001) : 0;
     const aguaMeses = (m.agua || []).filter(a => !a.pagado).map(a => a.nombre);
-    lista.push({ depto: d, total: m.total, manto: m.debeManto, mesesAtraso: mesesAtraso, agua: m.aguaPendiente, aguaMeses: aguaMeses, extra: extra, extraNombre: m.extraordinaria ? m.extraordinaria.nombre : "",
+    lista.push({ depto: d, total: m.total, manto: m.debeManto, mesesAtraso: mesesAtraso, agua: m.aguaPendiente, aguaMeses: aguaMeses, extra: extra, extraNombre: m.extraordinaria ? m.extraordinaria.nombre : "", extraDet: m.extraordinaria && m.extraordinaria.detalle ? m.extraordinaria.detalle.filter(x => x.pendiente > 0.5).map(x => [x.nombre, x.pendiente]) : [],
       enRevision: Math.round(enRevision * 100) / 100, cuota: cuota, c: cs[d] || {} });
   }
   return lista;
@@ -80,8 +80,8 @@ function detalle_(a) {
   const p = [];
   if (a.manto > 0.5) p.push(a.mesesAtraso + (a.mesesAtraso === 1 ? " cuota" : " cuotas") + " de mantenimiento (" + pesos_(a.manto) + ")");
   if (a.agua > 0.5) p.push("agua de " + a.aguaMeses.join(", ") + " (" + pesos_(a.agua) + ")");
-  if (a.extra > 0.5) p.push("cuota extraordinaria (" + pesos_(a.extra) + ")");
-  return p.join(", ").replace(/, ([^,]*)$/, " y $1");
+  if (a.extra > 0.5) { if ((a.extraDet || []).length) a.extraDet.forEach(x => { let n = x[0].replace(/\s*\(.*?\)\s*/g, " ").split(",")[0].trim().replace(/^Deuda con la CEA.*/i, "cuota de la CEA"); p.push(n.charAt(0).toLowerCase() + n.slice(1) + " (" + pesos_(x[1]) + ")"); }); else p.push("cuota extraordinaria (" + pesos_(a.extra) + ")"); }
+  return p.length > 1 ? p.slice(0, -1).join(", ") + " y " + p[p.length - 1] : p.join("");
 }
 /* Nivel según antigüedad y monto: 1 recordatorio · 2 pedir apoyo · 3 plan de pagos. */
 function nivel_(a) { return a.mesesAtraso >= 4 || a.total >= 6000 ? 3 : a.mesesAtraso >= 2 || a.total >= 3000 ? 2 : 1; }
