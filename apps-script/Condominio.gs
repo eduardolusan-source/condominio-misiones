@@ -199,16 +199,20 @@ function salud_() {
   if (String(cfg.clave_lector || "agua").trim() === "agua") aviso("La clave de lecturas.html sigue siendo «agua» (Config → clave_lector).");
   if (String(cfg.clave_egresos || "egresos").trim() === "egresos") aviso("La clave de egresos.html sigue siendo «egresos» (Config → clave_egresos).");
   if (!/pausa/i.test(String(cfg.reporte_envio || "")) && typeof correosVecinos_ === "function" && correosVecinos_().length === 0)
-    aviso("La pestaña Correos está vacía: el reporte del día 10 no le llegará a ningún vecino.");
+    aviso("La pestaña Correos está vacía: el reporte del día 10 no le llegará a ningún vecino. Comparte la página correo.html del sitio para que cada quien registre su correo.");
+  else {
+    const dc = deptosConCorreo_();
+    if (dc.faltan.length) puntos.push({ nivel: "nota", texto: "Correos: " + dc.con + " de " + UNIDADES + " departamentos registrados. Faltan: " + dc.faltan.join(", ") + " (comparte la página correo.html)." });
+  }
 
-  const color = puntos.some(p => p.nivel === "alerta") ? "rojo" : puntos.length ? "amarillo" : "verde";
+  const color = puntos.some(p => p.nivel === "alerta") ? "rojo" : puntos.some(p => p.nivel === "aviso") ? "amarillo" : "verde";
   return { color: color, puntos: puntos };
 }
 
 function revisarSalud() {
   const s = salud_();
   const titulo = { verde: "✅ Todo cuadra", amarillo: "⚠️ Hay cosas por revisar", rojo: "🛑 Hay errores que corregir" }[s.color];
-  avisoUi_(titulo, s.puntos.length ? s.puntos.map(p => (p.nivel === "alerta" ? "• (error) " : "• ") + p.texto).join("\n") : "No encontré problemas en la hoja.");
+  avisoUi_(titulo, s.puntos.length ? s.puntos.map(p => (p.nivel === "alerta" ? "• (error) " : p.nivel === "nota" ? "ℹ️ " : "• ") + p.texto).join("\n") : "No encontré problemas en la hoja.");
   return s;
 }
 
@@ -219,4 +223,59 @@ function saludHtml_() {
   const c = { verde: ["#e3f2e6", "✅ Todo cuadra en la hoja."], amarillo: ["#fff3dc", "⚠️ Revisa esto antes de compartir:"], rojo: ["#fde7e6", "🛑 Hay errores en la hoja; corrígelos antes de compartir:"] }[s.color];
   return '<div style="background:' + c[0] + ';border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:14px"><b>' + c[1] + "</b>" +
     (s.puntos.length ? '<ul style="margin:6px 0 0 18px;padding:0">' + s.puntos.map(p => "<li>" + esc_(p.texto) + "</li>").join("") + "</ul>" : "") + "</div>";
+}
+
+/* ---------- Registro de correos desde correo.html ---------- */
+
+/* Alta o baja de un correo en la pestaña Correos. No revela si el correo ya existía.
+   Candados: formato, departamento válido, campo trampa contra robots y límite por hora. */
+function registrarCorreo_(d) {
+  if (String(d.web || "").trim()) return { ok: true };                       // campo trampa: un robot lo llena
+  const correo = String(d.correo || "").trim().toLowerCase();
+  if (correo.length > 120 || !/^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/.test(correo)) return { ok: false, error: "correo" };
+  const baja = d.baja === true || d.baja === "1" || d.baja === "si";
+  const depto = parseInt(d.depto, 10);
+  if (!baja && !(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
+  const cache = CacheService.getScriptCache();
+  const k = "correo_" + Utilities.base64EncodeWebSafe(correo).slice(0, 200);
+  const n = Number(cache.get(k) || 0), g = Number(cache.get("correos_hora") || 0);
+  if (n >= 3 || g >= 40) return { ok: false, error: "espera" };
+  cache.put(k, String(n + 1), 3600); cache.put("correos_hora", String(g + 1), 3600);
+
+  const ss = SpreadsheetApp.getActive();
+  let h = ss.getSheetByName(REP_CORREOS);
+  if (!h) { h = ss.insertSheet(REP_CORREOS); h.getRange(1, 1, 1, 4).setValues([["Depto", "Nombre", "Correo", "Recibe el reporte (sí / no)"]]).setFontWeight("bold"); h.setFrozenRows(1); }
+  if (!String(h.getRange(1, 5).getValue()).trim()) h.getRange(1, 5, 1, 2).setValues([["Actualizado el", "Cómo llegó"]]).setFontWeight("bold");
+  const filas = h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, 4).getValues() : [];
+  const mias = [];
+  filas.forEach((f, i) => { if (String(f[2]).trim().toLowerCase() === correo) mias.push(i + 2); });
+  const ahora = new Date();
+  if (baja) {
+    mias.forEach(r => { h.getRange(r, 4).setValue("no"); h.getRange(r, 5, 1, 2).setValues([[ahora, "baja desde el sitio"]]); });
+    if (mias.length) MailApp.sendEmail(correo, "Ya no recibirás el reporte de Las Misiones", "Listo: dejaste de recibir el reporte mensual de cuentas de Las Misiones.\n\nSi fue un error, vuelve a registrarte en el sitio (página «Recibe el reporte»).", { name: REP_REMITENTE });
+    return { ok: true };
+  }
+  const nombre = limpiar_(d.nombre, 60);
+  if (mias.length) {
+    h.getRange(mias[0], 1, 1, 6).setValues([[depto, nombre || filas[mias[0] - 2][1], correo, "sí", ahora, "formulario del sitio"]]);
+  } else {
+    h.getRange(h.getLastRow() + 1, 1, 1, 6).setValues([[depto, nombre, correo, "sí", ahora, "formulario del sitio"]]);
+  }
+  MailApp.sendEmail(correo, "Quedaste registrado · reporte mensual de Las Misiones",
+    "Hola" + (nombre ? " " + nombre : "") + ":\n\nTu correo quedó registrado para recibir cada día 10 el reporte de cuentas de Las Misiones (departamento " + depto + "). " +
+    "Se envía con copia oculta: nadie más ve tu correo.\n\nSi no fuiste tú o quieres dejar de recibirlo, responde a este correo o date de baja en la página «Recibe el reporte» del sitio.",
+    { name: REP_REMITENTE });
+  return { ok: true };
+}
+
+/* Cuántos departamentos tienen al menos un correo activo (para el semáforo). */
+function deptosConCorreo_() {
+  const h = SpreadsheetApp.getActive().getSheetByName(REP_CORREOS);
+  const con = {};
+  if (h && h.getLastRow() > 1) h.getRange(2, 1, h.getLastRow() - 1, 4).getValues().forEach(f => {
+    const dep = parseInt(String(f[0]).replace(/\D/g, ""), 10);
+    if (dep >= 1 && dep <= UNIDADES && /@/.test(String(f[2])) && !/^no$/i.test(String(f[3]).trim())) con[dep] = true;
+  });
+  const faltan = []; for (let i = 1; i <= UNIDADES; i++) if (!con[i]) faltan.push(i);
+  return { con: UNIDADES - faltan.length, faltan: faltan };
 }

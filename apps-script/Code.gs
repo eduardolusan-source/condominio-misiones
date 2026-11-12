@@ -392,6 +392,7 @@ function doPost(e) {
     if (d.accion === "tarea") { lock.waitLock(10000); return json_(guardarTarea_(d)); }
     if (d.accion === "egreso") { lock.waitLock(10000); return json_(registrarEgreso_(d)); }
     if (d.accion === "anularEgreso") { lock.waitLock(10000); return json_(anularEgreso_(d)); }
+    if (d.accion === "correo") { lock.waitLock(10000); return json_(registrarCorreo_(d)); }   // correo.html (Condominio.gs)
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);

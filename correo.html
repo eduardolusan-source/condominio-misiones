@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Recibe el reporte por correo · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  .correo { max-width: 560px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  .correo h1 { font-size: 1.7rem; margin: .5rem 0 .2rem; }
+  .correo .lead { color: var(--ink-2); margin: 0 0 1.2rem; }
+  .paso { margin-bottom: 1.4rem; }
+  .paso h2 { font-size: 1.1rem; margin: 0 0 .6rem; }
+  .paso h2 span { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--accent); color: #fff; font-size: .85em; margin-right: .4em; }
+  .deptos { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+  .deptos button { font: inherit; font-weight: 700; font-size: 1.15rem; min-height: 56px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .deptos button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .correo label.campo { display: block; font-weight: 600; margin: .7rem 0 .3rem; }
+  .correo input[type=text], .correo input[type=email] { width: 100%; font: inherit; font-size: 1.05rem; padding: .75rem .9rem; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); }
+  .acepto { display: flex; gap: .6rem; align-items: flex-start; margin: 1rem 0; font-size: .95rem; color: var(--ink-2); }
+  .acepto input { width: 22px; height: 22px; margin-top: 2px; flex: none; }
+  .enviar { width: 100%; font: inherit; font-weight: 800; font-size: 1.1rem; min-height: 56px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; cursor: pointer; }
+  .enviar[disabled] { opacity: .5; cursor: not-allowed; }
+  .msg { margin-top: 1rem; padding: .9rem 1rem; border-radius: 12px; font-weight: 600; }
+  .msg.ok { background: #d4edda; color: #1d5a2a; } .msg.mal { background: #f8d7da; color: #7a1c24; }
+  .trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  details.baja { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+  details.baja summary { cursor: pointer; font-weight: 600; color: var(--ink-2); }
+  @media (prefers-color-scheme: dark) { .deptos button.sel, .enviar { color: #0d0d0d; } .msg.ok { background: #1d4a2a; color: #b8f0c6; } .msg.mal { background: #5a1d22; color: #ffb3b9; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="asamblea.html">Asamblea 13 oct</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+      <a href="ayuda.html">Ayuda</a>
+    </nav>
+  </div>
+</header>
+<main class="correo">
+  <h1>📩 Recibe el reporte por correo</h1>
+  <p class="lead">Cada día 10 la mesa directiva envía las cuentas del mes anterior en PDF. Regístrate una vez y te llega solo. Se envía con <b>copia oculta</b>: nadie ve tu correo.</p>
+  <form id="f" novalidate>
+    <div class="paso"><h2><span>1</span>Tu departamento</h2><div class="deptos" id="deptos"></div></div>
+    <div class="paso"><h2><span>2</span>Tus datos</h2>
+      <label class="campo" for="nombre">Nombre (opcional)</label>
+      <input type="text" id="nombre" maxlength="60" autocomplete="name" placeholder="Como quieres que te saludemos">
+      <label class="campo" for="email">Correo electrónico</label>
+      <input type="email" id="email" maxlength="120" autocomplete="email" inputmode="email" placeholder="tucorreo@ejemplo.com" required>
+      <div class="trampa" aria-hidden="true"><label for="web">No llenar</label><input type="text" id="web" tabindex="-1" autocomplete="off"></div>
+      <label class="acepto"><input type="checkbox" id="acepto"><span>Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>: mi correo solo se usa para enviarme el reporte y puedo darme de baja cuando quiera.</span></label>
+    </div>
+    <button type="submit" class="enviar" id="enviar" disabled>Registrar mi correo</button>
+    <p id="msg" class="msg" hidden role="status"></p>
+  </form>
+  <p style="color:var(--ink-2);font-size:.92rem;margin-top:1rem">¿Son varios en tu departamento (dueño e inquilino, por ejemplo)? Cada quien puede registrar su propio correo.</p>
+  <details class="baja"><summary>Ya no quiero recibir el reporte</summary>
+    <form id="fb" novalidate>
+      <label class="campo" for="emailBaja">Tu correo</label>
+      <input type="email" id="emailBaja" maxlength="120" autocomplete="email" inputmode="email" placeholder="tucorreo@ejemplo.com">
+      <button type="submit" class="enviar" style="margin-top:.8rem;background:var(--ink-2)">Darme de baja</button>
+      <p id="msgBaja" class="msg" hidden role="status"></p>
+    </form>
+  </details>
+</main>
+<script>
+(function () {
+  "use strict";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+  const UNIDADES = 16;
+  const $ = id => document.getElementById(id);
+  const valido = c => /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/i.test(c.trim());
+  let depto = null;
+  try { const g = +localStorage.getItem("misiones_depto"); if (g >= 1 && g <= UNIDADES) depto = g; } catch (e) {}
+  for (let i = 1; i <= UNIDADES; i++) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = i; b.dataset.n = i; b.setAttribute("aria-label", "Departamento " + i);
+    b.onclick = () => { depto = i; pintar(); try { localStorage.setItem("misiones_depto", i); } catch (e) {} };
+    $("deptos").appendChild(b);
+  }
+  function pintar() {
+    [...$("deptos").children].forEach(x => { const s = +x.dataset.n === depto; x.classList.toggle("sel", s); x.setAttribute("aria-pressed", s); });
+    $("enviar").disabled = !(depto && valido($("email").value) && $("acepto").checked);
+  }
+  ["input", "change"].forEach(ev => $("f").addEventListener(ev, pintar));
+  pintar();
+  function aviso(el, ok, t) { el.hidden = false; el.className = "msg " + (ok ? "ok" : "mal"); el.textContent = t; }
+  const ERR = { correo: "Revisa tu correo: parece que está mal escrito.", departamento: "Elige tu departamento.", espera: "Recibimos varios intentos seguidos. Espera un rato y vuelve a intentarlo." };
+  async function mandar(cuerpo) {
+    const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
+    return r.json();
+  }
+  $("f").addEventListener("submit", async e => {
+    e.preventDefault();
+    if ($("enviar").disabled) return;
+    $("enviar").disabled = true; $("enviar").textContent = "Registrando…";
+    try {
+      const j = await mandar({ accion: "correo", depto: depto, nombre: $("nombre").value, correo: $("email").value, web: $("web").value });
+      if (j.ok) { aviso($("msg"), true, "✓ ¡Listo! Te enviamos un correo de confirmación. Si no lo ves, revisa tu carpeta de spam."); $("email").value = ""; $("nombre").value = ""; $("acepto").checked = false; }
+      else aviso($("msg"), false, ERR[j.error] || "No se pudo registrar (" + (j.error || "error") + "). Intenta de nuevo.");
+    } catch (err) { aviso($("msg"), false, "No hubo conexión con la hoja de la mesa. Intenta en unos minutos."); }
+    $("enviar").textContent = "Registrar mi correo"; pintar();
+  });
+  $("fb").addEventListener("submit", async e => {
+    e.preventDefault();
+    const c = $("emailBaja").value;
+    if (!valido(c)) { aviso($("msgBaja"), false, ERR.correo); return; }
+    try {
+      const j = await mandar({ accion: "correo", baja: true, correo: c });
+      if (j.ok) aviso($("msgBaja"), true, "✓ Listo. Si tu correo estaba registrado, ya no recibirás el reporte y te llegará una confirmación.");
+      else aviso($("msgBaja"), false, ERR[j.error] || "No se pudo (" + j.error + ").");
+    } catch (err) { aviso($("msgBaja"), false, "No hubo conexión con la hoja de la mesa. Intenta en unos minutos."); }
+  });
+})();
+</script>
+
+<footer class="site-footer">
+  <div class="inner">
+    Las Misiones Residencial · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a>
+  </div>
+</footer>
+</body>
+</html>
