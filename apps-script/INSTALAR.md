@@ -322,3 +322,13 @@ Nueva versión. La primera vez Google puede pedir de nuevo el permiso de enviar 
 - Inicio rediseñado: «¿Qué necesitas?» con ocho accesos y «Así vamos» en vivo (caja, cuántos pagaron, cuotas
   atrasadas agregadas y cuántos reciben el reporte). Menú igual en todas las páginas.
 - Para activarlo: pega `Code.gs` y `Condominio.gs` nuevos → Nueva versión.
+
+## Qué hacer si…, Bienvenida, letra grande y avisos amables (13 de noviembre de 2026)
+Solo sitio (no hay que tocar el script):
+- `emergencias.html`: fuga, luz, elevador, acceso, gas y sismo, con botones para llamar.
+- `bienvenida.html`: lo esencial para quien llega, con botón para compartir por WhatsApp.
+- Botón «Aa» en todas las páginas para letra más grande (se recuerda en el navegador).
+- Inicio: franja de «Qué hacer si…» y «Bienvenida», y tarjeta de «¡Mes verde!» cuando pagan los 16.
+- Ayuda: «Palabras del condominio, en simple».
+- `llms.txt`: resumen en texto claro para que el asistente de IA de un vecino responda dudas básicas.
+- Guía de la mesa: plantillas de avisos amables listas para copiar.

@@ -1,0 +1,22 @@
+# Las Misiones Residencial
+
+> Sitio de propietarios y residentes de Las Misiones Residencial (Senda Eterna 444, Fraccionamiento Milenio III, Santiago de Querétaro): cuotas, cómo pagar, cuentas de la mesa directiva, agua por medidor, reglamento y pendientes.
+
+## Datos clave
+- 16 departamentos. La administración la lleva la mesa directiva desde octubre de 2026.
+- Mantenimiento: $1,500 al mes por departamento, por adelantado. Se paga por transferencia y se registra en pago.html.
+- Agua: se paga aparte según el medidor de cada departamento; la lectura del día 9 corresponde al agua del mes anterior.
+- El reporte de cuentas sale cada día 10; para recibirlo se registra el correo en correo.html.
+- Retraso en el pago: interés moratorio de CPP × 1.5 (art. 17 del reglamento).
+- Uso de los departamentos: solo casa habitación. Si se renta, el propietario entrega copia del contrato.
+- Cámaras y sistema de entrada: Technosecurity, +52 1 442 749 3002.
+
+## Páginas
+- [Mi depto](mi-depto.html): lo que debe cada departamento, mes por mes
+- [Registrar pago](pago.html)
+- [Agua](agua.html): recibo de cada departamento
+- [Finanzas](finanzas.html): ingresos, gastos y saldo por mes
+- [Pendientes y acuerdos](pendientes.html)
+- [Reglamento](reglamento.html) · [Áreas comunes](areas-comunes.html)
+- [Qué hacer si…](emergencias.html): fuga, luz, elevador, acceso, gas, sismo
+- [Bienvenida](bienvenida.html) · [Ayuda](ayuda.html) · [Aviso de privacidad](privacidad.html)

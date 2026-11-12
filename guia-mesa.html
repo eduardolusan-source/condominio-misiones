@@ -76,7 +76,7 @@ a { color: var(--accent); }
   <p class="lead">La rutina de cada mes en Las Misiones, con las pantallas dibujadas. Lo marcado en naranja es donde das clic. Todo pasa en la hoja de captura (menú <b>Condominio</b>) y en cuatro páginas del sitio: bandeja, egresos, lecturas e infografía.</p>
   <ul class="indice">
     <li><a href="#pagos">1 · Pagos</a></li><li><a href="#gastos">2 · Gastos</a></li><li><a href="#agua">3 · Agua</a></li><li><a href="#semaforo">4 · Semáforo</a></li>
-    <li><a href="#reporte">5 · Día 10</a></li><li><a href="#mes">6 · Mes nuevo</a></li><li><a href="#claves">Claves</a></li><li><a href="#version">Actualizar el script</a></li>
+    <li><a href="#reporte">5 · Día 10</a></li><li><a href="#mes">6 · Mes nuevo</a></li><li><a href="#claves">Claves</a></li><li><a href="#plantillas">Avisos amables</a></li><li><a href="#version">Actualizar el script</a></li>
   </ul>
 
   <div class="fase">Durante el mes</div>
@@ -151,6 +151,30 @@ a { color: var(--accent); }
     <p>Hay tres, todas en la pestaña <b>Config</b> de la hoja: <b>clave_admin</b> (bandeja de pagos), <b>clave_egresos</b> (egresos.html) y <b>clave_lector</b> (lecturas.html). Cámbialas cuando cambie la mesa. La de la bandeja se cambia desde el menú: <b>Condominio → Cambiar la clave de la bandeja de pagos…</b></p>
     <div class="tip">Como ya no viven en el código, pegar una versión nueva del script no las borra.</div>
   </section>
+
+
+  <section class="paso" id="plantillas">
+    <h2><span class="n">✍️</span>Avisos amables, listos para copiar</h2>
+    <p>Para lo difícil, con tono firme y cordial. Cambia lo que está entre corchetes y pégalo en WhatsApp o en un aviso del sitio. Nunca nombres a nadie en el grupo.</p>
+<details class="pl"><summary>💳 Recordatorio de pago (a todos)</summary><p class="pl-t">Hola, vecinos 👋 Un recordatorio amable: el mantenimiento de [MES] vence el día [DÍA]. Si ya pagaste, ¡gracias! Si todavía no, puedes hacerlo por transferencia y registrarlo aquí: https://eduardolusan-source.github.io/condominio-misiones/. Cualquier duda, con gusto la vemos.</p><button type="button" class="pl-b">Copiar</button></details>
+<details class="pl"><summary>💧 Corte de agua programado</summary><p class="pl-t">Aviso importante 💧 El [DÍA] de [HORA] a [HORA] no habrá agua en [LUGAR] por [MOTIVO]. Les sugerimos guardar agua desde antes. Gracias por su paciencia; avisaremos en cuanto se restablezca.</p><button type="button" class="pl-b">Copiar</button></details>
+<details class="pl"><summary>🔨 Obra con ruido</summary><p class="pl-t">Aviso 🔨 Del [FECHA] al [FECHA], de [HORA] a [HORA], habrá trabajos de [OBRA] en [LUGAR]. Puede haber ruido y polvo. Es para [BENEFICIO]. Gracias por su comprensión; cualquier inconveniente, escríbannos.</p><button type="button" class="pl-b">Copiar</button></details>
+<details class="pl"><summary>📣 Convocatoria a asamblea</summary><p class="pl-t">Convocatoria 📣 Asamblea [ordinaria/extraordinaria] el [DÍA] a las [HORA] en [LUGAR] (segunda convocatoria a las [HORA]). Orden del día: 1) [TEMA] 2) [TEMA] 3) Asuntos generales. Tu voto cuenta: si no puedes asistir, puedes enviar carta poder.</p><button type="button" class="pl-b">Copiar</button></details>
+<details class="pl"><summary>📈 Propuesta de ajuste de cuota</summary><p class="pl-t">Vecinos, queremos ser transparentes 📊 Hoy operar el condominio cuesta [MONTO] por departamento al mes y la cuota es de [CUOTA]. Llevaremos a la asamblea del [FECHA] una propuesta de [NUEVA CUOTA], con el detalle de en qué se usaría. Las cuentas completas: https://eduardolusan-source.github.io/condominio-misiones/.</p><button type="button" class="pl-b">Copiar</button></details>
+<details class="pl"><summary>🎉 Agradecimiento (mes verde)</summary><p class="pl-t">¡Gracias, vecinos! 🎉 En [MES] todos los departamentos pagaron su mantenimiento. Así podemos cubrir [LO QUE SE PAGÓ] sin atrasos. ¡Qué gusto vivir aquí!</p><button type="button" class="pl-b">Copiar</button></details>
+<details class="pl"><summary>🚗 Recordatorio de convivencia</summary><p class="pl-t">Un recordatorio amable 🙏 Para que todos estemos a gusto: [REGLA, por ejemplo: la basura se saca solo los días X / cada quien usa su cajón de estacionamiento]. Lo dice el reglamento ([ARTÍCULO]). ¡Gracias por su apoyo!</p><button type="button" class="pl-b">Copiar</button></details>
+  </section>
+<style>
+details.pl { background: var(--page); border: 1px solid var(--line, var(--border)); border-radius: 12px; padding: 0 12px; margin: 8px 0; }
+details.pl summary { cursor: pointer; font-weight: 700; padding: 10px 0; }
+.pl-t { white-space: pre-wrap; background: var(--surface); border-radius: 10px; padding: 10px 12px; margin: 0 0 8px; color: var(--ink) !important; }
+.pl-b { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 8px 16px; margin: 0 0 12px; background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer; }
+</style>
+<script>
+document.addEventListener("click", e => { const b = e.target.closest(".pl-b"); if (!b) return; const t = b.previousElementSibling.textContent;
+  const ok = () => { b.textContent = "✓ Copiado"; setTimeout(() => { b.textContent = "Copiar"; }, 2000); };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok, () => {}); else { const r = document.createRange(); r.selectNodeContents(b.previousElementSibling); getSelection().removeAllRanges(); getSelection().addRange(r); b.textContent = "Selecciona y copia"; } });
+</script>
 
   <section class="paso" id="version">
     <h2><span class="n">↻</span>Actualizar el script sin romper el sitio</h2>

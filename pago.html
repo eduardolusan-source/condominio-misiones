@@ -65,7 +65,7 @@
 <body>
 <header class="site-header">
   <div class="inner">
-    <a class="brand" href="index.html"><img src="assets/mark.svg" alt=""><span class="logo">Las Misiones</span><span class="tag">Residencial</span></a>
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
     <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
     <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
     <nav class="main">
@@ -352,5 +352,6 @@ try {
 try { const g = parseInt(localStorage.getItem("misiones_depto"), 10); if (g >= 1 && g <= UNIDADES) elegirDepto(g); } catch (e) {}
 validar();
 </script>
+<script src="js/letra.js"></script>
 </body>
 </html>
