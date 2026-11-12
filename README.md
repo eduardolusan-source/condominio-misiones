@@ -35,10 +35,16 @@ de contacto. No rigen hasta que la asamblea los apruebe.
 
 ## Finanzas
 
-Misma lógica que los sitios de Lahia y La Valetta: vista general del año (tarjetas, tabla
-mes por mes (desde octubre de 2026 en vivo desde la hoja de captura de la mesa, vía el Apps Script), gráficas de ingresos/egresos y saldo, composición del gasto ordinario, el agua
-en cifras) y detalle por mes al que se entra tocando una fila de la tabla. Aquí además se
-puede cambiar de año (2025 y 2026).
+`finanzas.html` es un tablero (mismo motor que los sitios de Lahia y La Valetta:
+`js/tablero.js` y `css/tablero.css`; si se cambia en uno, copiarlo a los otros dos).
+La portada muestra **seis indicadores** (saldo en caja con su tendencia, si alcanzó el
+último mes, quién pagó, cuotas atrasadas, cuánto del recibo de agua se cubrió y en qué
+se va la cuota) y todo lo demás vive en secciones a las que se entra con un toque: mes
+por mes, detalle de cada mes (`#mes-2026-10`), gráficas, en qué se gasta, morosidad,
+agua, proyectos, revisión de documentos y cómo leer los datos. Se puede cambiar de año
+(2025 y 2026). `js/finanzas.js` junta los datos: 2025 a junio de 2026 de `js/data.js`;
+desde octubre de 2026, en vivo de la hoja de captura de la mesa vía el Apps Script
+(`accion=finanzas`), incluida la morosidad agregada desde ese mes.
 
 **Corte: junio de 2026.** Falta que la administración reporte los cambios y los datos de
 julio y de agosto a la fecha. El aviso está en la propia página y en `pendientes.html`.
@@ -55,7 +61,7 @@ julio y de agosto a la fecha. El aviso está en la propia página y en `pendient
 
 Para publicar un mes nuevo: agregar su objeto a `meses` (el formato está documentado en el
 propio archivo), actualizar `morosidad` con la foto del nuevo corte y ajustar el texto del
-aviso de corte en `finanzas.html`, `index.html` y `pendientes.html`.
+aviso de corte en `js/finanzas.js` (`TEXTOS.aviso`), `index.html` y `pendientes.html`.
 
 **Regla de privacidad:** nunca se sube información por departamento ni nombres de
 condóminos. La morosidad se publica agregada (monto y número de unidades). Lo que vive en

@@ -1322,6 +1322,7 @@ function finanzas_(fresh) {
     if (!id) return;
     const m = leerMesVivo_(h, id);
     if (desde && id < desde) {
+      delete m.pagosPorUnidad;
       const recibido = Math.round((m.ingresos.manto + m.ingresos.extra + m.ingresos.casaClub) * 100) / 100;
       if (recibido > 0) previos.push({ id: id, nombre: m.nombre, monto: recibido, manto: m.ingresos.manto, extra: m.ingresos.extra, casaClub: m.ingresos.casaClub, pagaron: m.cobranza.pagaron });
       return;
@@ -1333,6 +1334,22 @@ function finanzas_(fresh) {
   });
   meses.sort((a, b) => a.id < b.id ? -1 : 1);
   previos.sort((a, b) => a.id < b.id ? -1 : 1);
+  /* Morosidad en vivo, desde finanzas_desde: por depto, lo pagado de mantenimiento
+     menos las cuotas transcurridas. Se calcula aquí con los cobros por depto y SOLO
+     salen sumas y conteos (lo anterior a finanzas_desde es de la administración
+     anterior y no entra en esta cuenta). */
+  const cuotaMes = Number(cfg.cuota_mantenimiento) || 1500;
+  const saldos = {};
+  meses.forEach(m => {
+    m.pagosPorUnidad.forEach(([depto, pagado]) => { saldos[depto] = (saldos[depto] || 0) + pagado - cuotaMes; });
+    const vals = Object.keys(saldos).map(k => saldos[k]);
+    const neg = vals.filter(v => v < -0.5), pos = vals.filter(v => v > 0.5);
+    m.mora = {
+      acumulada: Math.round(-neg.reduce((a, b) => a + b, 0) * 100) / 100, unidades: neg.length,
+      adelantos: Math.round(pos.reduce((a, b) => a + b, 0) * 100) / 100, unidadesAdelanto: pos.length
+    };
+    delete m.pagosPorUnidad;       // no sale del script
+  });
   const totalPrevios = Math.round(previos.reduce((a, p) => a + p.monto, 0) * 100) / 100;
   const ultimo = meses.length ? meses[meses.length - 1] : null;
   const out = {
@@ -1402,7 +1419,8 @@ function leerMesVivo_(h, id) {
     cobranza: { pagaron: pagaron, pct: Math.round(pagaron / UNIDADES * 1000) / 10 },
     detalle: { ordinarios: ordinarios, extraordinarios: extraordinarios },
     carpeta: carpeta, proyectos: proyectos,
-    capturado: manto > 0 || agua > 0 || extra > 0 || casaClub > 0 || totOrd > 0 || totExt > 0
+    capturado: manto > 0 || agua > 0 || extra > 0 || casaClub > 0 || totOrd > 0 || totExt > 0,
+    pagosPorUnidad: cobros.map(r => [String(r.b).trim(), Number(r.c) || 0])   // solo para calcular la mora; finanzas_ lo borra
   };
 }
 

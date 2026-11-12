@@ -216,3 +216,16 @@ correrlo a mano: `actualizarAgua()`.
 - **Probado** con las fórmulas reales calculadas en LibreOffice sobre la hoja exportada: noviembre con 5 m³ deja
   a los deptos 3 y 16 en $79.07, al 9 en $2,166.54 (11 × $189.77 + $79.07) y el edificio junta $10,374.08;
   octubre no cambia (16 × $670.13).
+
+## Finanzas: morosidad en vivo y tablero nuevo (12 de noviembre de 2026)
+Pegar el `Code.gs` nuevo **conservando la línea `const CLAVE_ADMIN = …` que ya está en el editor** y
+publicar nueva versión (paso 6). No hace falta correr `instalar`. Mientras no se publique, la página sigue
+funcionando: muestra la morosidad de la foto del 22 de junio de 2026.
+- `accion=finanzas` ahora trae, en cada mes en vivo, `mora`: **acumulada** (cuotas de mantenimiento sin
+  pagar desde `finanzas_desde`, sumadas), **unidades** con saldo en contra, **adelantos** (pagos de meses
+  futuros, sumados) y **unidadesAdelanto**. Se calcula depto por depto con la columna de mantenimiento de
+  "Cobros por departamento" y la cuota de Config (`cuota_mantenimiento`); solo salen sumas y conteos.
+- Lo anterior a `finanzas_desde` (la administración anterior) no entra en esa cuenta: su morosidad sigue
+  siendo la foto agregada de `js/data.js`. La página lo dice así.
+- `finanzas.html` cambió de cara: abre con seis indicadores y desde ahí se entra a cada sección
+  (mes por mes, gráficas, en qué se gasta, morosidad, agua, proyectos, revisión). Los datos son los mismos.
