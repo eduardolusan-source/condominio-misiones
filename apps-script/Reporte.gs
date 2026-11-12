@@ -99,10 +99,13 @@ function generarReporte_(opc) {
   const d = finanzas_(true);
   const props = PropertiesService.getScriptProperties();
 
-  /* Mes a reportar: el anterior al de hoy (en prueba, el último con datos). */
+  /* Mes a reportar: el anterior al de hoy, ya cerrado (también en la prueba; si ese
+     no tiene datos, la prueba usa el último cerrado que sí tenga). Nunca un mes futuro. */
   const hoy = new Date();
   const ant = new Date(Number(Utilities.formatDate(hoy, "America/Mexico_City", "yyyy")), Number(Utilities.formatDate(hoy, "America/Mexico_City", "M")) - 2, 1);
-  const objetivo = opc.mes || (opc.modo === "prueba" && d.meses.length ? d.meses[d.meses.length - 1].id : Utilities.formatDate(ant, "America/Mexico_City", "yyyy-MM"));
+  const mesAnterior = Utilities.formatDate(ant, "America/Mexico_City", "yyyy-MM");
+  const cerrados = d.meses.filter(x => x.id <= mesAnterior);
+  const objetivo = opc.mes || (opc.modo === "prueba" && !d.meses.some(x => x.id === mesAnterior) && cerrados.length ? cerrados[cerrados.length - 1].id : mesAnterior);
   const m = d.meses.find(x => x.id === objetivo);
   const nombreMes = REP_MESES[parseInt(objetivo.slice(5), 10) - 1] + " " + objetivo.slice(0, 4);
 
@@ -235,7 +238,8 @@ function kitHtml_(k, whatsapp, estado, urlPdf) {
     '<p style="font-size:15px"><b>' + esc_(estado) + "</b></p>" +
     '<p><a href="' + wa + '" style="display:inline-block;background:#25d366;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir WhatsApp con el mensaje escrito</a></p>' +
     '<p style="font-size:14px;color:#52514e">En el celular: toca el botón, elige el grupo y envía. Después abre una infografía y toca «Compartir a WhatsApp».</p>' +
-    "<p>" + boton(REP_INFOGRAFIA + "?tipo=cuotas&mes=" + k.id, "🏢 Infografía de cuotas", "#1d3f63") + boton(REP_INFOGRAFIA + "?tipo=agua&mes=" + k.id, "💧 ¿Alcanzó para el agua?", "#2f7fb5") +
+    "<p>" + boton(REP_INFOGRAFIA + "?tipo=cuotas&mes=" + k.id, "🏢 Cierre de " + k.mes + ": quién pagó", "#1d3f63") +
+    boton(REP_INFOGRAFIA + "?tipo=avance", "📈 Avance del mes en curso", "#3fae5a") + boton(REP_INFOGRAFIA + "?tipo=agua&mes=" + k.id, "💧 ¿Alcanzó para el agua?", "#2f7fb5") +
     (k.aguaPend ? boton(REP_INFOGRAFIA + "?tipo=aguadeuda&mes=" + k.aguaPend.mesAgua, "🚰 Agua por pagar (" + k.aguaPend.pendientes + ")", "#b3261e") : "") + "</p>" +
     '<pre style="white-space:pre-wrap;background:#f4f4f1;border-radius:10px;padding:14px;font-size:14px;font-family:inherit">' + esc_(whatsapp) + "</pre>" +
     '<p style="font-size:13px;color:#898781">El reporte PDF va adjunto y queda en Drive: <a href="' + urlPdf + '">abrir</a>.</p></div>';

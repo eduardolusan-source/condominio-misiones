@@ -13,7 +13,9 @@
 <style>
   /* Página de apoyo de la mesa directiva: arma la infografía del mes con las
      cifras AGREGADAS del Apps Script y la comparte a WhatsApp con un toque.
-     ?tipo=cuotas|agua|aguadeuda  &mes=2026-10  &estilo=1…5 (sin estilo: rota cada mes) */
+     ?tipo=cuotas|avance|agua|aguadeuda  &mes=2026-10  &estilo=1…5 (sin estilo: rota cada mes)
+     Cada imagen dice arriba a qué periodo se refiere: «cierre de octubre» o «avance al 12 de noviembre».
+     Los meses futuros (pagos adelantados) no se muestran como mes. */
   :root { --page: #f8f7f3; --surface: #fdfcf9; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781; --border: rgba(11,11,11,.1); --accent: #1d3f63; }
   @media (prefers-color-scheme: dark) { :root { --page: #0d0d0d; --surface: #1a1a19; --ink: #fff; --ink-2: #c3c2b7; --muted: #898781; --border: rgba(255,255,255,.1); --accent: #9dc0e0; } }
   * { box-sizing: border-box; }
@@ -42,7 +44,7 @@
   <h1>Infografía del mes</h1>
   <p class="sub" id="sub">Cargando cifras…</p>
   <div class="lienzo" id="lienzo"></div>
-  <div class="grupo" id="gTipo"><span>Qué contar</span><button data-tipo="cuotas">Cuotas de mantenimiento</button><button data-tipo="agua">¿Alcanzó para el agua?</button><button data-tipo="aguadeuda">Agua por pagar</button></div>
+  <div class="grupo" id="gTipo"><span>Qué contar</span><button data-tipo="cuotas">Cierre del mes: quién pagó</button><button data-tipo="avance">Avance del mes en curso</button><button data-tipo="agua">¿Alcanzó para el agua?</button><button data-tipo="aguadeuda">Agua por pagar</button></div>
   <div class="grupo" id="gEstilo"><span>Estilo</span></div>
   <div class="grupo"><span>Mes</span><select id="selMes" aria-label="Mes"></select></div>
   <div class="acciones"><button id="compartir" type="button">Compartir a WhatsApp</button><button id="descargar" type="button">Descargar imagen</button></div>
@@ -58,8 +60,11 @@
   const W = 1080, H = 1350;
   const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
   const q = new URLSearchParams(location.search);
-  const estado = { tipo: ["agua", "aguadeuda"].indexOf(q.get("tipo")) >= 0 ? q.get("tipo") : "cuotas", mes: q.get("mes") || "", estilo: +q.get("estilo") || 0 };
-  let meses = [], aguaCobro = [], fuenteFont = "", logoClaro = "", logoOscuro = "";
+  const estado = { tipo: ["agua", "aguadeuda", "avance"].indexOf(q.get("tipo")) >= 0 ? q.get("tipo") : "cuotas", mes: q.get("mes") || "", estilo: +q.get("estilo") || 0 };
+  let meses = [], aguaCobro = [], fuenteFont = "", logoClaro = "", logoOscuro = "", cuota = MISIONES.cuota;
+  const HOY = new Date();
+  let hoyId = HOY.getFullYear() + "-" + String(HOY.getMonth() + 1).padStart(2, "0");
+  let PERIODO = "", ANIMAR = true;      // etiqueta de arriba y animación (solo en pantalla; la imagen sale quieta)
 
   const $ = v => (v < 0 ? "−$" : "$") + Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -78,6 +83,7 @@
     return {
       id: m.id, nombre: MESES[parseInt(m.id.slice(5), 10) - 1], anio: m.id.slice(0, 4), vivo: vivo,
       pagaron: Number(m.cobranza && m.cobranza.pagaron) || 0, unidades: MISIONES.unidades,
+      manto: Number(m.ingresos && m.ingresos.manto) || 0,
       mora: m.mora || null,
       aguaCobrada: Number(m.ingresos && m.ingresos.agua) || 0,
       aguaRecibo: ord.filter(it => /^agua/i.test(it[0])).reduce((a, it) => a + Number(it[1] || 0), 0)
@@ -88,15 +94,17 @@
     try {
       const r = await fetch(SCRIPT_URL + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" });
       const j = await r.json();
+      if (j && j.ok && /^\d{4}-\d{2}$/.test(j.hoy || "")) hoyId = j.hoy;
+      if (j && j.ok && Number(j.cuota) > 0) cuota = Number(j.cuota);
       if (j && j.ok && Array.isArray(j.aguaCobro)) aguaCobro = j.aguaCobro.map(a => ({
         id: a.mesAgua, nombre: MESES[parseInt(a.mesAgua.slice(5), 10) - 1], anio: a.mesAgua.slice(0, 4), vivo: true,
-        cargados: a.cargados, pagados: a.pagados, pendientes: a.pendientes, montoPendiente: a.montoPendiente })).sort((a, b) => a.id.localeCompare(b.id));
+        cargados: a.cargados, pagados: a.pagados, pendientes: a.pendientes, montoPendiente: a.montoPendiente, montoCargado: a.montoCargado })).sort((a, b) => a.id.localeCompare(b.id));
       if (j && j.ok) (j.meses || []).forEach(m => {
         const n = normal(m, true), i = meses.findIndex(x => x.id === n.id);
         if (i >= 0) meses[i] = n; else meses.push(n);
       });
     } catch (e) { console.warn("[Infografía] Sin hoja en vivo: " + e.message); }
-    meses.sort((a, b) => a.id.localeCompare(b.id));
+    meses = meses.filter(m => m.id <= hoyId).sort((a, b) => a.id.localeCompare(b.id));   // nada de meses futuros
   }
 
   /* Fuente y logos incrustados para que la imagen exportada se vea igual. */
@@ -120,13 +128,13 @@
     return '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + " " + H + '">' +
       "<defs><style>" + fuenteFont + "</style>" +
       '<marker id="punta" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 Z" fill="#f07a62"/></marker></defs>' +
-      fondo + contenido +
+      fondo + (PERIODO ? '<text x="' + W / 2 + '" y="44" text-anchor="middle" ' + F + ' font-size="30" letter-spacing="3" fill="' + (oscuro ? "#f3ead8" : "#24304a") + '" opacity=".8">' + esc(PERIODO.toUpperCase()) + "</text>" : "") + contenido +
       ((oscuro ? logoOscuro : logoClaro) ? '<image href="' + (oscuro ? logoOscuro : logoClaro) + '" x="' + (W / 2 - 100) + '" y="' + (H - 112) + '" width="200" height="92" preserveAspectRatio="xMidYMid meet"/>'
         : '<text x="' + W / 2 + '" y="' + (H - 80) + '" text-anchor="middle" ' + F + ' font-size="40" fill="' + (oscuro ? "#f3ead8" : "#1d3f63") + '">Las Misiones</text>') +
       "</svg>";
   }
   function titulo(l1, l2, color, y) {
-    y = y || 150;
+    y = (y || 150) + 14;
     return '<text x="' + W / 2 + '" y="' + y + '" text-anchor="middle" ' + F + ' font-size="104" fill="' + color + '">' + esc(l1) + "</text>" +
       '<text x="' + W / 2 + '" y="' + (y + 112) + '" text-anchor="middle" ' + F + ' font-size="104" fill="' + color + '">' + esc(l2) + "</text>";
   }
@@ -388,6 +396,88 @@
       pieMora(m, 1160, "#5a2a1a"), false);
   }
 
+  /* ---------------- AVANCE DEL MES EN CURSO ---------------- */
+  /* Animación en pantalla (SMIL); al exportar la imagen se dibuja quieta y llena. */
+  function anim(attr, desde, hasta, retraso) {
+    if (!ANIMAR) return "";
+    return '<animate attributeName="' + attr + '" from="' + desde + '" to="' + hasta + '" begin="' + (retraso || 0) + 's" dur="1.6s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines=".2 .8 .2 1"/>';
+  }
+  function datosAvance(m) {
+    const dias = new Date(+m.anio, parseInt(m.id.slice(5), 10), 0).getDate();
+    const dia = m.id === hoyId ? HOY.getDate() : dias;
+    const esperado = m.unidades * cuota;
+    const a = aguaCobro.length ? aguaCobro[aguaCobro.length - 1] : null;
+    return { dias: dias, dia: dia, pctDia: dia / dias, esperado: esperado, pctManto: esperado ? Math.min(1, m.manto / esperado) : 0,
+      agua: a ? { nombre: a.nombre, cobrado: a.montoCargado - a.montoPendiente, total: a.montoCargado, pagados: a.pagados, cargados: a.cargados, pct: a.montoCargado ? (a.montoCargado - a.montoPendiente) / a.montoCargado : 0 } : null };
+  }
+  function ritmo(d) {
+    const p = Math.round(d.pctManto * 100), t = Math.round(d.pctDia * 100);
+    if (d.pctManto >= 0.999) return ["¡Mantenimiento completo!", "#2f7d32"];
+    return p >= t ? ["Vamos al día: el mes va al " + t + "% y la cobranza al " + p + "%", "#2f7d32"] : ["El mes va al " + t + "% y la cobranza al " + p + "%", "#b3261e"];
+  }
+
+  /* 1 · Barras que se llenan, con el calendario del mes como referencia. */
+  function avanceBarras(m, r) {
+    const d = datosAvance(m), x = 150, w = 780;
+    const fondo = '<rect width="' + W + '" height="' + H + '" fill="#f3f7f1"/>';
+    let c = "";
+    /* Calendario */
+    c += '<text x="' + x + '" y="352" ' + F + ' font-size="34" fill="#24304a">Día ' + d.dia + " de " + d.dias + "</text>" +
+      '<rect x="' + x + '" y="370" width="' + w + '" height="26" rx="13" fill="#dfe6dc"/>' +
+      '<rect x="' + x + '" y="370" width="' + Math.round(w * d.pctDia) + '" height="26" rx="13" fill="#9aa8b6">' + anim("width", 0, Math.round(w * d.pctDia)) + "</rect>";
+    for (let i = 1; i < d.dias; i++) if (i % 5 === 0) c += '<line x1="' + (x + w * i / d.dias) + '" y1="372" x2="' + (x + w * i / d.dias) + '" y2="394" stroke="#f3f7f1" stroke-width="3"/>';
+    const tarjeta = (y, alto, titulo2, cifra, sub, pct, color, puntos, llenos) => {
+      let t = '<rect x="' + (x - 30) + '" y="' + y + '" width="' + (w + 60) + '" height="' + alto + '" rx="28" fill="#ffffff" stroke="#d5ddd2" stroke-width="3"/>' +
+        '<text x="' + x + '" y="' + (y + 62) + '" ' + F + ' font-size="40" fill="#24304a">' + esc(titulo2) + "</text>" +
+        '<text x="' + (x + w) + '" y="' + (y + 62) + '" text-anchor="end" ' + F + ' font-size="40" fill="' + color + '">' + Math.round(pct * 100) + "%</text>" +
+        '<rect x="' + x + '" y="' + (y + 86) + '" width="' + w + '" height="64" rx="32" fill="#eef1ec" stroke="#c9d3c5" stroke-width="3"/>' +
+        '<rect x="' + x + '" y="' + (y + 86) + '" width="' + Math.max(0, Math.round(w * pct)) + '" height="64" rx="32" fill="' + color + '">' + anim("width", 0, Math.round(w * pct), 0.2) + "</rect>" +
+        '<line x1="' + (x + w * d.pctDia) + '" y1="' + (y + 76) + '" x2="' + (x + w * d.pctDia) + '" y2="' + (y + 160) + '" stroke="#24304a" stroke-width="4" stroke-dasharray="8 6"/>' +
+        '<text x="' + x + '" y="' + (y + 202) + '" ' + F + ' font-size="44" fill="#0b0b0b">' + esc(cifra) + "</text>" +
+        '<text x="' + x + '" y="' + (y + 248) + '" ' + F + ' font-size="32" fill="#52514e">' + esc(sub) + "</text>";
+      if (puntos) for (let i = 0; i < puntos; i++) {
+        const cx = x + 12 + i * Math.min(36, (w - 24) / Math.max(1, puntos - 1)), lleno = i < llenos;
+        t += '<circle cx="' + cx + '" cy="' + (y + 284) + '" r="12" fill="' + (lleno ? color : "#e1e6de") + '"' + (ANIMAR && lleno ? ' opacity="0"' : "") + ">" + (ANIMAR && lleno ? '<animate attributeName="opacity" from="0" to="1" begin="' + (0.3 + i * 0.08).toFixed(2) + 's" dur=".3s" fill="freeze"/>' : "") + "</circle>";
+      }
+      return t;
+    };
+    const conAgua = !!d.agua;
+    c += tarjeta(430, 320, "Mantenimiento de " + m.nombre, $(m.manto) + " de " + $(d.esperado), m.pagaron + " de " + m.unidades + " departamentos", d.pctManto, "#3fae5a", m.unidades, m.pagaron);
+    if (conAgua) c += tarjeta(775, 320, "Recibo del agua de " + d.agua.nombre, $(d.agua.cobrado) + " de " + $(d.agua.total), d.agua.pagados + " de " + d.agua.cargados + " recibos pagados", d.agua.pct, "#2f8fd8", d.agua.cargados, d.agua.pagados);
+    const rt = ritmo(d);
+    c += '<text x="' + W / 2 + '" y="' + (conAgua ? 1150 : 805) + '" text-anchor="middle" ' + F + ' font-size="34" fill="' + rt[1] + '">' + esc(rt[0]) + "</text>" +
+      '<text x="' + W / 2 + '" y="' + (conAgua ? 1196 : 850) + '" text-anchor="middle" ' + F + ' font-size="28" fill="#52514e">La línea punteada marca cuánto del mes ha pasado</text>';
+    return marco(fondo, titulo("Así va", m.nombre, "#1d3f63", 128) + c, false);
+  }
+
+  /* 2 · El edificio y el tinaco se llenan conforme se paga. */
+  function avanceEdificio(m, r) {
+    const d = datosAvance(m);
+    const fondo = '<defs><linearGradient id="atardecer" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26385f"/><stop offset="1" stop-color="#3d5a8a"/></linearGradient></defs><rect width="' + W + '" height="' + H + '" fill="url(#atardecer)"/>' +
+      [...Array(20)].map(() => '<circle cx="' + Math.round(r() * W) + '" cy="' + Math.round(40 + r() * 260) + '" r="' + (1.5 + r() * 2.5).toFixed(1) + '" fill="#f3ead8" opacity=".7"/>').join("");
+    const bx = 120, by = 350, bw = 440, bh = 640;
+    const hm = Math.round(bh * d.pctManto);
+    let c = '<defs><clipPath id="silueta"><rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="10"/></clipPath></defs>' +
+      '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="10" fill="#33456e" stroke="#f3ead8" stroke-width="6"/>' +
+      '<g clip-path="url(#silueta)"><rect x="' + bx + '" y="' + (by + bh - hm) + '" width="' + bw + '" height="' + hm + '" fill="#ffcb45">' + anim("height", 0, hm) + anim("y", by + bh, by + bh - hm) + "</rect></g>";
+    for (let f = 0; f < 4; f++) for (let k = 0; k < 3; k++) c += '<rect x="' + (bx + 50 + k * 125) + '" y="' + (by + 50 + f * 150) + '" width="90" height="100" rx="6" fill="none" stroke="#1d2b4c" stroke-width="5"/>';
+    c += '<rect x="' + (bx - 20) + '" y="' + (by - 24) + '" width="' + (bw + 40) + '" height="28" rx="6" fill="#f3ead8"/>' +
+      '<text x="' + (bx + bw / 2) + '" y="' + (by + bh + 70) + '" text-anchor="middle" ' + F + ' font-size="44" fill="#f3ead8">Mantenimiento ' + Math.round(d.pctManto * 100) + "%</text>" +
+      '<text x="' + (bx + bw / 2) + '" y="' + (by + bh + 118) + '" text-anchor="middle" ' + F + ' font-size="32" fill="#c9d6ee">' + m.pagaron + " de " + m.unidades + " · " + $(m.manto) + "</text>";
+    if (d.agua) {
+      const tx = 660, ty = 560, tw = 300, th = 430, ha = Math.round(th * d.agua.pct);
+      c += '<defs><clipPath id="tinacoA"><rect x="' + tx + '" y="' + ty + '" width="' + tw + '" height="' + th + '" rx="50"/></clipPath></defs>' +
+        '<rect x="' + tx + '" y="' + ty + '" width="' + tw + '" height="' + th + '" rx="50" fill="#33456e" stroke="#f3ead8" stroke-width="6"/>' +
+        '<g clip-path="url(#tinacoA)"><rect x="' + tx + '" y="' + (ty + th - ha) + '" width="' + tw + '" height="' + ha + '" fill="#5ec2ff">' + anim("height", 0, ha, 0.3) + anim("y", ty + th, ty + th - ha, 0.3) + "</rect></g>" +
+        '<rect x="' + (tx + 90) + '" y="' + (ty - 36) + '" width="120" height="40" rx="10" fill="#f3ead8"/>' +
+        '<text x="' + (tx + tw / 2) + '" y="' + (by + bh + 70) + '" text-anchor="middle" ' + F + ' font-size="44" fill="#f3ead8">Agua ' + Math.round(d.agua.pct * 100) + "%</text>" +
+        '<text x="' + (tx + tw / 2) + '" y="' + (by + bh + 118) + '" text-anchor="middle" ' + F + ' font-size="32" fill="#c9d6ee">recibo de ' + esc(d.agua.nombre) + ": " + d.agua.pagados + " de " + d.agua.cargados + "</text>";
+    }
+    const rt = ritmo(d);
+    c += '<text x="' + W / 2 + '" y="1180" text-anchor="middle" ' + F + ' font-size="32" fill="' + (rt[1] === "#2f7d32" ? "#9be7a1" : "#ffb4a8") + '">' + esc(rt[0]) + "</text>";
+    return marco(fondo, titulo("Así va", m.nombre, "#f3ead8", 128) + c, true);
+  }
+
   /* ---------------- AGUA POR PAGAR ---------------- */
   function aguaDeudaTextos(a) {
     return { linea: a.pagados + " ya pagaron · " + a.pendientes + (a.pendientes === 1 ? " pendiente" : " pendientes"),
@@ -437,11 +527,11 @@
       '<text x="' + W / 2 + '" y="1170" text-anchor="middle" ' + F + ' font-size="34" fill="#cfe6f4">Tu recibo y cómo pagarlo: página «Agua» del sitio</text>', true);
   }
 
-  const ESTILOS = { cuotas: [cuotasEdificio, cuotasCasitas, cuotasMonedas, cuotasBuzones, cuotasMacetas], agua: [aguaTinaco, aguaGotas, aguaVaso], aguadeuda: [deudaGarrafones, deudaLlaves] };
-  const NOMBRES_ESTILO = { cuotas: ["Edificio", "Casitas", "Alcancía", "Buzones", "Macetas"], agua: ["Tinaco", "Gotas", "Vaso"], aguadeuda: ["Garrafones", "Llaves"] };
+  const ESTILOS = { cuotas: [cuotasEdificio, cuotasCasitas, cuotasMonedas, cuotasBuzones, cuotasMacetas], agua: [aguaTinaco, aguaGotas, aguaVaso], aguadeuda: [deudaGarrafones, deudaLlaves], avance: [avanceBarras, avanceEdificio] };
+  const NOMBRES_ESTILO = { cuotas: ["Edificio", "Casitas", "Alcancía", "Buzones", "Macetas"], agua: ["Tinaco", "Gotas", "Vaso"], aguadeuda: ["Garrafones", "Llaves"], avance: ["Barras", "Edificio"] };
 
   /* ---------------- Pantalla ---------------- */
-  let svgActual = "";
+  let svgActual = "", svgEstatico = "";
   function estiloDe(m) {
     const n = ESTILOS[estado.tipo].length;
     if (estado.estilo >= 1 && estado.estilo <= n) return estado.estilo;
@@ -449,7 +539,11 @@
   }
   function pintar() {
     const lista = estado.tipo === "aguadeuda" ? aguaCobro : meses;
-    const m = lista.find(x => x.id === estado.mes) || lista[lista.length - 1];
+    let m = lista.find(x => x.id === estado.mes);
+    if (!m && estado.tipo === "avance") {
+      m = meses.find(x => x.id === hoyId) || { id: hoyId, nombre: MESES[parseInt(hoyId.slice(5), 10) - 1], anio: hoyId.slice(0, 4), vivo: true, pagaron: 0, manto: 0, unidades: MISIONES.unidades };
+    }
+    if (!m) { const cerrados = lista.filter(x => x.id < hoyId); m = cerrados[cerrados.length - 1] || lista[lista.length - 1]; }   // por omisión, el último mes ya cerrado
     const sel = document.getElementById("selMes");
     if (!m) {
       document.getElementById("lienzo").innerHTML = '<p style="padding:2rem 1rem;text-align:center;color:var(--muted)">Todavía no hay recibos de agua con cargo en la hoja.</p>';
@@ -457,13 +551,19 @@
     }
     estado.mes = m.id;
     const e = estiloDe(m);
-    const r = azar(m.id + estado.tipo + e);
-    svgActual = ESTILOS[estado.tipo][e - 1](m, r);
+    const hoyTxt = HOY.getDate() + " de " + MESES[HOY.getMonth()];
+    PERIODO = estado.tipo === "aguadeuda" ? "Recibo del agua de " + m.nombre + " · al " + hoyTxt
+      : m.id === hoyId ? "Avance al " + hoyTxt + " " + HOY.getFullYear() + " · mes en curso"
+      : "Cierre de " + m.nombre + " " + m.anio;
+    const generar = animar => { ANIMAR = animar; const out = ESTILOS[estado.tipo][e - 1](m, azar(m.id + estado.tipo + e)); ANIMAR = true; return out; };
+    svgActual = generar(true);
+    svgEstatico = generar(false);
     document.getElementById("lienzo").innerHTML = svgActual;
-    document.getElementById("sub").textContent = { cuotas: "Cuotas de mantenimiento", agua: "¿Alcanzó para el agua?", aguadeuda: "Agua por pagar" }[estado.tipo] + " · " + m.nombre + " " + m.anio + (m.vivo ? " · en vivo desde la hoja" : " · tablas contables");
+    document.getElementById("sub").textContent = PERIODO + (m.vivo ? " · en vivo desde la hoja" : " · tablas contables");
     marcarBotones(e);
     sel.innerHTML = "";
-    lista.slice().reverse().forEach(x => sel.add(new Option(x.nombre + " " + x.anio, x.id)));
+    const opciones = estado.tipo === "avance" && !meses.some(x => x.id === hoyId) ? [m].concat(meses.slice().reverse()) : lista.slice().reverse();
+    opciones.forEach(x => sel.add(new Option(x.nombre + " " + x.anio + (x.id === hoyId ? " (en curso)" : ""), x.id)));
     sel.value = m.id;
     const p = new URLSearchParams({ tipo: estado.tipo, mes: m.id });
     if (estado.estilo) p.set("estilo", estado.estilo);
@@ -478,7 +578,7 @@
   function png() {
     return new Promise((ok, mal) => {
       const img = new Image();
-      const url = URL.createObjectURL(new Blob([svgActual], { type: "image/svg+xml" }));
+      const url = URL.createObjectURL(new Blob([svgEstatico], { type: "image/svg+xml" }));
       img.onload = () => {
         const c = document.createElement("canvas"); c.width = W; c.height = H;
         c.getContext("2d").drawImage(img, 0, 0, W, H);

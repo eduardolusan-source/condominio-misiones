@@ -262,3 +262,14 @@ Qué pasa el día 10, con el mes anterior:
   con `reporte_envio = pausa` solo te llega el kit. Todo queda en la pestaña Reportes.
 - WhatsApp no permite publicar en grupos automáticamente sin la API de pago de WhatsApp Business; por eso el
   último paso (elegir el grupo y enviar) lo haces tú.
+
+## Meses futuros, etiquetas de periodo y avance del mes (12 de noviembre de 2026)
+Pegar `Code.gs` (conservando `CLAVE_ADMIN`) y `Reporte.gs` nuevos y publicar nueva versión (paso 6).
+- Si alguien paga un mes futuro (p. ej. diciembre estando en noviembre), ese mes **no se publica** ni cobra
+  cuota a nadie en la morosidad: su pago cuenta como adelanto del mes en curso. `accion=finanzas` trae `hoy`,
+  `pagosFuturos` y en cada mes `enCurso` y `esperado` (cuotas × unidades).
+- «Probar (solo a mí)» usa el mes anterior ya cerrado, igual que el envío del día 10.
+- Cada infografía dice arriba su periodo: «Cierre de octubre 2026», «Avance al 12 de noviembre · mes en curso»
+  o «Recibo del agua de octubre · al 12 de noviembre». Nuevo tipo `?tipo=avance` (barras con el calendario del
+  mes, o edificio y tinaco que se llenan; animadas en pantalla, la imagen sale quieta) y su botón en el kit.
+- En el tablero, el mes en curso se marca «en curso» y sus cifras se leen como avance, no como cierre.

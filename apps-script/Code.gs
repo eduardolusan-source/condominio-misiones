@@ -1339,9 +1339,17 @@ function finanzas_(fresh) {
      salen sumas y conteos (lo anterior a finanzas_desde es de la administración
      anterior y no entra en esta cuenta). */
   const cuotaMes = Number(cfg.cuota_mantenimiento) || 1500;
+  /* Meses futuros (alguien pagó diciembre por adelantado en noviembre): no se publican
+     como mes ni cobran cuota a nadie; sus pagos cuentan como adelanto del mes en curso. */
+  const hoyId = Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM");
+  const futuros = [];
+  for (let i = meses.length - 1; i >= 0; i--) if (meses[i].id > hoyId) futuros.unshift(meses.splice(i, 1)[0]);
   const saldos = {};
-  meses.forEach(m => {
+  meses.forEach((m, i) => {
     m.pagosPorUnidad.forEach(([depto, pagado]) => { saldos[depto] = (saldos[depto] || 0) + pagado - cuotaMes; });
+    if (i === meses.length - 1) futuros.forEach(f => f.pagosPorUnidad.forEach(([depto, pagado]) => { saldos[depto] = (saldos[depto] || 0) + pagado; }));
+    m.enCurso = m.id === hoyId;
+    m.esperado = UNIDADES * cuotaMes;
     const vals = Object.keys(saldos).map(k => saldos[k]);
     const neg = vals.filter(v => v < -0.5), pos = vals.filter(v => v > 0.5);
     m.mora = {
@@ -1374,7 +1382,8 @@ function finanzas_(fresh) {
   const out = {
     ok: true, servicio: "misiones-finanzas", generado: new Date().toISOString(),
     desde: desde, unidades: UNIDADES, cuota: Number(cfg.cuota_mantenimiento) || 1500,
-    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]), aguaCobro: aguaCobro,
+    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]), aguaCobro: aguaCobro, hoy: hoyId,
+    pagosFuturos: futuros.map(f => ({ id: f.id, nombre: f.nombre, manto: f.ingresos.manto, pagaron: f.cobranza.pagaron })),
     caja: { saldo: ultimo ? ultimo.saldoFin : 0, ultimoMes: ultimo ? ultimo.id : "", saldoInicialVivo: meses.length ? meses[0].saldoIni : 0, previos: previos, totalPrevios: totalPrevios }
   };
   try { cache.put("finanzas", JSON.stringify(out), CACHE_FINANZAS); } catch (e) {}
