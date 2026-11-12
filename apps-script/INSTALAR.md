@@ -216,3 +216,49 @@ correrlo a mano: `actualizarAgua()`.
 - **Probado** con las fórmulas reales calculadas en LibreOffice sobre la hoja exportada: noviembre con 5 m³ deja
   a los deptos 3 y 16 en $79.07, al 9 en $2,166.54 (11 × $189.77 + $79.07) y el edificio junta $10,374.08;
   octubre no cambia (16 × $670.13).
+
+## Finanzas: morosidad en vivo y tablero nuevo (12 de noviembre de 2026)
+Pegar el `Code.gs` nuevo **conservando la línea `const CLAVE_ADMIN = …` que ya está en el editor** y
+publicar nueva versión (paso 6). No hace falta correr `instalar`. Mientras no se publique, la página sigue
+funcionando: muestra la morosidad de la foto del 22 de junio de 2026.
+- `accion=finanzas` trae también `aguaCobro`: por mes del agua, deptos con cargo, cuántos pagaron, cuántos faltan y
+  el monto por cobrar (sumas de la pestaña Agua).
+- `accion=finanzas` ahora trae, en cada mes en vivo, `mora`: **acumulada** (cuotas de mantenimiento sin
+  pagar desde `finanzas_desde`, sumadas), **unidades** con saldo en contra, **adelantos** (pagos de meses
+  futuros, sumados) y **unidadesAdelanto**. Se calcula depto por depto con la columna de mantenimiento de
+  "Cobros por departamento" y la cuota de Config (`cuota_mantenimiento`); solo salen sumas y conteos.
+- Lo anterior a `finanzas_desde` (la administración anterior) no entra en esa cuenta: su morosidad sigue
+  siendo la foto agregada de `js/data.js`. La página lo dice así.
+- `finanzas.html` cambió de cara: abre con seis indicadores y desde ahí se entra a cada sección
+  (mes por mes, gráficas, en qué se gasta, morosidad, agua, proyectos, revisión). Los datos son los mismos.
+
+## Reporte mensual a los vecinos (PDF + correo + kit de WhatsApp)
+`Reporte.gs` es un **segundo archivo** del mismo proyecto de Apps Script (usa `finanzas_()` y `config_()` de
+`Code.gs`). Requiere que `Code.gs` ya tenga la morosidad en vivo (sección anterior).
+1. En el editor: **+ → Secuencia de comandos**, nombre `Reporte`, pegar `apps-script/Reporte.gs` y guardar.
+2. Ejecutar **instalarReporte** una vez y aceptar los permisos nuevos (enviar correo como tú, crear archivos en
+   Drive, disparadores). Crea la pestaña **Correos** (Depto · Nombre · Correo · Recibe sí/no), la pestaña
+   **Reportes** (bitácora), las claves de Config `reporte_envio` (`automático` o `pausa`) y `reporte_copia`
+   (tu correo), y el disparador del **día 10 a las 9** (hora de Querétaro).
+3. Publicar nueva versión de la implementación (paso 6) no hace falta para el reporte, pero sí para la
+   morosidad en vivo.
+4. Al abrir la hoja aparece el menú **Reporte a vecinos**: «Probar (solo a mí)» manda el último mes
+   capturado únicamente a `reporte_copia`. Úsalo antes del primer día 10.
+
+Qué pasa el día 10, con el mes anterior:
+- Arma el **PDF** (una hoja: saldo, entró/salió, quién pagó, cuotas atrasadas, agua, en qué se fue la cuota y
+  los gastos del mes) y lo guarda en Drive → «Misiones · Reportes / AAAA-MM».
+- Lo **envía** a los correos de la pestaña Correos en **copia oculta** (nadie ve el correo de los demás; se
+  omiten los marcados «no», los repetidos y los mal escritos), con un resumen en el cuerpo y liga al sitio.
+- Te manda el **kit de WhatsApp**: el texto, un botón que abre WhatsApp con el mensaje escrito y dos botones a
+  las **infografías** (`infografia.html?tipo=cuotas`, `?tipo=agua` y `?tipo=aguadeuda`), que se comparten como
+  imagen con un toque. Cuotas: edificio de noche, calle de casitas, alcancía, buzones y balcón con macetas.
+  ¿Alcanzó para el agua?: tinaco, gotas y vaso. Agua por pagar (deptos con su recibo pendiente, según la columna
+  «Pagado el» de la pestaña Agua; solo el conteo y el monto total): garrafones y llaves. El estilo rota cada mes;
+  en la página se puede elegir otro. Ventanas, casas, buzones, macetas, monedas, garrafones y llaves se acomodan
+  al azar cada mes: no son deptos reales.
+- El correo a los vecinos es el formal (PDF y resumen en tabla); lo visual es para WhatsApp.
+- **Candados:** si el mes no tiene datos no se envía nada a los vecinos y te avisa; un mes se envía una sola vez;
+  con `reporte_envio = pausa` solo te llega el kit. Todo queda en la pestaña Reportes.
+- WhatsApp no permite publicar en grupos automáticamente sin la API de pago de WhatsApp Business; por eso el
+  último paso (elegir el grupo y enviar) lo haces tú.
