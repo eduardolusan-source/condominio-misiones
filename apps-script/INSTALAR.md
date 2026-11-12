@@ -303,3 +303,14 @@ Qué cambia:
   versiones nuevas ya no la borra. Cambiarla: menú Condominio → Cambiar la clave de la bandeja de pagos…
 - **Sitio:** páginas `ayuda.html`, `privacidad.html` (aviso de privacidad) y `guia-mesa.html` (rutina mensual
   con pantallas dibujadas); «Ayuda» en el menú del sitio.
+
+## Registro de correos desde el sitio (12 de noviembre de 2026)
+Página nueva `correo.html` («Recibe el reporte por correo»): cada vecino elige su departamento, escribe su
+correo (y su nombre, opcional) y acepta el aviso de privacidad. Cae solo en la pestaña **Correos** con «sí» y le
+llega un correo de confirmación. En la misma página puede darse de baja (queda «no»). Un correo repetido se
+actualiza, no se duplica; varios correos por departamento están permitidos. Candados: formato, campo trampa
+contra robots y máximo 3 intentos por correo y 40 por hora. El semáforo dice cuántos departamentos ya tienen
+correo y cuáles faltan.
+
+Para activarlo: pega `Code.gs` y `Condominio.gs` nuevos → Implementar → Administrar implementaciones → lápiz →
+Nueva versión. La primera vez Google puede pedir de nuevo el permiso de enviar correo.
