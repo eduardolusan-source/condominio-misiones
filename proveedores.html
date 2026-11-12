@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Proveedores y contactos · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+
+<style>
+  .pg { max-width: 640px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  .pg h1 { font-size: 1.7rem; margin: .4rem 0 .2rem; } .pg .lead { color: var(--ink-2); margin: 0 0 1rem; }
+  .tels { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: 0 0 1rem; }
+  .tel { display: block; text-align: center; text-decoration: none; font-weight: 800; padding: .85rem .6rem; border-radius: 14px; background: var(--accent); color: #fff; }
+  .tel.sec { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+  details.pr { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin: .5rem 0; padding: 0 1rem; }
+  details.pr summary { cursor: pointer; font-weight: 700; padding: .9rem 0; list-style: none; } details.pr summary::after { content: "+"; float: right; color: var(--muted); } details.pr[open] summary::after { content: "−"; }
+  details.pr ol { margin: 0 0 .8rem 1.1rem; padding: 0; color: var(--ink-2); } details.pr li { margin: .3rem 0; }
+  .grid { display: grid; gap: .6rem; } @media (min-width: 620px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .t { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .9rem 1rem; } .t b { display: block; margin: .2rem 0; } .t span { color: var(--ink-2); font-size: .92rem; }
+  .wa { display: block; text-align: center; margin: 1rem 0; padding: .9rem; border-radius: 14px; background: #25d366; color: #fff; font-weight: 800; text-decoration: none; }
+  @media (prefers-color-scheme: dark) { .tel { color: #0d0d0d; } }
+  .pvs { display: grid; gap: .5rem; } @media (min-width: 760px) { .pvs { grid-template-columns: 1fr 1fr; } }
+  .pv { display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem; align-items: center; padding: .8rem 1rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+  .pv-i { font-size: 1.6rem; grid-row: span 2; } .pv-t b { display: block; } .pv-t small { color: var(--ink-2); }
+  .pv-a { grid-column: 2; display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .3rem; }
+  .pv-b { text-decoration: none; font-weight: 800; font-size: .92rem; padding: .5rem .9rem; border-radius: 999px; background: var(--accent); color: #fff; }
+  .pv-b.wa { background: #25d366; } @media (prefers-color-scheme: dark) { .pv-b { color: #0d0d0d; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="mi-depto.html">Mi depto</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="ayuda.html">Ayuda</a>
+    </nav>
+  </div>
+</header>
+<main class="pg">
+  <h1>📞 Proveedores y contactos</h1>
+  <div class="pvs"><div class="pv"><span class="pv-i">🧹</span><div class="pv-t"><b>Conserje</b><small>Don Jorge · 442 657 1663</small></div><div class="pv-a"><a class="pv-b" href="tel:+5214426571663">📞 Llamar</a><a class="pv-b wa" href="https://wa.me/5214426571663" target="_blank" rel="noopener">💬 WhatsApp</a></div></div><div class="pv"><span class="pv-i">🚪</span><div class="pv-t"><b>Acceso y cámaras</b><small>Technosecurity · 442 749 3002</small></div><div class="pv-a"><a class="pv-b" href="tel:+5214427493002">📞 Llamar</a><a class="pv-b wa" href="https://wa.me/5214427493002" target="_blank" rel="noopener">💬 WhatsApp</a></div></div><div class="pv"><span class="pv-i">🚨</span><div class="pv-t"><b>Emergencias</b><small>911</small></div><div class="pv-a"><a class="pv-b" href="tel:911">📞 Llamar</a></div></div><div class="pv"><span class="pv-i">⚡</span><div class="pv-t"><b>Luz (CFE)</b><small>071</small></div><div class="pv-a"><a class="pv-b" href="tel:071">📞 Llamar</a></div></div></div>
+  <p class="lead" style="margin-top:1rem">🚨 Emergencias: <a href="emergencias.html">qué hacer si…</a></p>
+</main>
+<footer class="site-footer"><div class="inner">Las Misiones Residencial · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a></div></footer>
+<script src="js/letra.js"></script>
+</body>
+</html>

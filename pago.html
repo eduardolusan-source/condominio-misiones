@@ -313,7 +313,7 @@ async function cargarEstado(n) {
         const txt = p.estatus === "Confirmado" ? "confirmado" : (p.estatus === "Rechazado" ? "no se encontró" : "en espera");
         html += '<div class="fila"><span>' + (p.mes ? nombreMes(p.mes) + (p.mes < "2026-10" ? " 🙏" : "") : p.fecha) + " · " + fmt(p.total) + '<br><small style="color:var(--muted)">' + partes + " · reportado el " + p.fecha + '</small></span><span class="badge ' + cls + '">' + txt + "</span></div>";
       });
-      if (j.pagos.some(p => p.estatus === "Rechazado")) html += '<p class="corte"><strong>No se encontró</strong>: la mesa directiva no ubicó ese pago en el banco con esos datos. Si sí lo hiciste, mándale la captura por WhatsApp; si fue un reporte repetido o de prueba, no tienes que hacer nada.</p>';
+      if (j.pagos.some(p => p.estatus === "Rechazado")) html += '<p class="corte"><strong>No se encontró</strong> en el banco: manda tu captura a la mesa.</p>';
     }
     caja.innerHTML = html;
   } catch (e) {
