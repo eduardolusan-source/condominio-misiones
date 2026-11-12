@@ -45,6 +45,7 @@ function onOpen() {
     .addItem("Probar (solo a mí)", "reportePrueba")
     .addItem("Enviar ahora el mes anterior a los vecinos", "reporteAhora")
     .addSeparator()
+    .addItem("Preparar la pestaña del mes siguiente", "prepararMesSiguiente")
     .addItem("Instalar o reparar la programación (día 10)", "instalarReporte")
     .addToUi();
 }
@@ -85,7 +86,10 @@ function instalarReporte() {
 }
 
 /* Lo llama el disparador del día 10. */
-function reporteProgramado() { generarReporte_({ modo: "vecinos" }); }
+function reporteProgramado() {
+  try { prepararMesSiguiente(); } catch (e) { Logger.log("No se pudo preparar el mes siguiente: " + e.message); }
+  generarReporte_({ modo: "vecinos" });
+}
 /* Menú: manda el reporte del último mes capturado SOLO a reporte_copia. */
 function reportePrueba() { generarReporte_({ modo: "prueba" }); }
 /* Menú: manda ya el mes anterior a los vecinos (respeta el candado de una sola vez). */

@@ -1498,8 +1498,37 @@ function hojaDelMes_(ss, mes) {
     hoja.getRange("B1").setValue("MISIONES · " + capitalizar_(MESES[idx]) + " " + anio);
     ajustarCasaClub_(hoja);
     limpiarMuestras_(hoja);
+    encadenarSaldo_(ss, hoja);                                        // también de diciembre a enero
+    const sig = buscarHojaMes_(ss, nombreHojaMes_((idx + 1) % 12, idx === 11 ? anio + 1 : anio));
+    if (sig) encadenarSaldo_(ss, sig);                                // si el mes siguiente ya existía, ahora apunta a éste
   }
   return hoja;
+}
+
+/* Saldo inicial (C6) = saldo final del mes inmediato anterior, aunque sea de otro año.
+   Respeta una fórmula propia de la mesa y no toca meses de la administración anterior. */
+function encadenarSaldo_(ss, h) {
+  const id = idDeHojaMes_(h);
+  const desde = mesTexto_(config_().finanzas_desde).trim();
+  if (!id || (desde && id <= desde)) return false;
+  const idPrev = mesSiguiente_(id, -1);
+  const prev = ss.getSheets().find(x => esHojaMes_(x) && idDeHojaMes_(x) === idPrev);
+  if (!prev) return false;
+  const ref = /\s/.test(prev.getName()) ? "'" + prev.getName() + "'" : prev.getName();
+  const fin = prev.createTextFinder("SALDO FINAL DEL MES").matchCase(false).findNext();
+  const quiero = "=" + ref + "!C" + (fin ? fin.getRow() : 18);
+  const c6 = h.getRange("C6"), actual = c6.getFormula();
+  if (actual === quiero || (actual && !/^='?[^'!]+'?!C\d+$/.test(actual))) return false;
+  c6.setFormula(quiero);
+  return true;
+}
+
+/* Deja lista la pestaña del mes siguiente al de hoy (en blanco y encadenada). La llama el
+   envío del día 10 y el menú; así enero existe antes de que alguien pague enero. */
+function prepararMesSiguiente() {
+  const sig = mesSiguiente_(Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM"), 1);
+  hojaDelMes_(SpreadsheetApp.getActive(), sig);
+  return sig;
 }
 /* Quita los montos de ejemplo de la plantilla (Administración 7,000 y Limpieza 7,000)
    cuando son lo único que hay en egresos y la pestaña no tiene cobros. */

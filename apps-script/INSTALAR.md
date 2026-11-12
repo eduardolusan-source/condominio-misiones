@@ -273,3 +273,10 @@ Pegar `Code.gs` (conservando `CLAVE_ADMIN`) y `Reporte.gs` nuevos y publicar nue
   o «Recibo del agua de octubre · al 12 de noviembre». Nuevo tipo `?tipo=avance` (barras con el calendario del
   mes, o edificio y tinaco que se llenan; animadas en pantalla, la imagen sale quieta) y su botón en el kit.
 - En el tablero, el mes en curso se marca «en curso» y sus cifras se leen como avance, no como cierre.
+
+## Cambio de año (12 de noviembre de 2026)
+- La morosidad en vivo cuenta desde `finanzas_desde` sin reiniciarse en enero.
+- Cuando el script crea la pestaña de un mes (al reportarse un pago, un egreso, o el día 10 con
+  `prepararMesSiguiente`), su saldo inicial queda **encadenado** al saldo final del mes anterior, también de
+  diciembre a **Enero 2027**. Menú: «Reporte a vecinos → Preparar la pestaña del mes siguiente».
+- Pendiente para dentro de unos años: archivar años viejos (como en La Valetta) cuando la hoja crezca.
