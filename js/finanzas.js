@@ -123,15 +123,15 @@
     textos: TEXTOS
   };
 
+  /* Carga sin «salto»: antes se dibujaba la copia de js/data.js y segundos después la hoja en
+     vivo la reemplazaba. Ahora: (1) si este navegador ya vio la hoja, se muestra esa última
+     respuesta al instante (casi siempre es igual a la nueva); (2) si no, se espera a la hoja con
+     el aviso «Cargando cifras…»; (3) solo si la hoja no responde en 8 s se muestra js/data.js. */
   const tablero = Tablero.montar(document.getElementById("tablero"), OPCIONES);
-  tablero.actualizar(modelo(null, null));
+  const LLAVE = "misiones.finanzas.vivo";
+  let pintado = false;
 
-  async function cargarVivo() {
-    if (!SCRIPT_URL) return;
-    const r = await fetch(SCRIPT_URL + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    const j = await r.json();
-    if (!j || !j.ok) throw new Error((j && j.error) || "sin datos");
+  function aplicarVivo(j) {
     const meses = (j.meses || []).filter(m => /^\d{4}-\d{2}$/.test(String(m.id || "")));
     if (!meses.length) throw new Error("la hoja aún no tiene meses capturados");
     const primero = meses[0], NOMBRES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -139,6 +139,25 @@
     TEXTOS.moraDesde = desde;
     TEXTOS.aviso = "🟢 <strong>En vivo desde " + desde + ".</strong> La mesa directiva captura cobros y gastos en su hoja y esta página los lee cada vez que se abre. De 2025 a junio de 2026 las cifras vienen de las tablas contables de Admin-Solutions; julio a septiembre de 2026 siguen pendientes de la administración anterior. <a href=\"pendientes.html#financiero\">Ver el pendiente</a>.";
     tablero.actualizar(modelo(meses, j));
+    pintado = true;
   }
-  cargarVivo().catch(e => console.warn("[Misiones] Sin hoja en vivo (" + e.message + "). Se muestra js/data.js."));
+  function respaldo() { if (!pintado) { tablero.actualizar(modelo(null, null)); pintado = true; } }
+
+  try { const g = JSON.parse(localStorage.getItem(LLAVE) || "null"); if (g && g.ok) aplicarVivo(g); } catch (_) { /* sin copia en este navegador */ }
+  const espera = setTimeout(respaldo, 8000);
+
+  async function cargarVivo() {
+    if (!SCRIPT_URL) throw new Error("sin dirección del script");
+    const r = await fetch(SCRIPT_URL + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    if (!j || !j.ok) throw new Error((j && j.error) || "sin datos");
+    aplicarVivo(j);
+    try { localStorage.setItem(LLAVE, JSON.stringify(j)); } catch (_) { /* sin almacenamiento */ }
+  }
+  cargarVivo().then(() => clearTimeout(espera)).catch(e => {
+    clearTimeout(espera);
+    console.warn("[Misiones] Sin hoja en vivo (" + e.message + "). Se muestra js/data.js.");
+    respaldo();
+  });
 })();
