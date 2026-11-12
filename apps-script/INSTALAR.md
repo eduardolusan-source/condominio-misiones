@@ -360,3 +360,15 @@ Cuatro archivos en el editor: `Code`, `Reporte`, `Condominio` y **`Mesa`** (nuev
 Crea solas las pestañas **Reuniones** y **Acuerdos vivos** (esta trae los acuerdos del 13 de octubre).
 Los votos de cada reunión caen en la pestaña Votos como «R20261120·tema». La minuta se guarda en
 Drive, carpeta «Misiones · Comprobantes → Minutas», con «cualquiera con el enlace puede ver».
+
+## Cobranza: reporte de adeudos y mensajes listos (13 de noviembre de 2026)
+Quinto archivo: **+ → Secuencia de comandos → `Cobranza`** → pega `Cobranza.gs` → guarda.
+1. Ejecutar → **instalarCobranza** (pide permiso para programar el envío). Crea la pestaña privada
+   **Vecinos (privado)** con los 16 deptos y sus nombres (de la hoja maestra) y los correos registrados, agrega a
+   Config `cobranza_correos` (reporte) y `cobranza_textos` (correo de quien manda los mensajes) y programa una
+   revisión diaria a las 8 h que solo envía el 15 y el último día del mes (30, o 28/29 en febrero).
+2. Llena en **Vecinos (privado)** la columna WhatsApp (10 dígitos). Si paga un inquilino, su nombre en «¿Quién paga?».
+   Cada llamada o promesa de pago se anota en «Último contacto» y «Acuerdo o promesa»: salen en el siguiente reporte.
+3. Probar sin esperar: Ejecutar → **cobranzaPrueba** (llega solo a ti, con reporte y mensajes).
+Los adeudos son los de mi-depto.html (desde finanzas_desde; lo de la administración anterior no se cobra) y los pagos
+reportados sin confirmar aparecen como «en revisión». Opcional: Config → `sitio_url` para las ligas de los mensajes.
