@@ -229,3 +229,30 @@ funcionando: muestra la morosidad de la foto del 22 de junio de 2026.
   siendo la foto agregada de `js/data.js`. La página lo dice así.
 - `finanzas.html` cambió de cara: abre con seis indicadores y desde ahí se entra a cada sección
   (mes por mes, gráficas, en qué se gasta, morosidad, agua, proyectos, revisión). Los datos son los mismos.
+
+## Reporte mensual a los vecinos (PDF + correo + kit de WhatsApp)
+`Reporte.gs` es un **segundo archivo** del mismo proyecto de Apps Script (usa `finanzas_()` y `config_()` de
+`Code.gs`). Requiere que `Code.gs` ya tenga la morosidad en vivo (sección anterior).
+1. En el editor: **+ → Secuencia de comandos**, nombre `Reporte`, pegar `apps-script/Reporte.gs` y guardar.
+2. Ejecutar **instalarReporte** una vez y aceptar los permisos nuevos (enviar correo como tú, crear archivos en
+   Drive, disparadores). Crea la pestaña **Correos** (Depto · Nombre · Correo · Recibe sí/no), la pestaña
+   **Reportes** (bitácora), las claves de Config `reporte_envio` (`automático` o `pausa`) y `reporte_copia`
+   (tu correo), y el disparador del **día 10 a las 9** (hora de Querétaro).
+3. Publicar nueva versión de la implementación (paso 6) no hace falta para el reporte, pero sí para la
+   morosidad en vivo.
+4. Al abrir la hoja aparece el menú **Reporte a vecinos**: «Probar (solo a mí)» manda el último mes
+   capturado únicamente a `reporte_copia`. Úsalo antes del primer día 10.
+
+Qué pasa el día 10, con el mes anterior:
+- Arma el **PDF** (una hoja: saldo, entró/salió, quién pagó, cuotas atrasadas, agua, en qué se fue la cuota y
+  los gastos del mes) y lo guarda en Drive → «Misiones · Reportes / AAAA-MM».
+- Lo **envía** a los correos de la pestaña Correos en **copia oculta** (nadie ve el correo de los demás; se
+  omiten los marcados «no», los repetidos y los mal escritos), con un resumen en el cuerpo y liga al sitio.
+- Te manda el **kit de WhatsApp**: el texto, un botón que abre WhatsApp con el mensaje escrito y dos botones a
+  las **infografías** del mes (`infografia.html?tipo=cuotas` y `?tipo=agua`), que se comparten como imagen con
+  un toque. El estilo cambia cada mes (edificio de noche, calle de casitas, alcancía; tinaco, gotas, vaso); en la
+  página se puede elegir otro. Las ventanas/casas/monedas se acomodan al azar cada mes: no son deptos reales.
+- **Candados:** si el mes no tiene datos no se envía nada a los vecinos y te avisa; un mes se envía una sola vez;
+  con `reporte_envio = pausa` solo te llega el kit. Todo queda en la pestaña Reportes.
+- WhatsApp no permite publicar en grupos automáticamente sin la API de pago de WhatsApp Business; por eso el
+  último paso (elegir el grupo y enviar) lo haces tú.
