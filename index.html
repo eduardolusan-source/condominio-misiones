@@ -31,6 +31,9 @@
   .pv-a { grid-column: 2; display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .3rem; }
   .pv-b { text-decoration: none; font-weight: 800; font-size: .92rem; padding: .5rem .9rem; border-radius: 999px; background: var(--accent); color: #fff; }
   .pv-b.wa { background: #25d366; } @media (prefers-color-scheme: dark) { .pv-b { color: #0d0d0d; } }
+  .reu-b { display: flex; align-items: center; gap: .8rem; margin: .2rem 0 1rem; padding: .85rem 1rem; border-radius: 18px; text-decoration: none; color: #fff; background: linear-gradient(140deg, #1d3f63, #12293f); box-shadow: var(--shadow); }
+  .reu-b[hidden] { display: none; } .reu-b span { font-size: 1.7rem; } .reu-b b { display: block; font-size: 1.05rem; } .reu-b small { opacity: .85; } .reu-b i { margin-left: auto; font-style: normal; font-size: 1.4rem; opacity: .8; }
+  .reu-b.vivo { background: linear-gradient(140deg, #b3261e, #7a1c14); }
   .kpi i { position: absolute; left: 0; bottom: 0; height: 5px; width: var(--w); background: var(--accent); }
 </style>
 </head>
@@ -46,6 +49,7 @@
       <a href="pago.html">Registrar pago</a>
       <a href="agua.html">Agua</a>
       <a href="finanzas.html">Finanzas</a>
+      <a href="reunion.html">Reunión</a>
       <a href="pendientes.html">Pendientes</a>
       <a href="reglamento.html">Reglamento</a>
       <a href="areas-comunes.html">Áreas comunes</a>
@@ -61,6 +65,7 @@
 </section>
 
 <main class="wrap">
+  <a class="reu-b" id="reuB" href="reunion.html" hidden></a>
   <h2 class="section-title" style="margin-top:.4rem">¿Qué necesitas?</h2>
   <div class="acc">
     <a class="ac" href="mi-depto.html"><span>🏠</span><b>Mi depto</b><small>lo que debo, mes por mes</small></a>
@@ -82,7 +87,7 @@
     <div class="kpi"><b>…</b><span>saldo en caja</span></div><div class="kpi"><b>…</b><span>pagaron este mes</span></div><div class="kpi"><b>…</b><span>cuotas atrasadas</span></div><div class="kpi"><b>…</b><span>reciben el reporte</span></div>
   </div>
 
-  <a class="card" href="acuerdos.html" style="display:block;margin-top:1rem"><h3>📣 Asamblea del 13 de octubre: lo que se acordó</h3><p>Administración por la mesa directiva, reconstrucción de las cuentas, deuda con la CEA y responsables de cada tarea.</p></a>
+  <a class="card" href="minutas.html" style="display:block;margin-top:1rem"><h3>📚 Acuerdos y minutas</h3><p>Lo que se decidió en cada reunión, quién lo hace y en qué va.</p></a>
 
   <h2 class="section-title">Lo que más se pregunta</h2>
   <p class="section-sub">Los datos del reglamento vigente que conviene tener a la mano.</p>
@@ -105,7 +110,7 @@
 
 <footer class="site-footer">
   <div class="inner">
-    Las Misiones Residencial · Senda Eterna 444, Milenio III, Querétaro · <a href="ayuda.html">Ayuda</a> · <a href="proveedores.html">Proveedores</a> · <a href="privacidad.html">Aviso de privacidad</a> · <a href="guia-mesa.html">Guía de la mesa</a>
+    Las Misiones Residencial · Senda Eterna 444, Milenio III, Querétaro · <a href="ayuda.html">Ayuda</a> · <a href="proveedores.html">Proveedores</a> · <a href="privacidad.html">Aviso de privacidad</a> · <a href="guia-mesa.html">Guía de la mesa</a> · <a href="mesa.html">🔑 Mesa directiva</a>
   </div>
 </footer>
 <script>
@@ -131,6 +136,17 @@
   }
   try { const g = JSON.parse(localStorage.getItem("misiones.finanzas.vivo") || "null"); if (g && g.ok) pintar(g); } catch (e) {}
   fetch(URL_ + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => { if (j && j.ok) { pintar(j); try { localStorage.setItem("misiones.finanzas.vivo", JSON.stringify(j)); } catch (e) {} } }).catch(() => {});
+})();
+</script>
+<script src="js/reunion.js"></script>
+<script>
+(function () {
+  const R = window.Reunion, b = document.getElementById("reuB");
+  const pinta = j => { const r = j && j.reunion; if (!r || r.estado === "Cerrada") { b.hidden = true; return; } const c = R.cuando(r); if (c.c === "fin" && r.estado !== "En curso") { b.hidden = true; return; }
+    b.className = "reu-b" + (r.estado === "En curso" ? " vivo" : ""); b.hidden = false;
+    b.innerHTML = "<span>" + (r.estado === "En curso" ? "🔴" : "🗓️") + "</span><div><b>" + R.esc(r.estado === "En curso" ? r.titulo + " · en vivo" : r.titulo) + "</b><small>" + R.esc(c.t + " · " + R.fecha(r.fecha) + (r.hora ? " · " + R.hora(r.hora) : "")) + "</small></div><i>›</i>"; };
+  try { pinta(JSON.parse(localStorage.getItem("misiones.reunion") || "null")); } catch (e) {}
+  R.cargar().then(j => { if (j && j.ok) { pinta(j); try { localStorage.setItem("misiones.reunion", JSON.stringify(j)); } catch (e) {} } }).catch(() => {});
 })();
 </script>
 <script src="js/letra.js"></script>

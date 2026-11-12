@@ -371,6 +371,7 @@ function doGet(e) {
     if (p.accion === "reservas") return json_(reservasCasa_(p.depto));               // casa-club.html (Condominio.gs)
     if (p.accion === "lecturas") { asegurarAgua_(true); return json_(lecturasMes_(p.mes, p.clave)); }
     if (p.accion === "agua") { asegurarAgua_(true); return json_(aguaDepto_(parseInt(p.depto, 10))); }
+    if (typeof rutaMesaGet_ === "function") { const m = rutaMesaGet_(p); if (m) return json_(m); }   // mesa.html y reunion.html (Mesa.gs)
     if (p.accion === "votos") return json_(votos_());
     if (p.accion === "acuerdos") return json_(acuerdos_());
     if (p.accion === "tareas") return json_(tareas_());
@@ -387,6 +388,7 @@ function doPost(e) {
   try {
     const d = JSON.parse(e.postData.contents || "{}");
     if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
+    if (typeof rutaMesaPost_ === "function" && /^(reunion|acuerdoEstado|casaResolver)/.test(String(d.accion))) { lock.waitLock(20000); const m = rutaMesaPost_(d); if (m) return json_(m); }
     if (d.accion === "lectura") { lock.waitLock(10000); asegurarAgua_(false); return json_(guardarLectura_(d)); }
     if (d.accion === "recibo") { lock.waitLock(10000); asegurarAgua_(false); return json_(guardarRecibo_(d)); }
     if (d.accion === "voto") { lock.waitLock(10000); return json_(votar_(d)); }

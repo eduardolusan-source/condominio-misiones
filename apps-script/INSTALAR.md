@@ -350,3 +350,13 @@ club»** como «Por confirmar» y te llega un correo. Tú cambias el Estatus a C
 que se traslapan, hasta 90 días antes, 2 reservas activas por depto; el vecino puede cancelar la suya. El semáforo
 avisa reservas por confirmar. Costo: Config → casa_club_monto. Reglas (opcional): Config → reglas_casa_club.
 Pega `Code.gs` y `Condominio.gs` nuevos → Nueva versión.
+
+## Mesa directiva y reuniones (12 de noviembre de 2026)
+Cuatro archivos en el editor: `Code`, `Reporte`, `Condominio` y **`Mesa`** (nuevo).
+1. Extensiones → Apps Script → `Code` → borra todo → pega `Code.gs` (primera línea: «Las Misiones Residencial · Registro de pagos»).
+2. **+ → Secuencia de comandos** → nómbralo `Mesa` → pega `Mesa.gs` (primera línea: «Las Misiones · Mesa directiva y reuniones»).
+3. Guardar → Implementar → Administrar implementaciones → lápiz → **Nueva versión** → Implementar.
+4. Abre `mesa.html` con la clave de la bandeja (Config → clave_admin).
+Crea solas las pestañas **Reuniones** y **Acuerdos vivos** (esta trae los acuerdos del 13 de octubre).
+Los votos de cada reunión caen en la pestaña Votos como «R20261120·tema». La minuta se guarda en
+Drive, carpeta «Misiones · Comprobantes → Minutas», con «cualquiera con el enlace puede ver».

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mesa directiva · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  body { font-size: 1.03rem; }
+  .pg { max-width: 680px; margin: 0 auto; padding: 1.1rem 1rem 5rem; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin: .3rem 0 1rem; } .top h1 { font-size: 1.6rem; margin: 0; }
+  .top button { font: inherit; font-size: .9rem; border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; }
+  .caja { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.1rem; box-shadow: var(--shadow); margin-bottom: 1rem; }
+  .in, .ta { width: 100%; box-sizing: border-box; font: inherit; font-size: 1rem; padding: .7rem .85rem; border: 2px solid var(--baseline); border-radius: 12px; background: var(--page); color: var(--ink); }
+  .ta { min-height: 84px; resize: vertical; line-height: 1.45; } .in:focus, .ta:focus { outline: none; border-color: var(--accent); }
+  .lb { display: block; font-weight: 800; font-size: .9rem; margin: .8rem 0 .3rem; } .lb small { font-weight: 400; color: var(--muted); }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .go { display: block; width: 100%; font: inherit; font-weight: 800; font-size: 1.07rem; min-height: 54px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; cursor: pointer; margin-top: .9rem; }
+  .go.sec { background: var(--page); color: var(--ink); border: 1px solid var(--border); } .go.rojo { background: #b3261e; color: #fff; } .go.verde { background: var(--good-text); color: #fff; }
+  .go:disabled { opacity: .5; cursor: wait; }
+  .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; margin-bottom: 1.2rem; }
+  .tile { position: relative; display: flex; flex-direction: column; gap: .15rem; text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: .9rem; box-shadow: var(--shadow); }
+  .tile span { font-size: 1.6rem; } .tile b { font-size: 1rem; } .tile small { color: var(--muted); font-size: .82rem; }
+  .tile .n { position: absolute; top: .7rem; right: .7rem; min-width: 1.7rem; height: 1.7rem; padding: 0 .4rem; border-radius: 999px; display: grid; place-items: center; font-weight: 900; font-size: .9rem; background: #b3261e; color: #fff; }
+  .tile .n.cero { background: var(--grid); color: var(--muted); }
+  h2.t { font-size: 1.2rem; margin: 1.4rem 0 .6rem; display: flex; align-items: center; gap: .5rem; }
+  .pasos { display: grid; grid-template-columns: repeat(4, 1fr); gap: .3rem; margin: 0 0 .9rem; font-size: .74rem; font-weight: 800; text-align: center; }
+  .pasos span { padding: .45rem .15rem; border-radius: 10px; background: var(--page); border: 1px solid var(--border); color: var(--muted); }
+  .pasos span.ya { color: var(--good-text); } .pasos span.ya::before { content: "✓ "; } .pasos span.aqui { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .seg { display: inline-flex; border: 2px solid var(--baseline); border-radius: 12px; overflow: hidden; } .seg button { font: inherit; font-weight: 700; font-size: .92rem; padding: .5rem .85rem; border: 0; background: var(--page); color: var(--ink); cursor: pointer; }
+  .seg button.sel { background: var(--accent); color: #fff; }
+  .tema { border: 1px solid var(--border); border-radius: 16px; padding: .8rem .85rem; margin-top: .7rem; background: var(--page); }
+  .tema-h { display: flex; justify-content: space-between; align-items: center; gap: .4rem; } .tema-h b { font-size: .85rem; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+  .tema-h button { font: inherit; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .tema .in, .tema .ta { background: var(--surface); }
+  .add { font: inherit; font-weight: 800; width: 100%; margin-top: .7rem; min-height: 50px; border: 2px dashed var(--baseline); border-radius: 14px; background: none; color: var(--accent); cursor: pointer; }
+  .res { display: flex; gap: .8rem; align-items: flex-start; } .res .ic { font-size: 2rem; } .res h3 { margin: 0; font-size: 1.15rem; } .res p { margin: .15rem 0 0; color: var(--ink-2); }
+  .acc { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; margin-top: .9rem; }
+  .acc > * { display: flex; align-items: center; justify-content: center; text-align: center; gap: .35rem; font: inherit; font-weight: 800; font-size: .92rem; min-height: 50px; padding: .4rem .5rem; border-radius: 14px; border: 1px solid var(--border); background: var(--page); color: var(--ink); text-decoration: none; cursor: pointer; }
+  .acc .wa { background: #25d366; border-color: #25d366; color: #fff; } .acc .full { grid-column: 1 / -1; }
+  .deps { display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; margin-top: .6rem; } @media (max-width: 520px) { .deps { grid-template-columns: repeat(4, 1fr); } }
+  .deps button { position: relative; font: inherit; font-weight: 800; font-size: 1.05rem; min-height: 50px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .deps button.on { color: #fff; border-color: transparent; } .deps button small { display: block; font-size: .6rem; font-weight: 700; line-height: 1; opacity: .9; }
+  .ops { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+  .ops button { font: inherit; font-weight: 800; padding: .55rem .9rem; border-radius: 999px; border: 2px solid var(--baseline); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .ops button.sel { color: #fff; border-color: transparent; }
+  .tip { font-size: .85rem; color: var(--muted); margin: .4rem 0 0; }
+  .qbar { display: flex; align-items: center; gap: .6rem; font-weight: 800; margin-top: .5rem; } .qbar i { flex: 1; height: 10px; border-radius: 999px; background: var(--grid); overflow: hidden; } .qbar i u { display: block; height: 100%; background: var(--good-text); }
+  .cc { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .7rem 0; border-top: 1px solid var(--grid); } .cc:first-child { border-top: 0; } .cc small { display: block; color: var(--muted); }
+  .cc .b { display: flex; gap: .35rem; } .cc .b button { font: inherit; font-weight: 800; min-width: 46px; height: 44px; border-radius: 12px; border: 2px solid var(--good-text); background: var(--good-text); color: #fff; cursor: pointer; } .cc .b button.no { background: none; color: var(--bad-text); border-color: var(--bad-text); }
+  .avs { display: grid; gap: .45rem; } .av { display: grid; grid-template-columns: 1fr auto; gap: .6rem; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .7rem .85rem; }
+  .av small { display: block; color: var(--muted); } .av.Cumplido b { text-decoration: line-through; color: var(--muted); }
+  .est { font: inherit; font-size: .8rem; font-weight: 800; padding: .4rem .7rem; border-radius: 999px; border: 0; cursor: pointer; white-space: nowrap; }
+  .est.Pendiente { background: #fff3cd; color: #7a5a00; } .est[class~="En"] { background: #d6e2ee; color: #12293f; } .est.Cumplido { background: #d4edda; color: #1d5a2a; }
+  .msg { margin: .6rem 0 0; font-weight: 700; } .msg.ok { color: var(--good-text); } .msg.mal { color: var(--bad-text); }
+  .file { display: flex; align-items: center; gap: .6rem; padding: .8rem; border: 2px dashed var(--baseline); border-radius: 14px; cursor: pointer; background: var(--page); } .file input { display: none; } .file span { font-size: 1.6rem; }
+  .hidden { display: none !important; }
+  @media (prefers-color-scheme: dark) { .go, .pasos span.aqui, .seg button.sel { color: #0d0d0d; } .est.Pendiente { background: #5a4300; color: #ffe08a; } .est.Cumplido { background: #1d4a2a; color: #b9f0c6; } .est[class~="En"] { background: #12293f; color: #c3d9ee; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+  </div>
+</header>
+<main class="pg">
+  <div id="login" class="caja hidden" style="margin-top:1.2rem">
+    <h1 style="font-size:1.5rem;margin:0 0 .3rem">🔑 Mesa directiva</h1>
+    <p style="margin:0;color:var(--ink-2)">La misma clave de la bandeja de pagos.</p>
+    <input id="clave" class="in" type="password" autocomplete="current-password" placeholder="clave" style="margin-top:.8rem;font-size:1.15rem">
+    <button class="go" id="entrar">Entrar</button>
+    <p id="claveMal" class="msg mal hidden">Clave incorrecta.</p>
+  </div>
+
+  <div id="panel" class="hidden">
+    <div class="top"><h1>🔑 Mesa directiva</h1><button type="button" id="salir">Salir</button></div>
+    <div class="tiles">
+      <a class="tile" href="bandeja.html"><span>💳</span><b>Pagos por confirmar</b><small>bandeja</small><i class="n cero" id="nPagos">0</i></a>
+      <a class="tile" href="#casa" id="tCasa"><span>🏠</span><b>Casa club</b><small>reservas por confirmar</small><i class="n cero" id="nCasa">0</i></a>
+      <a class="tile" href="egresos.html"><span>🧾</span><b>Registrar un gasto</b><small>egresos</small></a>
+      <a class="tile" href="lecturas.html"><span>💧</span><b>Lecturas de agua</b><small>medidores y recibo</small></a>
+    </div>
+
+    <section id="casa" class="hidden"><h2 class="t">🏠 Casa club por confirmar</h2><div class="caja" id="casaL"></div></section>
+
+    <h2 class="t">🗓️ Reunión</h2>
+    <div class="pasos" id="pasos"><span>Preparar</span><span>Convocar</span><span>En vivo</span><span>Acuerdos y minuta</span></div>
+    <div id="reu"></div>
+
+    <h2 class="t">✅ Seguimiento de acuerdos</h2>
+    <div class="avs" id="avs"></div>
+    <p class="tip">Toca el estado para cambiarlo. Los vecinos lo ven en <a href="minutas.html">Acuerdos y minutas</a>.</p>
+  </div>
+</main>
+<script src="js/ventana.js"></script>
+<script src="js/reunion.js"></script>
+<script>
+(function () {
+  "use strict";
+  const R = window.Reunion, esc = R.esc, $ = id => document.getElementById(id);
+  const U = 16, DEPTOS = Array.from({ length: U }, (_, i) => i + 1);
+  let clave = "", J = null, modo = "", borrador = null, activa = {}, ocupado = false;
+  try { clave = localStorage.getItem("misiones_admin") || ""; } catch (e) {}
+
+  function pedir() { $("login").classList.remove("hidden"); $("panel").classList.add("hidden"); $("clave").focus(); }
+  $("entrar").onclick = () => { clave = $("clave").value.trim(); if (clave) cargar(true); };
+  $("clave").addEventListener("keydown", e => { if (e.key === "Enter") $("entrar").click(); });
+  $("salir").onclick = () => { clave = ""; try { localStorage.removeItem("misiones_admin"); } catch (e) {} pedir(); };
+
+  const enviar = d => R.post(Object.assign({ claveAdmin: clave }, d)).then(j => { if (j && j.error === "clave") { pedir(); throw new Error("clave"); } return j; });
+
+  function cargar(desdeLogin) {
+    return fetch(R.URL + "?accion=mesa&clave=" + encodeURIComponent(clave) + "&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => {
+      if (!j.ok) { if (j.error === "clave") { pedir(); if (desdeLogin) $("claveMal").classList.remove("hidden"); return; } throw new Error(j.error); }
+      try { localStorage.setItem("misiones_admin", clave); } catch (e) {}
+      $("login").classList.add("hidden"); $("panel").classList.remove("hidden"); $("claveMal").classList.add("hidden");
+      J = j; pintarTodo();
+    }).catch(e => { if (!J) { $("login").classList.remove("hidden"); $("claveMal").textContent = "Sin conexión con la hoja (" + (e.message || e) + "). ¿Ya pegaste el archivo Mesa y publicaste la nueva versión?"; $("claveMal").classList.remove("hidden"); } });
+  }
+
+  function pintarTodo() {
+    const n = (id, v) => { $(id).textContent = v; $(id).classList.toggle("cero", !v); };
+    n("nPagos", J.pagos || 0); n("nCasa", (J.casa || []).length);
+    $("casa").classList.toggle("hidden", !(J.casa || []).length);
+    $("casaL").innerHTML = (J.casa || []).map(c => '<div class="cc"><div><b>Depto ' + c.depto + "</b><small>" + esc(R.fecha(c.dia)) + " · " + esc(c.horario) + " · " + esc(c.folio) + '</small></div><div class="b"><button type="button" data-cc="' + esc(c.folio) + '" data-e="Confirmada" aria-label="Confirmar">✓</button><button type="button" class="no" data-cc="' + esc(c.folio) + '" data-e="Rechazada" aria-label="Rechazar">✕</button></div></div>').join("");
+    pintarReunion(); pintarAcuerdos();
+  }
+
+  /* ------------------------------ reunión: según su estado ------------------------------ */
+  function pasos(k) { [...$("pasos").children].forEach((s, i) => { s.className = i < k ? "ya" : i === k ? "aqui" : ""; }); }
+  function pintarReunion() {
+    const r = J.reunion;
+    if (modo === "editar" || !r) { pasos(0); return editor(modo === "editar" && r && r.estado !== "Cerrada" ? r : null); }
+    if (modo === "cerrar") { pasos(3); return formCerrar(r); }
+    if (r.estado === "Convocada") { pasos(1); return convocada(r); }
+    if (r.estado === "En curso") { pasos(2); return enVivo(r); }
+    pasos(r.minuta ? 4 : 3); cerrada(r);
+  }
+  const cabecera = (r, ic) => '<div class="res"><span class="ic">' + ic + "</span><div><h3>" + esc(r.titulo) + "</h3><p>" + esc(R.fecha(r.fecha).replace(/^./, c => c.toUpperCase())) + (r.hora ? " · " + esc(R.hora(r.hora)) : "") + (r.lugar ? " · " + esc(r.lugar) : "") + "</p><p>" + r.temas.length + " temas · " + r.temas.filter(t => t.tipo === "vota").length + " se votan</p></div></div>";
+
+  function convocada(r) {
+    $("reu").innerHTML = '<div class="caja">' + cabecera(r, "📣") + '<div class="acc"><a class="wa full" href="' + R.wa(r) + '" target="_blank" rel="noopener">💬 Mandar la convocatoria al grupo</a>' +
+      '<button type="button" data-a="editar">✏️ Editar</button><a href="reunion.html" target="_blank" rel="noopener">👀 Ver como vecino</a><button type="button" data-a="presentar">▶ Presentar</button><button type="button" data-a="cal">📅 Calendario</button></div>' +
+      '<button class="go rojo" data-a="iniciar">🔴 Empezar la reunión</button><p class="tip">Al empezar se abre el registro de asistencia y de votos, y la página de los vecinos muestra «En vivo».</p></div>';
+  }
+
+  function enVivo(r) {
+    const a = r.asistencia || [], vot = r.temas.filter(t => t.tipo === "vota");
+    let h = '<div class="caja"><div class="res"><span class="ic">🔴</span><div><h3>En vivo · ' + esc(r.titulo) + '</h3><p>Toca cada depto conforme lo diga en la reunión. Vale el último registro.</p></div></div>' +
+      '<div class="acc"><button type="button" data-a="presentar" class="full">▶ Presentar en pantalla</button></div></div>';
+    h += '<div class="caja"><b>👥 Asistencia</b><div class="qbar"><span>' + a.length + " de " + U + '</span><i><u style="width:' + Math.round(a.length / U * 100) + '%"></u></i><span>' + (a.length >= J.quorum ? "✅ Quórum" : "Quórum: " + J.quorum) + "</span></div>" +
+      '<div class="deps">' + DEPTOS.map(d => '<button type="button" data-as="' + d + '" class="' + (a.indexOf(d) >= 0 ? "on" : "") + '"' + (a.indexOf(d) >= 0 ? ' style="background:var(--good-text)"' : "") + ">" + d + "</button>").join("") + "</div></div>";
+    vot.forEach(t => {
+      const v = (r.votos || {})[t.id] || { conteo: {}, deptos: {} }, act = activa[t.id] || t.opciones[0];
+      h += '<div class="caja"><b>🗳️ Tema ' + (r.temas.indexOf(t) + 1) + " · " + esc(t.pregunta || t.titulo) + '</b><div class="ops">' + t.opciones.map((o, i) => '<button type="button" data-op="' + esc(t.id) + '" data-o="' + esc(o) + '" class="' + (o === act ? "sel" : "") + '"' + (o === act ? ' style="background:' + R.COLORES[i % R.COLORES.length] + '"' : "") + ">" + esc(o) + " · " + (v.conteo[o] || 0) + "</button>").join("") + "</div>" +
+        '<p class="tip">Elige la opción y toca los deptos que la votaron. Tocar otra vez el mismo depto borra su voto.</p><div class="deps">' + DEPTOS.map(d => { const o = v.deptos[d], i = t.opciones.indexOf(o);
+          return '<button type="button" data-vt="' + esc(t.id) + '" data-d="' + d + '" class="' + (o ? "on" : "") + '"' + (o ? ' style="background:' + R.COLORES[i % R.COLORES.length] + '"' : "") + ">" + d + (o ? "<small>" + esc(o.slice(0, 8)) + "</small>" : "") + "</button>"; }).join("") + "</div></div>";
+    });
+    h += '<button class="go verde" data-a="terminar">🏁 Terminar y escribir los acuerdos</button>';
+    $("reu").innerHTML = h;
+  }
+
+  function formCerrar(r) {
+    let h = '<div class="caja"><div class="res"><span class="ic">🏁</span><div><h3>Acuerdos</h3><p>Ya van escritos con el resultado de cada votación; ajústalos si hace falta.</p></div></div>';
+    r.temas.forEach((t, i) => {
+      const v = (r.votos || {})[t.id]; let pre = t.acuerdo || "";
+      if (!pre && t.tipo === "vota" && v) { const tot = Object.keys(v.deptos).length, max = Math.max(...t.opciones.map(o => v.conteo[o] || 0)), g = t.opciones.filter(o => (v.conteo[o] || 0) === max);
+        pre = g.length === 1 ? "Votación «" + (t.pregunta || t.titulo) + "»: ganó «" + g[0] + "», " + max + " de " + tot + " votos." : "Empate en «" + (t.pregunta || t.titulo) + "»; se vuelve a tratar."; }
+      h += '<div class="tema"><div class="tema-h"><b>' + (i + 1) + ". " + esc(t.titulo) + '</b></div><textarea class="ta" data-ac="' + esc(t.id) + '" placeholder="Acuerdo (vacío si solo se informó)">' + esc(pre) + "</textarea>" +
+        '<div class="dos"><input class="in" data-re="' + esc(t.id) + '" placeholder="👤 Quién" value="' + esc(t.responsable || "") + '"><input class="in" type="date" data-co="' + esc(t.id) + '" value="' + esc(t.compromiso || "") + '"></div></div>';
+    });
+    h += '<label class="lb">📄 Minuta <small>(opcional; la puedes subir después)</small></label>' + minutaCampos() +
+      '<button class="go verde" data-a="cerrar">✅ Cerrar la reunión y publicar acuerdos</button><button class="go sec" data-a="volver">Volver a la votación</button><p class="msg" id="mCer"></p></div>';
+    $("reu").innerHTML = h;
+  }
+  const minutaCampos = () => '<label class="file"><input type="file" id="fMin" accept="application/pdf,image/*"><span>📎</span><div><b id="fMinT">Subir PDF o foto</b><small style="display:block;color:var(--muted)">queda pública en el sitio; quita datos sensibles</small></div></label>' +
+    '<input class="in" id="lMin" type="url" placeholder="…o pega el enlace de Drive o Docs" style="margin-top:.5rem">';
+
+  function cerrada(r) {
+    const ac = r.temas.filter(t => t.acuerdo);
+    $("reu").innerHTML = '<div class="caja">' + cabecera(r, "✅") + '<p style="margin:.7rem 0 0">' + ac.length + (ac.length === 1 ? " acuerdo publicado." : " acuerdos publicados.") + "</p>" +
+      (r.minuta ? '<div class="acc"><a class="full" href="' + esc(r.minuta) + '" target="_blank" rel="noopener">📄 Ver la minuta publicada</a></div>'
+        : '<label class="lb">📄 Sube la minuta</label>' + minutaCampos() + '<button class="go" data-a="minuta">Publicar la minuta</button><p class="msg" id="mMin"></p>') +
+      '<button class="go sec" data-a="nueva">＋ Preparar la siguiente reunión</button><p class="tip">La página de la reunión se queda así hasta que convoques la siguiente.</p></div>';
+  }
+
+  /* ------------------------------------- editor ------------------------------------- */
+  const BASE = [{ titulo: "Bienvenida, asistencia y quórum", tipo: "informa", texto: "" }, { titulo: "Informe de la mesa directiva", tipo: "informa", texto: "Cuentas del mes\nPagos y cobranza\nAvance de pendientes" }, { titulo: "Asuntos generales", tipo: "informa", texto: "" }];
+  function editor(r) {
+    if (!borrador) { try { borrador = JSON.parse(localStorage.getItem("misiones.mesa.borrador") || "null"); } catch (e) {} }
+    if (r) borrador = JSON.parse(JSON.stringify(r));
+    if (!borrador) borrador = { tipo: "Reunión", titulo: "", fecha: "", hora: "20:00", lugar: "Casa club", enlace: "", convocatoria: "", temas: JSON.parse(JSON.stringify(BASE)) };
+    const b = borrador;
+    let h = '<div class="caja"><div class="seg" id="tipo">' + ["Reunión", "Asamblea"].map(t => '<button type="button" data-tp="' + t + '" class="' + (b.tipo === t ? "sel" : "") + '">' + (t === "Asamblea" ? "🏛️ " : "🗣️ ") + t + "</button>").join("") + "</div>" +
+      '<label class="lb">Título <small>(opcional)</small></label><input class="in" data-k="titulo" maxlength="120" placeholder="' + (b.tipo === "Asamblea" ? "Asamblea de propietarios" : "Reunión de vecinos") + '" value="' + esc(b.titulo) + '">' +
+      '<div class="dos"><div><label class="lb">Día</label><input class="in" type="date" data-k="fecha" value="' + esc(b.fecha) + '"></div><div><label class="lb">Hora</label><input class="in" type="time" data-k="hora" value="' + esc(b.hora) + '"></div></div>' +
+      '<label class="lb">Lugar</label><input class="in" data-k="lugar" maxlength="120" value="' + esc(b.lugar) + '">' +
+      '<label class="lb">Liga de videollamada <small>(Meet, Zoom; opcional)</small></label><input class="in" type="url" data-k="enlace" placeholder="https://meet.google.com/…" value="' + esc(b.enlace) + '">' +
+      '<label class="lb">Mensaje de convocatoria <small>(opcional, corto)</small></label><textarea class="ta" data-k="convocatoria" maxlength="600" style="min-height:60px">' + esc(b.convocatoria) + "</textarea></div>";
+    h += '<div class="caja"><b>📋 Orden del día</b>' + b.temas.map((t, i) => '<div class="tema"><div class="tema-h"><b>Tema ' + (i + 1) + '</b><span><button type="button" data-mv="' + i + '" data-dir="-1" aria-label="Subir">↑</button> <button type="button" data-mv="' + i + '" data-dir="1" aria-label="Bajar">↓</button> <button type="button" data-del="' + i + '" aria-label="Quitar">🗑</button></span></div>' +
+      '<input class="in" data-t="' + i + '" data-f="titulo" maxlength="120" placeholder="¿De qué se trata?" value="' + esc(t.titulo) + '" style="margin-top:.4rem">' +
+      '<div class="seg" style="margin-top:.5rem">' + [["informa", "ℹ️ Se informa"], ["vota", "🗳️ Se vota"]].map(x => '<button type="button" data-ti="' + i + '" data-v="' + x[0] + '" class="' + (t.tipo === x[0] ? "sel" : "") + '">' + x[1] + "</button>").join("") + "</div>" +
+      '<textarea class="ta" data-t="' + i + '" data-f="texto" maxlength="1500" placeholder="Puntos clave, uno por renglón (salen en la presentación)" style="margin-top:.5rem">' + esc(t.texto || "") + "</textarea>" +
+      (t.tipo === "vota" ? '<input class="in" data-t="' + i + '" data-f="pregunta" maxlength="200" placeholder="Pregunta: ¿Aprobamos…?" value="' + esc(t.pregunta || "") + '" style="margin-top:.5rem"><input class="in" data-t="' + i + '" data-f="opcionesTxt" placeholder="Opciones separadas por coma" value="' + esc((t.opciones && t.opciones.length ? t.opciones : ["Sí", "No", "Abstención"]).join(", ")) + '" style="margin-top:.5rem">' : "") + "</div>").join("") +
+      '<button type="button" class="add" data-a="tema">＋ Agregar tema</button></div>';
+    h += '<button class="go" data-a="guardar">' + (J.reunion && J.reunion.estado !== "Cerrada" ? "Guardar cambios" : "📣 Convocar y publicar") + "</button>" + (J.reunion && J.reunion.estado !== "Cerrada" ? '<button class="go sec" data-a="cancelarEd">Cancelar</button>' : "") + '<p class="msg" id="mEd"></p>';
+    $("reu").innerHTML = h;
+  }
+  const guardarBorrador = () => { try { localStorage.setItem("misiones.mesa.borrador", JSON.stringify(borrador)); } catch (e) {} };
+  $("reu").addEventListener("input", e => {
+    const el = e.target; if (!borrador || !$("tipo")) return;
+    if (el.dataset.k) borrador[el.dataset.k] = el.value;
+    if (el.dataset.t != null && el.dataset.f) { const t = borrador.temas[+el.dataset.t]; if (el.dataset.f === "opcionesTxt") t.opciones = el.value.split(",").map(s => s.trim()).filter(Boolean); else t[el.dataset.f] = el.value; }
+    guardarBorrador();
+  });
+
+  /* ------------------------------------- acciones ------------------------------------- */
+  $("reu").addEventListener("click", async e => {
+    const el = e.target.closest("button,[data-a]"); if (!el) return;
+    const r = J.reunion, a = el.dataset.a;
+    if (el.dataset.tp) { borrador.tipo = el.dataset.tp; guardarBorrador(); return editor(modo === "editar" ? r : null); }
+    if (el.dataset.ti != null) { const t = borrador.temas[+el.dataset.ti]; t.tipo = el.dataset.v; if (t.tipo === "vota" && !(t.opciones || []).length) t.opciones = ["Sí", "No", "Abstención"]; guardarBorrador(); return editor(null); }
+    if (el.dataset.mv != null) { const i = +el.dataset.mv, j2 = i + +el.dataset.dir, T = borrador.temas; if (j2 >= 0 && j2 < T.length) { [T[i], T[j2]] = [T[j2], T[i]]; guardarBorrador(); editor(null); } return; }
+    if (el.dataset.del != null) { borrador.temas.splice(+el.dataset.del, 1); guardarBorrador(); return editor(null); }
+    if (a === "tema") { borrador.temas.push({ titulo: "", tipo: "informa", texto: "" }); guardarBorrador(); editor(null); const ins = $("reu").querySelectorAll('[data-f="titulo"]'); ins[ins.length - 1].focus(); return; }
+    if (a === "guardar") {
+      if (!borrador.fecha) { msg("mEd", false, "Falta el día."); return; }
+      borrador.temas = borrador.temas.filter(t => String(t.titulo || "").trim());
+      if (!borrador.temas.length) { msg("mEd", false, "Agrega al menos un tema."); return editor(null); }
+      borrador.temas.forEach((t, i) => { if (!t.id) t.id = "t" + (Date.now().toString(36).slice(-4)) + i; });
+      el.disabled = true;
+      const j = await enviar({ accion: "reunionGuardar", reunion: borrador }).catch(() => null);
+      el.disabled = false;
+      if (!j || !j.ok) return msg("mEd", false, "No se guardó (" + ((j && j.error) || "sin conexión") + ").");
+      borrador = null; try { localStorage.removeItem("misiones.mesa.borrador"); } catch (x) {}
+      modo = ""; await cargar(); window.ventana(j.nueva ? "📣 Reunión convocada" : "Cambios guardados", '<p class="exp">' + (j.nueva ? "Ya aparece en el sitio. Mándala al grupo de WhatsApp con el botón verde." : "La página de los vecinos ya muestra los cambios.") + "</p>");
+      return;
+    }
+    if (a === "cancelarEd") { modo = ""; borrador = null; return pintarReunion(); }
+    if (a === "editar") { modo = "editar"; borrador = null; return editor(r); }
+    if (a === "presentar") return R.presentar(r, { quorum: J.quorum, unidades: U }, () => fetch(R.URL + "?accion=mesa&clave=" + encodeURIComponent(clave) + "&t=" + Date.now()).then(x => x.json()).then(n => { if (n.ok) { J = n; pintarTodo(); return n.reunion; } }));
+    if (a === "cal") return R.ics(r);
+    if (a === "iniciar" || a === "volver") { if (a === "volver") { modo = ""; } el.disabled = true; const j = await enviar({ accion: "reunionEstado", estado: "En curso" }).catch(() => null); if (j && j.ok) await cargar(); else el.disabled = false; return; }
+    if (a === "terminar") { modo = "cerrar"; return pintarReunion(); }
+    if (a === "cerrar" || a === "minuta") {
+      el.disabled = true; const out = a === "cerrar" ? "mCer" : "mMin";
+      const d = { accion: a === "cerrar" ? "reunionCerrar" : "reunionMinuta", minuta: ($("lMin") || {}).value || "" };
+      if (a === "cerrar") d.acuerdos = r.temas.map(t => ({ id: t.id, acuerdo: q('[data-ac="' + t.id + '"]'), responsable: q('[data-re="' + t.id + '"]'), compromiso: q('[data-co="' + t.id + '"]') }));
+      const f = $("fMin") && $("fMin").files[0];
+      try { if (f) Object.assign(d, await archivo(f)); } catch (x) { el.disabled = false; return msg(out, false, x.message); }
+      if (a === "minuta" && !d.minuta && !d.archivo) { el.disabled = false; return msg(out, false, "Elige el archivo o pega el enlace."); }
+      msg(out, true, f ? "Subiendo…" : "Guardando…");
+      const j = await enviar(d).catch(() => null); el.disabled = false;
+      if (!j || !j.ok) return msg(out, false, "No se guardó (" + ((j && j.error) || "sin conexión") + ").");
+      modo = ""; await cargar();
+      window.ventana(a === "cerrar" ? "✅ Reunión cerrada" : "📄 Minuta publicada", '<p class="exp">' + (a === "cerrar" ? j.acuerdos + " acuerdo(s) ya están en «Acuerdos y minutas»." + (j.minuta ? " La minuta también." : " Sube la minuta cuando la tengas.") : "Ya se ve en la página de la reunión y en «Acuerdos y minutas».") + "</p>");
+      return;
+    }
+    if (a === "nueva") { modo = "editar"; borrador = null; try { localStorage.removeItem("misiones.mesa.borrador"); } catch (x) {} return editor(null); }
+    if (el.dataset.op) { activa[el.dataset.op] = el.dataset.o; return enVivo(r); }
+    if (el.dataset.as) return marcar("asistencia", +el.dataset.as, (r.asistencia || []).indexOf(+el.dataset.as) >= 0 ? "" : "Presente");
+    if (el.dataset.vt) { const t = r.temas.find(x => x.id === el.dataset.vt), o = activa[t.id] || t.opciones[0], cur = (((r.votos || {})[t.id] || {}).deptos || {})[el.dataset.d];
+      return marcar(t.id, +el.dataset.d, cur === o ? "" : o); }
+  });
+  const q = s => { const x = $("reu").querySelector(s); return x ? x.value : ""; };
+  function msg(id, ok, t) { const m = $(id); if (m) { m.textContent = t; m.className = "msg " + (ok ? "ok" : "mal"); } }
+
+  /* Registro optimista: se pinta al momento y se confirma con la hoja. */
+  async function marcar(tema, depto, opcion) {
+    const r = J.reunion;
+    if (tema === "asistencia") { r.asistencia = (r.asistencia || []).filter(d => d !== depto); if (opcion) r.asistencia.push(depto); }
+    else { const v = (r.votos = r.votos || {})[tema] = r.votos[tema] || { conteo: {}, deptos: {} }; const ant = v.deptos[depto];
+      if (ant) { v.conteo[ant]--; delete v.deptos[depto]; } if (opcion) { v.deptos[depto] = opcion; v.conteo[opcion] = (v.conteo[opcion] || 0) + 1; } }
+    enVivo(r);
+    const j = await enviar({ accion: "reunionVoto", tema: tema, depto: depto, opcion: opcion }).catch(() => null);
+    if (!j || !j.ok) { window.ventana("No se guardó", '<p class="exp">Depto ' + depto + ": " + esc((j && j.error) || "sin conexión") + ". Vuelve a tocarlo.</p>"); cargar(); }
+  }
+
+  /* PDF tal cual; fotos comprimidas a 1800 px para que suban rápido. */
+  function archivo(f) {
+    return new Promise((ok, mal) => {
+      if (f.size > 20e6) return mal(new Error("El archivo pesa más de 20 MB."));
+      const lee = new FileReader();
+      lee.onload = () => {
+        if (!/^image\//.test(f.type)) return ok({ archivo: lee.result, tipo: "application/pdf" });
+        const img = new Image(); img.onload = () => { const k = Math.min(1, 1800 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); ok({ archivo: c.toDataURL("image/jpeg", .82), tipo: "image/jpeg" }); };
+        img.onerror = () => mal(new Error("No pude leer la foto.")); img.src = lee.result;
+      };
+      lee.onerror = () => mal(new Error("No pude leer el archivo.")); lee.readAsDataURL(f);
+    });
+  }
+  document.addEventListener("change", e => { if (e.target.id === "fMin" && e.target.files[0]) $("fMinT").textContent = "📎 " + e.target.files[0].name; });
+
+  /* ------------------------------- casa club y acuerdos ------------------------------- */
+  $("casaL").addEventListener("click", async e => {
+    const b = e.target.closest("[data-cc]"); if (!b) return;
+    b.parentNode.querySelectorAll("button").forEach(x => { x.disabled = true; });
+    const j = await enviar({ accion: "casaResolver", folio: b.dataset.cc, estatus: b.dataset.e }).catch(() => null);
+    if (j && j.ok) { J.casa = J.casa.filter(c => c.folio !== b.dataset.cc); pintarTodo(); } else { window.ventana("No se guardó", '<p class="exp">Intenta otra vez.</p>'); cargar(); }
+  });
+  function pintarAcuerdos() {
+    const L = (J.acuerdos || []).slice().sort((x, y) => (x.estado === "Cumplido") - (y.estado === "Cumplido") || (y.fecha > x.fecha ? 1 : -1));
+    $("avs").innerHTML = L.length ? L.map(a => '<div class="av ' + esc(a.estado.split(" ")[0]) + '"><div><b>' + esc(a.acuerdo) + "</b><small>" + esc([a.responsable && "👤 " + a.responsable, a.compromiso && "📅 " + a.compromiso, R.fechaCorta(a.fecha)].filter(Boolean).join(" · ")) + '</small></div><button type="button" class="est ' + esc(a.estado) + '" data-fila="' + a.fila + '">' + esc(a.estado) + "</button></div>").join("")
+      : '<p class="tip">Aquí aparecen los acuerdos al cerrar cada reunión.</p>';
+  }
+  $("avs").addEventListener("click", async e => {
+    const b = e.target.closest("[data-fila]"); if (!b) return;
+    const E = ["Pendiente", "En curso", "Cumplido"], a = J.acuerdos.find(x => x.fila === +b.dataset.fila), nuevo = E[(E.indexOf(a.estado) + 1) % 3];
+    const ant = a.estado; a.estado = nuevo; pintarAcuerdos();
+    const j = await enviar({ accion: "acuerdoEstado", fila: a.fila, estado: nuevo }).catch(() => null);
+    if (!j || !j.ok) { a.estado = ant; pintarAcuerdos(); }
+  });
+
+  if (clave) cargar(); else pedir();
+})();
+</script>
+<script src="js/letra.js"></script>
+</body>
+</html>
