@@ -70,13 +70,13 @@
     <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
     <nav class="main">
       <a href="index.html">Inicio</a>
-      <a href="asamblea.html">Asamblea 13 oct</a>
-      <a href="reglamento.html">Reglamento</a>
-      <a href="areas-comunes.html">Áreas comunes</a>
-      <a href="pendientes.html">Pendientes</a>
-      <a href="finanzas.html">Finanzas</a>
+      <a href="mi-depto.html">Mi depto</a>
       <a href="pago.html" class="active">Registrar pago</a>
       <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
       <a href="ayuda.html">Ayuda</a>
     </nav>
   </div>
@@ -85,6 +85,7 @@
 <main class="pago">
   <h1>Registrar mi pago</h1>
   <p class="lead">Ya hiciste la transferencia. Avísalo aquí en lugar del grupo: queda <strong>en espera</strong> hasta que la mesa directiva la confirme en el banco.</p>
+  <a id="verDepto" href="mi-depto.html" style="display:flex;justify-content:space-between;align-items:center;gap:.6rem;text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:.8rem 1rem;margin:0 0 1.1rem;font-weight:700">🏠 ¿Cuánto debo? Ver mi depto, mes por mes <span style="color:var(--accent)">›</span></a>
   <p id="cuentaTxt" class="pista hidden" style="text-align:left;margin:-0.6rem 0 1rem"></p>
   <div id="aviso" class="notice hidden"></div>
 
@@ -198,6 +199,7 @@ function elegirDepto(n) {
   depto = n;
   [...deptos.children].forEach(x => x.classList.toggle("sel", +x.dataset.n === n));
   try { localStorage.setItem("misiones_depto", n); } catch (e) {}
+  const vd = document.getElementById("verDepto"); if (vd) { vd.href = "mi-depto.html?depto=" + n; vd.firstChild.textContent = "🏠 ¿Cuánto debe el depto " + n + "? Ver mes por mes "; }
   cargarEstado(n);
   validar();
 }

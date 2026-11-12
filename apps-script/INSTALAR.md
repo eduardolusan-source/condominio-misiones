@@ -314,3 +314,11 @@ correo y cuáles faltan.
 
 Para activarlo: pega `Code.gs` y `Condominio.gs` nuevos → Implementar → Administrar implementaciones → lápiz →
 Nueva versión. La primera vez Google puede pedir de nuevo el permiso de enviar correo.
+
+## Mi depto y nuevo Inicio (12 de noviembre de 2026)
+- Página nueva `mi-depto.html`: cada departamento ve lo que debe hoy y, desglosado, el mantenimiento mes por
+  mes desde octubre, el agua recibo por recibo, lo de antes de octubre (hoja maestra, si Config → adeudos =
+  mostrar) y los pagos que reportó. Abierta, por decisión de la mesa. Liga desde Inicio y Registrar pago.
+- Inicio rediseñado: «¿Qué necesitas?» con ocho accesos y «Así vamos» en vivo (caja, cuántos pagaron, cuotas
+  atrasadas agregadas y cuántos reciben el reporte). Menú igual en todas las páginas.
+- Para activarlo: pega `Code.gs` y `Condominio.gs` nuevos → Nueva versión.

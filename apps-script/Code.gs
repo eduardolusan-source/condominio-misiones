@@ -367,6 +367,7 @@ function doGet(e) {
     if (p.accion === "pendientes") return json_(pendientes_(p.clave));
     if (p.accion === "imagen") return json_(imagen_(p.clave, p.folio));
     if (p.accion === "cuentas") return json_(cuentasDepto_(parseInt(p.depto, 10)));
+    if (p.accion === "midepto") return json_(miDepto_(parseInt(p.depto, 10)));      // mi-depto.html (Condominio.gs)
     if (p.accion === "lecturas") { asegurarAgua_(true); return json_(lecturasMes_(p.mes, p.clave)); }
     if (p.accion === "agua") { asegurarAgua_(true); return json_(aguaDepto_(parseInt(p.depto, 10))); }
     if (p.accion === "votos") return json_(votos_());
@@ -1387,6 +1388,7 @@ function finanzas_(fresh) {
     pagosFuturos: futuros.map(f => ({ id: f.id, nombre: f.nombre, manto: f.ingresos.manto, pagaron: f.cobranza.pagaron })),
     caja: { saldo: ultimo ? ultimo.saldoFin : 0, ultimoMes: ultimo ? ultimo.id : "", saldoInicialVivo: meses.length ? meses[0].saldoIni : 0, previos: previos, totalPrevios: totalPrevios }
   };
+  try { if (typeof deptosConCorreo_ === "function") { const dc = deptosConCorreo_(); out.correos = { con: dc.con, total: UNIDADES }; } } catch (e) {}
   try { cache.put("finanzas", JSON.stringify(out), CACHE_FINANZAS); } catch (e) {}
   return out;
 }

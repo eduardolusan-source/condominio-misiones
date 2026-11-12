@@ -7,6 +7,23 @@
 <title>Las Misiones Residencial</title>
 <link rel="stylesheet" href="css/styles.css?v=20261011">
 <link rel="icon" href="assets/mark.svg">
+<style>
+  .hero-compacto { padding-bottom: 1.2rem; } .hero-compacto .lead { margin-bottom: 0; }
+  .acc { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; }
+  @media (min-width: 760px) { .acc { grid-template-columns: repeat(4, 1fr); } }
+  .ac { display: flex; flex-direction: column; gap: .1rem; min-height: 108px; padding: .9rem 1rem; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; transition: transform .15s, border-color .15s; }
+  .ac:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .ac span { font-size: 1.7rem; line-height: 1; margin-bottom: .35rem; } .ac b { font-size: 1.02rem; } .ac small { color: var(--ink-2); font-size: .82rem; }
+  .ac.prim { background: var(--accent); border-color: var(--accent); color: #fff; } .ac.prim small { color: rgba(255,255,255,.85); }
+  @media (prefers-color-scheme: dark) { .ac.prim { color: #0d0d0d; } .ac.prim small { color: rgba(0,0,0,.7); } }
+  .kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; }
+  @media (min-width: 760px) { .kpis { grid-template-columns: repeat(4, 1fr); } }
+  .kpi { position: relative; overflow: hidden; padding: .9rem 1rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); text-decoration: none; color: var(--ink); }
+  .kpi b { display: block; font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .kpi b.mal { color: var(--bad-text); } .kpi b.bien { color: var(--good-text); }
+  .kpi span { color: var(--ink-2); font-size: .85rem; }
+  .kpi i { position: absolute; left: 0; bottom: 0; height: 5px; width: var(--w); background: var(--accent); }
+</style>
 </head>
 <body>
 <header class="site-header">
@@ -16,55 +33,44 @@
     <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
     <nav class="main">
       <a href="index.html" class="active">Inicio</a>
-      <a href="asamblea.html">Asamblea 13 oct</a>
-      <a href="reglamento.html">Reglamento</a>
-      <a href="areas-comunes.html">Áreas comunes</a>
-      <a href="pendientes.html">Pendientes</a>
-      <a href="finanzas.html">Finanzas</a>
+      <a href="mi-depto.html">Mi depto</a>
       <a href="pago.html">Registrar pago</a>
       <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
       <a href="ayuda.html">Ayuda</a>
     </nav>
   </div>
 </header>
 
-<section class="hero">
+<section class="hero hero-compacto">
   <p class="kicker">Senda Eterna 444 · Milenio III · Querétaro</p>
   <h1 class="logo-h1"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="hero-logo" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></h1>
-  <p class="lead">Conjunto habitacional en condominio de 16 unidades privativas. Portal informativo para propietarios y residentes: reglamento del condominio, áreas comunes, pendientes de la mesa directiva y rendición de cuentas.</p>
-  <div class="cta-row">
-    <a class="btn primary" href="pago.html">Registrar mi pago</a>
-    <a class="btn ghost" href="finanzas.html">Ver finanzas</a>
-    <a class="btn ghost" href="correo.html">📩 Recibe el reporte por correo</a>
-    <a class="btn ghost" href="pendientes.html">Pendientes</a>
-    <a class="btn ghost" href="reglamento.html">Consultar el reglamento</a>
-  </div>
+  <p class="lead">16 departamentos, una sola mesa directiva y las cuentas a la vista.</p>
 </section>
 
 <main class="wrap">
-  <div class="notice" style="margin-top:0">📣 <strong>Asamblea de propietarios: martes 13 de octubre, 7:00 pm.</strong> Nos quedamos sin administrador y hay que decidir cómo pagar la deuda con la CEA, quién administra, cómo reconstruimos las cuentas y qué hacemos con Víctor. Todo lo que sabemos, en una sola página: <a href="asamblea.html">ver la convocatoria y la información</a>.</div>
-  <div class="cards">
-    <a class="card" href="reglamento.html">
-      <div class="icon">📖</div>
-      <h3>Reglamento del condominio</h3>
-      <p>El reglamento protocolizado ante notario, explicado en lenguaje claro: uso de las unidades, partes comunes, cuotas, administración, asambleas y controversias.</p>
-    </a>
-    <a class="card" href="areas-comunes.html">
-      <div class="icon">🏛️</div>
-      <h3>Áreas comunes</h3>
-      <p>Qué es área común según el reglamento, cómo se usa cada espacio y qué reglas aplican al acceso, al estacionamiento y al elevador.</p>
-    </a>
-    <a class="card" href="pendientes.html">
-      <div class="icon">🗓️</div>
-      <h3>Pendientes</h3>
-      <p>Acuerdos de asamblea y de la reunión mensual de la mesa directiva, con responsable, fecha compromiso y estatus, y la convocatoria a la siguiente reunión.</p>
-    </a>
-    <a class="card" href="finanzas.html">
-      <div class="icon">📊</div>
-      <h3>Finanzas</h3>
-      <p>Rendición de cuentas de 2025 y de enero a junio de 2026: ingresos, egresos, saldo, agua, morosidad agregada y la revisión de los documentos. Sección abierta, sin clave. Actualizada a junio; falta que la administración reporte julio y agosto a la fecha.</p>
-    </a>
+  <h2 class="section-title" style="margin-top:.4rem">¿Qué necesitas?</h2>
+  <div class="acc">
+    <a class="ac prim" href="mi-depto.html"><span>🏠</span><b>Mi depto</b><small>lo que debo, mes por mes</small></a>
+    <a class="ac" href="pago.html"><span>💳</span><b>Registrar un pago</b><small>sube tu comprobante</small></a>
+    <a class="ac" href="agua.html"><span>💧</span><b>Mi recibo de agua</b><small>lectura y cargo del mes</small></a>
+    <a class="ac" href="finanzas.html"><span>📊</span><b>Las cuentas</b><small>en qué se gasta tu cuota</small></a>
+    <a class="ac" href="correo.html"><span>📩</span><b>Recibe el reporte</b><small>cada día 10 en tu correo</small></a>
+    <a class="ac" href="pendientes.html"><span>🗓️</span><b>Pendientes y acuerdos</b><small>qué se decidió y quién lo hace</small></a>
+    <a class="ac" href="reglamento.html"><span>📖</span><b>Reglamento</b><small>en lenguaje claro</small></a>
+    <a class="ac" href="ayuda.html"><span>💬</span><b>Ayuda</b><small>preguntas frecuentes</small></a>
   </div>
+
+  <h2 class="section-title">Así vamos</h2>
+  <p class="section-sub" id="avSub">Desde la hoja de la mesa directiva.</p>
+  <div class="kpis" id="kpis">
+    <div class="kpi"><b>…</b><span>saldo en caja</span></div><div class="kpi"><b>…</b><span>pagaron este mes</span></div><div class="kpi"><b>…</b><span>cuotas atrasadas</span></div><div class="kpi"><b>…</b><span>reciben el reporte</span></div>
+  </div>
+
+  <a class="card" href="acuerdos.html" style="display:block;margin-top:1rem"><h3>📣 Asamblea del 13 de octubre: lo que se acordó</h3><p>Administración por la mesa directiva, reconstrucción de las cuentas, deuda con la CEA y responsables de cada tarea.</p></a>
 
   <h2 class="section-title">Lo que más se pregunta</h2>
   <p class="section-sub">Los datos del reglamento vigente que conviene tener a la mano.</p>
@@ -161,5 +167,28 @@
     Las Misiones Residencial · Senda Eterna 444, Fraccionamiento Milenio III, Santiago de Querétaro, Qro. · Contenido basado en el Reglamento de Condominio y Administración del Conjunto &ldquo;Misiones&rdquo;, en la minuta de la mesa directiva del 10 de agosto de 2026 y en las tablas contables y estados de cuenta entregados por la administración (corte: junio de 2026). Los datos señalados como propuesta o por definir son ilustrativos y no forman parte del reglamento vigente. Sitio informativo temporal. · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a> · <a href="guia-mesa.html">Guía de la mesa directiva</a>
   </div>
 </footer>
+<script>
+(function () {
+  "use strict";
+  const URL_ = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+  const $0 = v => (v < 0 ? "−$" : "$") + Math.round(Math.abs(v)).toLocaleString("es-MX");
+  const MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  function pintar(j) {
+    const ms = (j.meses || []).filter(m => !j.hoy || m.id <= j.hoy); if (!ms.length) return;
+    const u = ms[ms.length - 1], ant = ms.filter(m => !m.enCurso).slice(-1)[0] || u, mora = (ant.mora || {}).acumulada || 0, uds = (ant.mora || {}).unidades || 0;
+    const pag = (u.cobranza || {}).pagaron || 0, U = j.unidades || 16, c = j.correos;
+    const k = [
+      ['<b class="' + (u.saldoFin < 0 ? "mal" : "") + '">' + $0(u.saldoFin) + "</b><span>saldo en caja" + (u.enCurso ? " · hoy" : "") + "</span>", "finanzas.html"],
+      ["<b>" + pag + "/" + U + "</b><span>pagaron " + MES[parseInt(u.id.slice(5), 10) - 1] + '</span><i style="--w:' + Math.round(pag / U * 100) + '%"></i>', "finanzas.html#meses"],
+      ['<b class="' + (mora > 0.5 ? "mal" : "bien") + '">' + (mora > 0.5 ? $0(mora) : "$0") + "</b><span>cuotas atrasadas" + (uds ? " · " + uds + (uds === 1 ? " depto" : " deptos") : "") + "</span>", "finanzas.html#morosidad"],
+      c ? ["<b>" + c.con + "/" + c.total + "</b><span>reciben el reporte</span><i style=\"--w:" + Math.round(c.con / c.total * 100) + '%"></i>', "correo.html"] : ["<b>📩</b><span>registra tu correo</span>", "correo.html"]
+    ];
+    document.getElementById("kpis").innerHTML = k.map(x => '<a class="kpi" href="' + x[1] + '">' + x[0] + "</a>").join("");
+    document.getElementById("avSub").textContent = "En vivo desde la hoja de la mesa directiva · " + (u.enCurso ? "avance de " + MES[parseInt(u.id.slice(5), 10) - 1] : "cierre de " + MES[parseInt(u.id.slice(5), 10) - 1]) + ".";
+  }
+  try { const g = JSON.parse(localStorage.getItem("misiones.finanzas.vivo") || "null"); if (g && g.ok) pintar(g); } catch (e) {}
+  fetch(URL_ + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => { if (j && j.ok) { pintar(j); try { localStorage.setItem("misiones.finanzas.vivo", JSON.stringify(j)); } catch (e) {} } }).catch(() => {});
+})();
+</script>
 </body>
 </html>
