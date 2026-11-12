@@ -315,6 +315,18 @@ function miDepto_(depto) {
     agua.push({ mes: mesAgua, nombre: capitalizar_(MESES[parseInt(mesAgua.slice(5), 10) - 1]) + " " + mesAgua.slice(0, 4), consumo: Number(f[4]) || 0, cargo: Math.round(cargo * 100) / 100, pagado: f[9] !== "" && f[9] != null });
   });
   agua.sort((a, b) => a.mes < b.mes ? -1 : 1);
+  /* El agua de antes de finanzas_desde (p. ej. la de septiembre, que se lee el 9 de octubre) es de la
+     administración anterior: no se cobra. */
+  for (let i = agua.length - 1; i >= 0; i--) if (desde && agua[i].mes < desde) agua.splice(i, 1);
+  /* Cuota extraordinaria (Config): lo pagado en la columna Extraordinario de cualquier pestaña de mes. */
+  const exMonto = Number(cfg.extraordinario_monto) || 0, exNombre = String(cfg.extraordinario_nombre || "Cuota extraordinaria").trim();
+  let exPagado = 0;
+  ss.getSheets().forEach(h => {
+    if (!esHojaMes_(h) || h.getName() === PLANTILLA) return;
+    const vals = h.getRange(1, 2, 120, 4).getValues(), et = vals.map(f => normEt_(f[0])), fC = et.indexOf("cobrospordepartamento");
+    if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) if (et[i] === "depto" + depto) { exPagado += Number(vals[i][3]) || 0; break; }
+  });
+  const extraordinaria = exMonto > 0 ? { nombre: exNombre, monto: exMonto, pagado: Math.round(exPagado * 100) / 100, pendiente: Math.round(Math.max(0, exMonto - exPagado) * 100) / 100 } : null;
   let saldoManto = 0, adelantado = 0;
   meses.forEach(m => { m.diferencia = Math.round((m.manto - m.cuota) * 100) / 100; if (m.futuro) adelantado += m.manto; else saldoManto += m.manto - m.cuota; });
   const aguaPendiente = agua.filter(a => !a.pagado).reduce((s, a) => s + a.cargo, 0);
@@ -330,7 +342,7 @@ function miDepto_(depto) {
   const est = estadoDepto_(depto);
   return {
     ok: true, depto: depto, cuota: cuota, desde: desde, hoy: hoyId,
-    total: Math.round((debeManto + aguaPendiente) * 100) / 100, debeManto: Math.round(debeManto * 100) / 100, aFavor: Math.round(aFavor * 100) / 100, adelantado: Math.round(adelantado * 100) / 100, aguaPendiente: Math.round(aguaPendiente * 100) / 100,
+    total: Math.round((debeManto + aguaPendiente + (extraordinaria ? extraordinaria.pendiente : 0)) * 100) / 100, extraordinaria: extraordinaria, debeManto: Math.round(debeManto * 100) / 100, aFavor: Math.round(aFavor * 100) / 100, adelantado: Math.round(adelantado * 100) / 100, aguaPendiente: Math.round(aguaPendiente * 100) / 100,
     meses: meses, agua: agua, previo: previo, previoEnRevision: !previo, pagos: est.pagos || [], cuenta: est.cuenta || ""
   };
 }
