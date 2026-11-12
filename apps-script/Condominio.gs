@@ -194,6 +194,10 @@ function salud_() {
     if (viejos.length) aviso(viejos.length + (viejos.length === 1 ? " pago reportado lleva" : " pagos reportados llevan") + " más de una semana sin confirmar en la bandeja.");
   }
 
+  /* 3b · Reservas de casa club por confirmar */
+  try { const pc = filasRcc_().filter(f => /por confirmar/i.test(String(f[6] || "Por confirmar")) && diaIso_(f[2]) >= Utilities.formatDate(hoy, zona, "yyyy-MM-dd"));
+    if (pc.length) aviso(pc.length + " reserva(s) de casa club por confirmar: " + pc.map(f => f[0] + " (depto " + f[4] + ", " + diaIso_(f[2]) + ")").join(", ") + "."); } catch (e) {}
+
   /* 4 · Configuración */
   if (!String(cfg.clave_admin || "").trim() && CLAVE_ADMIN === "cambia-esta-clave") alerta("La bandeja de pagos usa la clave de ejemplo. Menú Condominio → Cambiar la clave de la bandeja de pagos.");
   if (String(cfg.clave_lector || "agua").trim() === "agua") aviso("La clave de lecturas.html sigue siendo «agua» (Config → clave_lector).");
@@ -364,4 +368,72 @@ function pendientesPorCelda_(ss) {
     celdas.split(";").forEach(r => { const p = r.split("="); const m = Number(p[p.length - 1]); if (p[0] && isFinite(m)) out[p[0]] = (out[p[0]] || 0) + m; });
   });
   return out;
+}
+
+/* ---------- Reservas de la casa club (casa-club.html) ---------- */
+/* Pestaña «Reservas casa club». El vecino pide día y horario; la mesa cambia el Estatus a Confirmada o
+   Rechazada en la hoja. El calendario público muestra solo días y horarios ocupados (sin depto). */
+const HOJA_RCC = "Reservas casa club";
+const ENC_RCC = ["Folio", "Solicitada el", "Día", "Horario", "Depto", "Correo (privado)", "Estatus", "Nota de la mesa"];
+const HORARIOS_CC = ["Mañana · 9 a 14 h", "Tarde · 15 a 20 h", "Noche · 19 a 23 h", "Día completo"];
+
+function hojaRcc_() {
+  const ss = SpreadsheetApp.getActive();
+  let h = ss.getSheetByName(HOJA_RCC);
+  if (!h) {
+    h = ss.insertSheet(HOJA_RCC);
+    h.getRange(1, 1, 1, ENC_RCC.length).setValues([ENC_RCC]).setFontWeight("bold"); h.setFrozenRows(1);
+    try { h.getRange(2, 7, 500, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(["Por confirmar", "Confirmada", "Rechazada", "Cancelada"], true).setAllowInvalid(true).build()); } catch (e) {}
+  }
+  return h;
+}
+function filasRcc_() { const h = SpreadsheetApp.getActive().getSheetByName(HOJA_RCC); return h && h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, ENC_RCC.length).getValues() : []; }
+function diaIso_(v) { return Object.prototype.toString.call(v) === "[object Date]" ? Utilities.formatDate(v, "America/Mexico_City", "yyyy-MM-dd") : String(v || "").slice(0, 10); }
+const activaRcc_ = f => /por confirmar|confirmada/i.test(String(f[6] || "Por confirmar"));
+const chocaRcc_ = (a, b) => a === b || a === "Día completo" || b === "Día completo" || (/Tarde/.test(a) && /Noche/.test(b)) || (/Noche/.test(a) && /Tarde/.test(b));
+
+function reservasCasa_(depto) {
+  const hoy = Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM-dd"), cfg = config_();
+  const filas = filasRcc_();
+  const ocupados = filas.filter(f => activaRcc_(f) && diaIso_(f[2]) >= hoy).map(f => ({ dia: diaIso_(f[2]), horario: String(f[3]), estatus: /confirmada/i.test(String(f[6])) ? "ocupado" : "apartado" }));
+  const r = { ok: true, ocupados: ocupados, horarios: HORARIOS_CC, costo: Number(cfg.casa_club_monto) || 500,
+    reglas: String(cfg.reglas_casa_club || "Sujeto a confirmación de la mesa. Hasta 90 días antes, 2 reservas activas por depto.") };
+  const d = parseInt(depto, 10);
+  if (d >= 1 && d <= UNIDADES) r.mias = filas.filter(f => Number(f[4]) === d && diaIso_(f[2]) >= hoy).map(f => ({ folio: String(f[0]), dia: diaIso_(f[2]), horario: String(f[3]), estatus: String(f[6] || "Por confirmar"), nota: String(f[7] || "") }));
+  return r;
+}
+
+function reservarCasa_(d) {
+  if (String(d.web || "").trim()) return { ok: true, folio: "" };
+  const depto = parseInt(d.depto, 10), dia = String(d.dia || "").slice(0, 10), horario = String(d.horario || "");
+  if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
+  if (HORARIOS_CC.indexOf(horario) < 0) return { ok: false, error: "horario" };
+  const hoy = Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM-dd"), tope = Utilities.formatDate(new Date(Date.now() + 90 * 864e5), "America/Mexico_City", "yyyy-MM-dd");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia) || dia < hoy) return { ok: false, error: "dia" };
+  if (dia > tope) return { ok: false, error: "lejos" };
+  const correo = String(d.correo || "").trim().toLowerCase();
+  if (correo && !/^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/.test(correo)) return { ok: false, error: "correo" };
+  const filas = filasRcc_();
+  if (filas.some(f => activaRcc_(f) && diaIso_(f[2]) === dia && chocaRcc_(String(f[3]), horario))) return { ok: false, error: "ocupado" };
+  if (filas.filter(f => Number(f[4]) === depto && activaRcc_(f) && diaIso_(f[2]) >= hoy).length >= 2) return { ok: false, error: "tope" };
+  const props = PropertiesService.getScriptProperties(), n = Number(props.getProperty("folio_casa") || 0) + 1;
+  props.setProperty("folio_casa", String(n));
+  const folio = "CC-" + ("000" + n).slice(-4), h = hojaRcc_();
+  h.getRange(h.getLastRow() + 1, 1, 1, ENC_RCC.length).setValues([[folio, new Date(), dia, horario, depto, correo, "Por confirmar", ""]]);
+  h.getRange(h.getLastRow(), 3).setNumberFormat("yyyy-mm-dd");
+  const cfg = config_(), copia = String(cfg.reporte_copia || Session.getEffectiveUser().getEmail());
+  MailApp.sendEmail(copia, "Casa club: reserva por confirmar " + folio, "Depto " + depto + " pide la casa club el " + dia + " (" + horario + ").\n\nConfírmala o recházala en la pestaña «" + HOJA_RCC + "» (columna Estatus).", { name: REP_REMITENTE });
+  if (correo) MailApp.sendEmail(correo, "Recibimos tu reserva de la casa club " + folio, "Día: " + dia + " · " + horario + "\nEstatus: por confirmar.\n\nLa mesa directiva te confirmará. Puedes verla en la página «Casa club» del sitio.", { name: REP_REMITENTE });
+  return { ok: true, folio: folio };
+}
+
+function cancelarCasa_(d) {
+  const folio = String(d.folio || "").trim().toUpperCase(), depto = parseInt(d.depto, 10);
+  const h = SpreadsheetApp.getActive().getSheetByName(HOJA_RCC);
+  const filas = filasRcc_(), i = filas.findIndex(f => String(f[0]).toUpperCase() === folio && Number(f[4]) === depto);
+  if (!h || i < 0) return { ok: false, error: "no encontrado" };
+  h.getRange(i + 2, 7).setValue("Cancelada");
+  const cfg = config_();
+  MailApp.sendEmail(String(cfg.reporte_copia || Session.getEffectiveUser().getEmail()), "Casa club: reserva cancelada " + folio, "Depto " + depto + " canceló su reserva del " + diaIso_(filas[i][2]) + " (" + filas[i][3] + "). El horario quedó libre.", { name: REP_REMITENTE });
+  return { ok: true };
 }

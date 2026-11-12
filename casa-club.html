@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Casa club · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+
+<style>
+  .pg { max-width: 640px; margin: 0 auto; padding: 1.25rem 1rem 4rem; } .pg h1 { font-size: 1.7rem; margin: .4rem 0 .5rem; }
+  .cc-top { display: flex; flex-wrap: wrap; gap: .4rem .8rem; align-items: center; margin: 0 0 .8rem; } .cc-top .chip { font-weight: 800; padding: .3rem .8rem; border-radius: 999px; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  .cal { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: .9rem; box-shadow: var(--shadow); }
+  .cal-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; } .cal-h b { font-size: 1.15rem; text-transform: capitalize; }
+  .cal-h button { font: inherit; font-size: 1.4rem; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border); background: var(--page); color: var(--ink); cursor: pointer; } .cal-h button:disabled { opacity: .3; cursor: default; }
+  .cal-s, .cal-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: .3rem; } .cal-s span { text-align: center; font-size: .72rem; font-weight: 800; color: var(--muted); text-transform: uppercase; }
+  .d { position: relative; aspect-ratio: 1; font: inherit; font-weight: 700; font-size: 1rem; border-radius: 12px; border: 1px solid var(--border); background: var(--page); color: var(--ink); cursor: pointer; display: grid; place-items: center; }
+  .d:disabled { opacity: .3; cursor: default; } .d.hoy { box-shadow: inset 0 0 0 2px var(--accent); }
+  .d.parcial { background: #fff3cd; border-color: #f0d58a; color: #5a4300; } .d.lleno { background: #f8d7da; border-color: #eeb4ba; color: #7a1c24; }
+  .d.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .d i { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .7; }
+  .ley { display: flex; flex-wrap: wrap; gap: .3rem .9rem; font-size: .8rem; color: var(--ink-2); margin-top: .6rem; } .ley span::before { content: ""; display: inline-block; width: .8rem; height: .8rem; border-radius: 4px; margin-right: .3rem; vertical-align: -2px; border: 1px solid var(--border); background: var(--page); }
+  .ley .p::before { background: #fff3cd; } .ley .l::before { background: #f8d7da; }
+  .paso { margin-top: 1rem; } .paso h2 { font-size: 1.05rem; margin: 0 0 .5rem; }
+  .hs { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; }
+  .h { font: inherit; text-align: left; padding: .75rem .8rem; border-radius: 14px; border: 2px solid var(--baseline); background: var(--surface); color: var(--ink); cursor: pointer; min-height: 60px; }
+  .h b { display: block; } .h small { color: var(--muted); } .h:disabled { opacity: .45; cursor: default; text-decoration: line-through; } .h.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface)); } .h.sel b::before { content: "✓ "; }
+  .deptos { display: grid; grid-template-columns: repeat(8, 1fr); gap: .35rem; } @media (max-width: 520px) { .deptos { grid-template-columns: repeat(4, 1fr); } }
+  .deptos button { font: inherit; font-weight: 700; font-size: 1.05rem; min-height: 46px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; } .deptos button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .in { width: 100%; font: inherit; font-size: 1rem; padding: .75rem .9rem; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); }
+  .go { display: block; width: 100%; margin-top: 1rem; font: inherit; font-weight: 800; font-size: 1.1rem; min-height: 56px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; cursor: pointer; } .go:disabled { opacity: .45; cursor: default; }
+  .mias { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .mia { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .75rem 1rem; border-top: 1px solid var(--grid); } .mia:first-child { border-top: 0; } .mia small { display: block; color: var(--muted); }
+  .est { font-size: .78rem; font-weight: 800; padding: .15rem .55rem; border-radius: 999px; white-space: nowrap; } .est.ok { background: #d4edda; color: #1d5a2a; } .est.pen { background: #fff3cd; color: #7a5a00; } .est.no { background: #f8d7da; color: #7a1c24; }
+  .x { font: inherit; font-size: .85rem; font-weight: 700; border: 0; background: none; color: var(--bad-text); cursor: pointer; text-decoration: underline; }
+  .pasos3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; margin-top: .9rem; font-size: .8rem; font-weight: 700; text-align: center; } .pasos3 span { padding: .45rem .2rem; border-radius: 10px; background: var(--page); border: 1px solid var(--border); color: var(--muted); } .pasos3 .ok { background: #d4edda; color: #1d5a2a; border-color: transparent; } .pasos3 .pen { background: #fff3cd; color: #7a5a00; border-color: transparent; }
+  .trampa { position: absolute; left: -9999px; }
+  @media (prefers-color-scheme: dark) { .d.sel, .deptos button.sel, .go { color: #0d0d0d; } .d.parcial, .ley .p::before { background: #5a4300; color: #ffe08a; } .d.lleno, .ley .l::before { background: #5a1d22; color: #ffb3b9; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="mi-depto.html">Mi depto</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="ayuda.html">Ayuda</a>
+    </nav>
+  </div>
+</header>
+<main class="pg">
+  <h1>🏠 Casa club</h1>
+  <div class="cc-top"><span class="chip" id="costo">$500 por uso</span><small id="reglas" style="color:var(--ink-2)"></small></div>
+  <div class="cal">
+    <div class="cal-h"><button type="button" id="ant" aria-label="Mes anterior">‹</button><b id="mesT"></b><button type="button" id="sig" aria-label="Mes siguiente">›</button></div>
+    <div class="cal-s"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+    <div class="cal-g" id="grid"></div>
+    <div class="ley"><span>libre</span><span class="p">apartado en parte</span><span class="l">ocupado</span></div>
+  </div>
+  <section class="paso" id="pHor" hidden><h2 id="diaT"></h2><div class="hs" id="hs"></div></section>
+  <section class="paso" id="pDep" hidden><h2>¿Tu depto?</h2><div class="deptos" id="deptos"></div>
+    <input class="in" id="correo" type="email" inputmode="email" autocomplete="email" placeholder="Correo para avisarte (opcional)" style="margin-top:.6rem">
+    <div class="trampa" aria-hidden="true"><input id="web" tabindex="-1" autocomplete="off"></div>
+    <button class="go" id="go" disabled>Pedir la reserva</button></section>
+  <section class="paso" id="pMias" hidden><h2>📅 Tus reservas</h2><div class="mias" id="mias"></div></section>
+</main>
+<script>
+(function () {
+  "use strict";
+  const URL_ = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+  const $ = id => document.getElementById(id), esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  const MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"], DIA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const iso = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const hoy = new Date(); hoy.setHours(12, 0, 0, 0); const HOY = iso(hoy), TOPE = iso(new Date(hoy.getTime() + 90 * 864e5));
+  const choca = (a, b) => a === b || a === "Día completo" || b === "Día completo" || (/Tarde/.test(a) && /Noche/.test(b)) || (/Noche/.test(a) && /Tarde/.test(b));
+  const largo = s => { const d = new Date(s + "T12:00:00"); return DIA[d.getDay()] + " " + d.getDate() + " de " + MES[d.getMonth()]; };
+  let D = { ocupados: [], horarios: ["Mañana · 9 a 14 h", "Tarde · 15 a 20 h", "Noche · 19 a 23 h", "Día completo"], costo: 500 }, mes = new Date(hoy.getFullYear(), hoy.getMonth(), 1), dia = null, hor = null, depto = null;
+  try { const g = +localStorage.getItem("misiones_depto"); if (g >= 1 && g <= 16) depto = g; } catch (e) {}
+  const delDia = s => D.ocupados.filter(o => o.dia === s);
+  const libres = s => D.horarios.filter(h => !delDia(s).some(o => choca(o.horario, h)));
+  function calendario() {
+    $("mesT").textContent = MES[mes.getMonth()] + " " + mes.getFullYear();
+    $("ant").disabled = mes.getFullYear() === hoy.getFullYear() && mes.getMonth() === hoy.getMonth();
+    const lim = new Date(TOPE + "T12:00:00"); $("sig").disabled = mes.getFullYear() * 12 + mes.getMonth() >= lim.getFullYear() * 12 + lim.getMonth();
+    const hueco = (mes.getDay() + 6) % 7, dias = new Date(mes.getFullYear(), mes.getMonth() + 1, 0).getDate();
+    let h = '<span></span>'.repeat(hueco);
+    for (let n = 1; n <= dias; n++) {
+      const s = iso(new Date(mes.getFullYear(), mes.getMonth(), n)), fuera = s < HOY || s > TOPE, oc = delDia(s), li = libres(s);
+      const cls = ["d", s === HOY ? "hoy" : "", oc.length ? (li.length ? "parcial" : "lleno") : "", s === dia ? "sel" : ""].join(" ");
+      h += '<button type="button" class="' + cls + '" data-d="' + s + '"' + (fuera || !li.length ? " disabled" : "") + ' aria-label="' + largo(s) + (oc.length ? (li.length ? ", apartado en parte" : ", ocupado") : ", libre") + '">' + n + (oc.length ? "<i></i>" : "") + "</button>";
+    }
+    $("grid").innerHTML = h;
+  }
+  function horarios() {
+    if (!dia) return; $("pHor").hidden = false; $("diaT").textContent = "⏰ " + largo(dia).replace(/^./, c => c.toUpperCase());
+    const li = libres(dia);
+    $("hs").innerHTML = D.horarios.map(x => { const [t, r] = x.split(" · "); const ok = li.indexOf(x) >= 0; return '<button type="button" class="h' + (x === hor ? " sel" : "") + '" data-h="' + esc(x) + '"' + (ok ? "" : " disabled") + "><b>" + esc(t) + "</b><small>" + (ok ? esc(r || "") : "ocupado") + "</small></button>"; }).join("");
+    $("pDep").hidden = false; validar();
+  }
+  function validar() { $("go").disabled = !(dia && hor && depto); [...$("deptos").children].forEach(b => b.classList.toggle("sel", +b.dataset.n === depto)); }
+  for (let i = 1; i <= 16; i++) { const b = document.createElement("button"); b.type = "button"; b.textContent = i; b.dataset.n = i; b.onclick = () => { depto = i; try { localStorage.setItem("misiones_depto", i); } catch (e) {} validar(); cargar(); }; $("deptos").appendChild(b); }
+  function mias() {
+    const M = D.mias || []; $("pMias").hidden = !M.length; if (!M.length) return;
+    $("mias").innerHTML = M.map(m => '<div class="mia"><span><b>' + esc(largo(m.dia)) + "</b><small>" + esc(m.horario) + " · " + esc(m.folio) + '</small></span><span><span class="est ' + (/confirmada/i.test(m.estatus) ? "ok" : /rechaz|cancel/i.test(m.estatus) ? "no" : "pen") + '">' + esc(m.estatus.toLowerCase()) + "</span>" + (/rechaz|cancel/i.test(m.estatus) ? "" : ' <button class="x" data-cancel="' + esc(m.folio) + '">cancelar</button>') + "</span></div>").join("");
+  }
+  async function cargar() {
+    try {
+      const r = await fetch(URL_ + "?accion=reservas" + (depto ? "&depto=" + depto : "") + "&t=" + Date.now(), { cache: "no-store" });
+      const j = await r.json();
+      if (j.ok && Array.isArray(j.ocupados)) {
+        D = Object.assign({ horarios: D.horarios }, j);
+        $("costo").textContent = "$" + (j.costo || 500).toLocaleString("es-MX") + " por uso";
+        $("reglas").textContent = j.reglas || "";
+      } else $("reglas").textContent = "El calendario se activa en cuanto la mesa actualice el servicio.";
+    } catch (e) { $("reglas").textContent = "No pudimos leer el calendario; intenta en un momento."; }
+    calendario(); horarios(); mias();
+  }
+  $("ant").onclick = () => { mes = new Date(mes.getFullYear(), mes.getMonth() - 1, 1); calendario(); };
+  $("sig").onclick = () => { mes = new Date(mes.getFullYear(), mes.getMonth() + 1, 1); calendario(); };
+  document.addEventListener("click", async e => {
+    const d = e.target.closest("[data-d]"); if (d && !d.disabled) { dia = d.dataset.d; if (hor && libres(dia).indexOf(hor) < 0) hor = null; calendario(); horarios(); $("pHor").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+    const h = e.target.closest("[data-h]"); if (h && !h.disabled) { hor = h.dataset.h; horarios(); return; }
+    const c = e.target.closest("[data-cancel]");
+    if (c) return ventana("¿Cancelar " + c.dataset.cancel + "?", '<p class="exp">El horario quedará libre para alguien más.</p><div class="acc"><a class="p" href="#" id="siCancelar" data-f="' + esc(c.dataset.cancel) + '">Sí, cancelar</a></div>', "No");
+    if (e.target.id === "siCancelar") { e.preventDefault(); document.querySelector("dialog.ve").close();
+      const r = await fetch(URL_, { method: "POST", body: JSON.stringify({ accion: "cancelarCasa", folio: e.target.dataset.f, depto: depto }), headers: { "Content-Type": "text/plain;charset=utf-8" } }).then(x => x.json()).catch(() => ({ ok: false }));
+      ventana(r.ok ? "✓ Cancelada" : "No se pudo", r.ok ? '<p class="exp">El horario quedó libre.</p>' : '<p class="exp">Intenta de nuevo en un momento.</p>'); cargar(); return; }
+    if (e.target.id === "go" && !e.target.disabled) return ventana("Revisa tu reserva", '<div class="cuenta-l"><span>📅 Día</span><b>' + esc(largo(dia)) + '</b></div><div class="cuenta-l"><span>⏰ Horario</span><b>' + esc(hor) + '</b></div><div class="cuenta-l"><span>🏠 Depto</span><b>' + depto + '</b></div><div class="cuenta-l tot"><span>Costo</span><span>$' + (D.costo || 500).toLocaleString("es-MX") + '</span></div><div class="acc"><a class="p" href="#" id="siReservar">Sí, pedirla</a></div>', "Corregir");
+    if (e.target.id === "siReservar") { e.preventDefault(); document.querySelector("dialog.ve").close(); $("go").disabled = true; $("go").textContent = "Enviando…";
+      const r = await fetch(URL_, { method: "POST", body: JSON.stringify({ accion: "reservaCasa", depto: depto, dia: dia, horario: hor, correo: $("correo").value, web: $("web").value }), headers: { "Content-Type": "text/plain;charset=utf-8" } }).then(x => x.json()).catch(() => ({ ok: false, error: "conexión" }));
+      $("go").textContent = "Pedir la reserva";
+      const ERR = { ocupado: "Ese horario se acaba de ocupar. Elige otro.", tope: "Tu depto ya tiene 2 reservas activas.", lejos: "Solo hasta 90 días antes.", dia: "Elige un día de hoy en adelante.", correo: "Revisa tu correo." };
+      if (r.ok) { ventana("✓ ¡Pedida! " + r.folio, '<div class="pasos3"><span class="ok">✓ Pedida</span><span class="pen">⏳ La mesa confirma</span><span>○ Pagas $' + (D.costo || 500).toLocaleString("es-MX") + '</span></div><div class="acc"><a class="p" href="pago.html?depto=' + depto + "&casa=" + (D.costo || 500) + '">💳 Registrar el pago de la casa club</a></div>');
+        dia = null; hor = null; $("pHor").hidden = true; }
+      else ventana("No se pudo", '<p class="exp">' + (ERR[r.error] || "Intenta de nuevo en un momento.") + "</p>");
+      cargar(); }
+  });
+  calendario(); cargar();
+})();
+</script>
+<footer class="site-footer"><div class="inner">Las Misiones Residencial · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a></div></footer>
+<script src="js/letra.js"></script>
+<script src="js/ventana.js"></script>
+</body>
+</html>
