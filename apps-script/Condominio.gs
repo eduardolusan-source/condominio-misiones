@@ -335,7 +335,16 @@ function miDepto_(depto) {
     const vals = h.getRange(1, 2, 120, 4).getValues(), et = vals.map(f => normEt_(f[0])), fC = et.indexOf("cobrospordepartamento");
     if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) if (et[i] === "depto" + depto) { exPagado += neto(h, i + 1, 5, vals[i][3]); break; }
   });
-  const extraordinaria = exMonto > 0 ? { nombre: exNombre, monto: exMonto, pagado: Math.round(exPagado * 100) / 100, pendiente: Math.round(Math.max(0, exMonto - exPagado) * 100) / 100 } : null;
+  /* Varias cuotas extraordinarias: Config → extraordinarias = «Nombre=monto | Nombre=monto», de la más vieja a la
+     más nueva. Lo pagado en la columna Extraordinario cubre primero la más vieja. Sin esa celda se usa la de siempre
+     (extraordinario_nombre / extraordinario_monto). */
+  const lista = String(cfg.extraordinarias || "").split("|").map(x => x.trim()).filter(Boolean).map(x => { const k = x.lastIndexOf("="); return { nombre: x.slice(0, k).trim(), monto: Number(String(x.slice(k + 1)).replace(/[^\d.]/g, "")) || 0 }; }).filter(x => x.nombre && x.monto > 0);
+  if (!lista.length && exMonto > 0) lista.push({ nombre: exNombre, monto: exMonto });
+  let bolsaEx = exPagado;
+  const extraordinarias = lista.map(x => { const pag = Math.min(x.monto, Math.max(0, bolsaEx)); bolsaEx -= pag; return { nombre: x.nombre, monto: x.monto, pagado: Math.round(pag * 100) / 100, pendiente: Math.round((x.monto - pag) * 100) / 100 }; });
+  const pendEx = extraordinarias.filter(x => x.pendiente > 0.5);
+  const extraordinaria = extraordinarias.length ? { nombre: (pendEx.length ? pendEx : extraordinarias).map(x => x.nombre).join(" + "), monto: extraordinarias.reduce((a, x) => a + x.monto, 0),
+    pagado: Math.round(exPagado * 100) / 100, pendiente: Math.round(extraordinarias.reduce((a, x) => a + x.pendiente, 0) * 100) / 100, detalle: extraordinarias } : null;
   let saldoManto = 0, adelantado = 0;
   meses.forEach(m => { m.diferencia = Math.round((m.manto - m.cuota) * 100) / 100; if (m.futuro) adelantado += m.manto; else saldoManto += m.manto - m.cuota; });
   const aguaPendiente = agua.filter(a => !a.pagado).reduce((s, a) => s + a.cargo, 0);
