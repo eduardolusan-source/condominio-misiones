@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Bienvenida · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+
+<style>
+  .pg { max-width: 640px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  .pg h1 { font-size: 1.7rem; margin: .4rem 0 .2rem; } .pg .lead { color: var(--ink-2); margin: 0 0 1rem; }
+  .tels { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: 0 0 1rem; }
+  .tel { display: block; text-align: center; text-decoration: none; font-weight: 800; padding: .85rem .6rem; border-radius: 14px; background: var(--accent); color: #fff; }
+  .tel.sec { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+  details.pr { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; margin: .5rem 0; padding: 0 1rem; }
+  details.pr summary { cursor: pointer; font-weight: 700; padding: .9rem 0; list-style: none; } details.pr summary::after { content: "+"; float: right; color: var(--muted); } details.pr[open] summary::after { content: "−"; }
+  details.pr ol { margin: 0 0 .8rem 1.1rem; padding: 0; color: var(--ink-2); } details.pr li { margin: .3rem 0; }
+  .grid { display: grid; gap: .6rem; } @media (min-width: 620px) { .grid { grid-template-columns: 1fr 1fr; } }
+  .t { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .9rem 1rem; } .t b { display: block; margin: .2rem 0; } .t span { color: var(--ink-2); font-size: .92rem; }
+  .wa { display: block; text-align: center; margin: 1rem 0; padding: .9rem; border-radius: 14px; background: #25d366; color: #fff; font-weight: 800; text-decoration: none; }
+  @media (prefers-color-scheme: dark) { .tel { color: #0d0d0d; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="mi-depto.html">Mi depto</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="ayuda.html">Ayuda</a>
+    </nav>
+  </div>
+</header>
+<main class="pg">
+  <h1>👋 Bienvenida</h1>
+  <p class="lead">Lo que necesitas en tu primera semana en Las Misiones, seas propietario o inquilino.</p>
+  <div class="grid">
+    <div class="t">💳<b>Tu cuota</b><span>$1,500 al mes por departamento, por adelantado. Transfiere y <a href="pago.html">registra tu pago</a>; en <a href="mi-depto.html">Mi depto</a> ves lo que llevas.</span></div>
+    <div class="t">💧<b>El agua</b><span>Se paga aparte, según tu medidor. Tu recibo y cómo se reparte, en <a href="agua.html">Agua</a>.</span></div>
+    <div class="t">📩<b>Las cuentas</b><span>Cada día 10 sale el reporte del mes. <a href="correo.html">Registra tu correo</a> y te llega solo.</span></div>
+    <div class="t">📖<b>Las reglas</b><span>Solo casa habitación; si rentas, entrega copia del contrato. <a href="reglamento.html">Reglamento</a> y <a href="areas-comunes.html">áreas comunes</a>.</span></div>
+    <div class="t">🚪<b>Acceso y cámaras</b><span>Technosecurity · <a href="tel:+524427493002">442 749 3002</a>. Las fallas, a la mesa directiva.</span></div>
+    <div class="t">🚨<b>Emergencias</b><span>Fuga, luz, elevador, gas o sismo: <a href="emergencias.html">qué hacer si…</a></span></div>
+  </div>
+  <a class="wa" href="https://wa.me/?text=%F0%9F%91%8B%20Bienvenida%20a%20Las%20Misiones%20Residencial%0A%0A%F0%9F%92%B3%20Mantenimiento%3A%20%241%2C500%20al%20mes%20por%20departamento%2C%20por%20adelantado.%20Paga%20por%20transferencia%20y%20registra%20tu%20pago%20en%20el%20sitio.%0A%F0%9F%93%A9%20Recibe%20las%20cuentas%20cada%20d%C3%ADa%2010%3A%20reg%C3%ADstrate%20en%20el%20sitio.%0A%F0%9F%92%A7%20El%20agua%20se%20paga%20aparte%2C%20seg%C3%BAn%20tu%20medidor.%0A%F0%9F%9A%A8%20Emergencias%3A%20p%C3%A1gina%20%C2%ABQu%C3%A9%20hacer%20si%E2%80%A6%C2%BB.%0A%0ATodo%20en%3A%20https%3A//eduardolusan-source.github.io/condominio-misiones/" target="_blank" rel="noopener">Compartir la bienvenida por WhatsApp</a>
+  <p class="lead">Ideal para mandarla a quien llega a vivir o a rentar.</p>
+</main>
+
+<footer class="site-footer"><div class="inner">Las Misiones Residencial · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a></div></footer>
+<script src="js/letra.js"></script>
+</body>
+</html>

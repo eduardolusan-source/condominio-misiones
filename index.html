@@ -22,6 +22,10 @@
   .kpi b { display: block; font-size: 1.7rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
   .kpi b.mal { color: var(--bad-text); } .kpi b.bien { color: var(--good-text); }
   .kpi span { color: var(--ink-2); font-size: .85rem; }
+  .franja { display: grid; gap: .5rem; margin: .9rem 0 0; } @media (min-width: 760px) { .franja { grid-template-columns: 1fr 1fr; } }
+  .franja a { display: block; padding: .75rem 1rem; border-radius: 14px; background: color-mix(in srgb, #c9a227 12%, var(--surface)); border: 1px solid color-mix(in srgb, #c9a227 35%, var(--border)); color: var(--ink); text-decoration: none; font-size: .95rem; }
+  .verde { display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center; margin: .8rem 0 0; padding: .9rem 1rem; border-radius: 16px; background: color-mix(in srgb, var(--good-text) 13%, var(--surface)); border: 1px solid color-mix(in srgb, var(--good-text) 35%, var(--border)); }
+  .verde span { flex: 1 1 200px; color: var(--ink-2); } .verde a { font-weight: 800; }
   .kpi i { position: absolute; left: 0; bottom: 0; height: 5px; width: var(--w); background: var(--accent); }
 </style>
 </head>
@@ -64,8 +68,11 @@
     <a class="ac" href="ayuda.html"><span>💬</span><b>Ayuda</b><small>preguntas frecuentes</small></a>
   </div>
 
+  <div class="franja"><a href="emergencias.html">🚨 ¿Fuga, sin luz, elevador detenido? <b>Qué hacer si…</b></a><a href="bienvenida.html">👋 ¿Recién llegas? <b>Bienvenida</b></a></div>
+
   <h2 class="section-title">Así vamos</h2>
   <p class="section-sub" id="avSub">Desde la hoja de la mesa directiva.</p>
+  <div id="mesVerde"></div>
   <div class="kpis" id="kpis">
     <div class="kpi"><b>…</b><span>saldo en caja</span></div><div class="kpi"><b>…</b><span>pagaron este mes</span></div><div class="kpi"><b>…</b><span>cuotas atrasadas</span></div><div class="kpi"><b>…</b><span>reciben el reporte</span></div>
   </div>
@@ -184,11 +191,14 @@
       c ? ["<b>" + c.con + "/" + c.total + "</b><span>reciben el reporte</span><i style=\"--w:" + Math.round(c.con / c.total * 100) + '%"></i>', "correo.html"] : ["<b>📩</b><span>registra tu correo</span>", "correo.html"]
     ];
     document.getElementById("kpis").innerHTML = k.map(x => '<a class="kpi" href="' + x[1] + '">' + x[0] + "</a>").join("");
+    const cer = ms.filter(m => !m.enCurso).slice(-1)[0], v = document.getElementById("mesVerde");
+    if (cer && v && ((cer.cobranza || {}).pagaron || 0) >= U) { const t = "🎉 ¡Mes verde en Las Misiones! En " + MES[parseInt(cer.id.slice(5), 10) - 1] + " los 16 departamentos pagaron su mantenimiento. ¡Gracias, vecinos!"; v.innerHTML = '<div class="verde"><b>🎉 ¡Mes verde!</b><span>En ' + MES[parseInt(cer.id.slice(5), 10) - 1] + ' pagaron los 16 departamentos. Gracias.</span><a href="https://wa.me/?text=' + encodeURIComponent(t) + '" target="_blank" rel="noopener">Compartir</a></div>'; }
     document.getElementById("avSub").textContent = "En vivo desde la hoja de la mesa directiva · " + (u.enCurso ? "avance de " + MES[parseInt(u.id.slice(5), 10) - 1] : "cierre de " + MES[parseInt(u.id.slice(5), 10) - 1]) + ".";
   }
   try { const g = JSON.parse(localStorage.getItem("misiones.finanzas.vivo") || "null"); if (g && g.ok) pintar(g); } catch (e) {}
   fetch(URL_ + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => { if (j && j.ok) { pintar(j); try { localStorage.setItem("misiones.finanzas.vivo", JSON.stringify(j)); } catch (e) {} } }).catch(() => {});
 })();
 </script>
+<script src="js/letra.js"></script>
 </body>
 </html>

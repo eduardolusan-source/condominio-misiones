@@ -90,5 +90,6 @@ document.getElementById("hoy").textContent = new Date().toLocaleDateString("es-M
   document.getElementById("acuerdos").innerHTML = TEMAS.map(t => { const a = acuerdos[t[0]] || {}; return '<div class="ac"><div class="k">' + t[1] + '</div><p>' + (a.acuerdo || "<i>Sin acuerdo registrado.</i>") + '</p>' + (a.responsable || a.fecha ? '<p class="meta">Responsable: <b>' + (a.responsable || "—") + '</b> · Fecha compromiso: <b>' + (a.fecha || "—") + '</b></p>' : "") + '</div>'; }).join("");
 })();
 </script>
+<script src="js/letra.js"></script>
 </body>
 </html>
