@@ -243,7 +243,7 @@
   /* ============================ Montaje ============================ */
   function montar(raiz, opciones) {
     const O = Object.assign({
-      nombre: "", anioDefault: null, rubros: [], excluirDeCuota: null,
+      nombre: "", anioDefault: null, rubros: [], excluirDeCuota: null, cuotaDesde: "",
       agua: null,               // { titulo, cobro: "la derrama", gasto: "las pipas" }
       sexto: "reserva",         // "reserva" | "agua"
       textos: {},
@@ -292,7 +292,15 @@
       return -1;
     }
     /* Promedio mensual por rubro de lo que paga la cuota, por unidad. */
+    /* «¿En qué se va tu cuota?» puede contarse solo desde un mes (opción cuotaDesde, «2026-10»):
+       así no se mezclan gastos de una administración anterior que ya no existen. */
+    function mesesCuota(M) {
+      if (!O.cuotaDesde) return M;
+      const F = M.filter(m => m.id >= O.cuotaDesde);
+      return F.length ? F : M;
+    }
     function desgloseCuota(M) {
+      M = mesesCuota(M);
       const acc = O.rubros.map(() => 0);
       let otros = 0;
       M.forEach(m => m.grupos.filter(g => g.cuota !== false).forEach(g => {
@@ -394,7 +402,7 @@
         '<div class="tb-veredicto ' + (diferencia >= 0 ? "bien" : "mal") + '">' + (diferencia >= 0
           ? "✓ Operar cuesta " + $0(costo) + " por unidad: sobran <b>" + $0(diferencia) + "</b>"
           : "✕ Operar cuesta " + $0(costo) + " por unidad: faltan <b>" + $0(-diferencia) + "</b>") + "</div>" +
-        '<div class="tb-d">Promedio mensual de ' + esc(rango(M)) + (T.notaCuota ? " · " + T.notaCuota : "") + ".</div>" +
+        '<div class="tb-d">Promedio mensual de ' + esc(rango(mesesCuota(M))) + (T.notaCuota ? " · " + T.notaCuota : "") + ".</div>" +
         '<span class="tb-mas">Ver en qué se gasta ›</span></a>';
 
       /* 6 · Agua o reserva */
@@ -563,7 +571,7 @@
       const totalG = sum(Object.keys(grupos).map(k => grupos[k]));
       return cabecera("En qué se gasta", esc(rango(M)) + ".") + chipsAnio("gastos") +
         '<section class="tb-panel"><h3>Tu cuota de ' + $0(modelo.cuota) + ", por rubro</h3>" +
-        '<p class="tb-nota">Promedio mensual de lo que cuesta operar el condominio, dividido entre las ' + modelo.unidades + " unidades" + (T.notaCuota ? " (" + T.notaCuota + ")" : "") + ". Total: <b>" + $0(costo) + "</b> por unidad al mes.</p>" +
+        '<p class="tb-nota">Promedio mensual de lo que cuesta operar el condominio (' + esc(rango(mesesCuota(M))) + "), dividido entre las " + modelo.unidades + " unidades" + (T.notaCuota ? " (" + T.notaCuota + ")" : "") + ". Total: <b>" + $0(costo) + "</b> por unidad al mes.</p>" +
         '<div class="tb-grafica" data-g="cuota"></div></section>' +
         '<section class="tb-panel"><h3>Por tipo de gasto en ' + anio + "</h3>" +
         '<div class="tb-tipos">' + Object.keys(grupos).filter(k => grupos[k] > 0.5).map(k => '<div class="tb-tipo"><span>' + esc(k) + "</span><b>" + $0(grupos[k]) + "</b><small>" + pct(grupos[k], totalG) + "% del total</small></div>").join("") + "</div></section>" +

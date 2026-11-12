@@ -102,6 +102,7 @@
     clave: "misiones",
     sexto: "agua",
     excluirDeCuota: /^agua/i,
+    cuotaDesde: "2026-10",      // «¿en qué se va tu cuota?» solo con los meses de la mesa directiva (sin la administración anterior)
     rubros: [
       { nombre: "Administración", re: /administraci/i },
       { nombre: "Limpieza y conserjería", re: /limpieza|conserj/i },
