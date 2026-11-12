@@ -114,8 +114,15 @@
     $("mias").innerHTML = M.map(m => '<div class="mia"><span><b>' + esc(largo(m.dia)) + "</b><small>" + esc(m.horario) + " · " + esc(m.folio) + '</small></span><span><span class="est ' + (/confirmada/i.test(m.estatus) ? "ok" : /rechaz|cancel/i.test(m.estatus) ? "no" : "pen") + '">' + esc(m.estatus.toLowerCase()) + "</span>" + (/rechaz|cancel/i.test(m.estatus) ? "" : ' <button class="x" data-cancel="' + esc(m.folio) + '">cancelar</button>') + "</span></div>").join("");
   }
   async function cargar() {
-    try { const r = await fetch(URL_ + "?accion=reservas" + (depto ? "&depto=" + depto : "") + "&t=" + Date.now(), { cache: "no-store" }); const j = await r.json(); if (j.ok) { D = j; $("costo").textContent = "$" + (j.costo || 500).toLocaleString("es-MX") + " por uso"; $("reglas").textContent = j.reglas || ""; } }
-    catch (e) { $("reglas").textContent = "No pudimos leer el calendario; intenta en un momento."; }
+    try {
+      const r = await fetch(URL_ + "?accion=reservas" + (depto ? "&depto=" + depto : "") + "&t=" + Date.now(), { cache: "no-store" });
+      const j = await r.json();
+      if (j.ok && Array.isArray(j.ocupados)) {
+        D = Object.assign({ horarios: D.horarios }, j);
+        $("costo").textContent = "$" + (j.costo || 500).toLocaleString("es-MX") + " por uso";
+        $("reglas").textContent = j.reglas || "";
+      } else $("reglas").textContent = "El calendario se activa en cuanto la mesa actualice el servicio.";
+    } catch (e) { $("reglas").textContent = "No pudimos leer el calendario; intenta en un momento."; }
     calendario(); horarios(); mias();
   }
   $("ant").onclick = () => { mes = new Date(mes.getFullYear(), mes.getMonth() - 1, 1); calendario(); };
