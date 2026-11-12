@@ -35,6 +35,17 @@
   .est.ok { background: #d4edda; color: #1d5a2a; } .est.no { background: #f8d7da; color: #7a1c24; } .est.ade { background: #dbe8f7; color: #1d3f63; } .est.pen { background: #fff3cd; color: #7a5a00; }
   .nota { font-size: .88rem; color: var(--ink-2); margin: .6rem 0 1rem; }
   .chip { font: inherit; border: 0; cursor: pointer; } .chip.pen { background: #fff3cd; color: #7a5a00; }
+  .pzs { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: .45rem; margin: .7rem 0 .2rem; }
+  .pz { display: flex; flex-direction: column; align-items: center; gap: .1rem; font: inherit; color: var(--ink); background: color-mix(in srgb, var(--bad-text) 9%, var(--page)); border: 1px solid color-mix(in srgb, var(--bad-text) 25%, var(--border)); border-radius: 14px; padding: .6rem .3rem; cursor: pointer; }
+  .pz.ok { background: color-mix(in srgb, var(--good-text) 10%, var(--page)); border-color: color-mix(in srgb, var(--good-text) 30%, var(--border)); }
+  .pz span { font-size: 1.4rem; } .pz b { font-size: 1.1rem; font-variant-numeric: tabular-nums; } .pz small { font-size: .78rem; color: var(--ink-2); }
+  .rev { display: block; width: 100%; margin-top: .5rem; font: inherit; font-weight: 700; text-align: left; padding: .6rem .8rem; border-radius: 12px; border: 0; background: #fff3cd; color: #7a5a00; cursor: pointer; }
+  .rev.ade { background: #dbe8f7; color: #1d3f63; }
+  .acciones button { font: inherit; font-weight: 800; padding: .85rem; border-radius: 14px; border: 1px solid var(--border); color: var(--ink); background: var(--surface); cursor: pointer; }
+  .pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem; margin-top: .9rem; font-size: .8rem; font-weight: 700; text-align: center; }
+  .pasos span { padding: .45rem .2rem; border-radius: 10px; background: var(--page); border: 1px solid var(--border); color: var(--muted); }
+  .pasos .ok { background: #d4edda; color: #1d5a2a; border-color: transparent; } .pasos .pen { background: #fff3cd; color: #7a5a00; border-color: transparent; } .pasos .no { background: #f8d7da; color: #7a1c24; border-color: transparent; }
+  .fila-b { grid-template-columns: 1fr auto auto !important; }
   .como { display: block; width: 100%; margin-top: .8rem; font: inherit; font-weight: 700; padding: .75rem; border-radius: 12px; border: 1px dashed var(--baseline); background: var(--page); color: var(--ink); cursor: pointer; }
   h2.sec { font-size: 1.05rem; margin: 1.3rem 0 .5rem; } h2.sec small { display: block; font-weight: 400; color: var(--muted); font-size: .82rem; }
   .lista { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
@@ -43,6 +54,7 @@
   .fila-b small { display: block; color: var(--muted); font-size: .82rem; } .fila-b i { font-style: normal; color: var(--muted); font-size: 1.3rem; }
   .desac { margin-top: 1.6rem; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1rem 1.1rem; }
   .desac h2 { font-size: 1.1rem; margin: 0 0 .5rem; } .desac ol { margin: 0 0 .8rem 1.1rem; padding: 0; color: var(--ink-2); } .desac li { margin: .45rem 0; }
+  .wa { display: block; text-align: center; text-decoration: none; font-weight: 800; padding: .85rem; border-radius: 14px; background: #25d366; color: #fff; margin: 1.2rem 0 .5rem; }
   .desac .wa { display: block; text-align: center; text-decoration: none; font-weight: 800; padding: .85rem; border-radius: 14px; background: #25d366; color: #fff; }
   @media (prefers-color-scheme: dark) { .deptos button.sel, .acciones a.prim { color: #0d0d0d; } .est.ok { background: #1d4a2a; color: #b8f0c6; } .est.no { background: #5a1d22; color: #ffb3b9; } .est.ade { background: #1d3354; color: #bcd6f5; } .est.pen { background: #5a4300; color: #ffe08a; } }
 </style>
@@ -68,8 +80,7 @@
 </header>
 <main class="md">
   <h1>🏠 Mi depto</h1>
-  <p class="lead">Lo que tienes pendiente, mes por mes. Toca cualquier renglón para ver de dónde sale.</p>
-  <h2 class="sec" style="margin-top:.4rem">1 · ¿Cuál es tu departamento?</h2>
+  <p class="lead">Toca tu departamento.</p>
   <div class="deptos" id="deptos"></div>
   <div id="res"></div>
 </main>
@@ -100,88 +111,79 @@
   }
   let J = null;
   const MESN = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-  const mesDe = id => MESN[parseInt(id.slice(5), 10) - 1] + " " + id.slice(0, 4);
+  const mesDe = id => { const n = MESN[parseInt(id.slice(5), 10) - 1]; return n.charAt(0).toUpperCase() + n.slice(1) + " " + id.slice(0, 4); };
   const pagosDe = id => (J.pagos || []).filter(p => p.mes === id);
-  const estTxt = e => /confirm/i.test(e) ? "confirmado" : /rechaz/i.test(e) ? "no se encontró en el banco" : "en revisión";
+  const enRev = p => !/confirm|rechaz/i.test(p.estatus);
+  const estTxt = e => /confirm/i.test(e) ? "confirmado" : /rechaz/i.test(e) ? "no encontrado" : "en revisión";
   const estCls = e => /confirm/i.test(e) ? "ok" : /rechaz/i.test(e) ? "no" : "pen";
   const wa = t => "https://wa.me/?text=" + encodeURIComponent(t);
-  const enRevision = () => (J.pagos || []).filter(p => !/confirm|rechaz/i.test(p.estatus)).reduce((a, p) => a + (p.mantenimiento || 0) + (p.agua || 0), 0);
-  function pintar(j) {
-    J = j;
-    const debe = j.total > 0.5, rev = enRevision();
-    const pas = j.meses.filter(m => !m.futuro), fut = j.meses.filter(m => m.futuro);
-    const faltan = pas.filter(m => m.diferencia < -0.5 && !m.enCurso && !pagosDe(m.id).some(p => !/confirm|rechaz/i.test(p.estatus)));
-    let h = '<section class="total"><div class="k">Depto ' + j.depto + ' · lo que debes hoy</div><div class="big ' + (debe ? "mal" : "bien") + '">' + (debe ? $0(j.total) : "✓ Al corriente") + "</div>" +
-      '<div class="chips">' + (j.debeManto > 0.5 ? '<button class="chip" data-info="manto">Mantenimiento ' + $0(j.debeManto) + " ⓘ</button>" : "") + (j.aguaPendiente > 0.5 ? '<button class="chip" data-info="agua">Agua ' + $0(j.aguaPendiente) + " ⓘ</button>" : "") +
-      (rev > 0.5 ? '<button class="chip pen" data-info="revision">En revisión ' + $0(rev) + " ⓘ</button>" : "") +
-      (j.adelantado > 0.5 ? '<button class="chip verde" data-info="adelantado">Adelantado ' + $0(j.adelantado) + " ⓘ</button>" : "") + (j.aFavor > 0.5 ? '<button class="chip verde" data-info="favor">A favor ' + $0(j.aFavor) + " ⓘ</button>" : "") + "</div>" +
-      (debe && rev > 0.5 ? '<p class="nota" style="margin:.5rem 0 0">Si la mesa confirma tu pago en revisión, quedarías en <b>' + $0(Math.max(0, j.total - rev)) + "</b>.</p>" : "") +
-      '<button class="como" id="btnComo">🧮 ¿De dónde sale esta cantidad?</button></section>' +
-      '<div class="acciones"><a class="prim" href="pago.html?depto=' + j.depto + (faltan.length ? "&mes=" + faltan[0].id : "") + '">💳 Registrar un pago</a><a href="#desacuerdo">🤔 No estoy de acuerdo</a></div>';
-    h += '<h2 class="sec">Mantenimiento, mes por mes <small>toca un mes para ver el detalle</small></h2><div class="lista">' +
-      fut.map(m => '<button class="fila-b" data-mes="' + m.id + '"><span><b>' + esc(m.nombre) + "</b><small>pagaste " + $0(m.manto) + ' por adelantado</small></span><span class="est ade">adelantado</span><i>›</i></button>').join("") +
-      pas.slice().reverse().map(m => { const pr = pagosDe(m.id).filter(p => !/confirm/i.test(p.estatus)); const st = m.diferencia < -0.5 ? (pr.length ? ["pen", "en revisión"] : m.enCurso ? ["pen", "por pagar " + $0(-m.diferencia)] : ["no", "faltan " + $0(-m.diferencia)]) : ["ok", "pagado"];
-        return '<button class="fila-b" data-mes="' + m.id + '"><span><b>' + esc(m.nombre) + "</b><small>" + (m.enCurso ? "mes en curso · " : "") + "cuota " + $0(m.cuota) + " · registrado " + $0(m.manto) + '</small></span><span class="est ' + st[0] + '">' + st[1] + "</span><i>›</i></button>"; }).join("") + "</div>";
-    if (j.agua.length) h += '<h2 class="sec">Agua, recibo por recibo <small>toca un recibo</small></h2><div class="lista">' +
-      j.agua.slice().reverse().map((a, i) => '<button class="fila-b" data-agua="' + (j.agua.length - 1 - i) + '"><span><b>Agua de ' + esc(a.nombre) + "</b><small>" + a.consumo + " m³ · " + $0(a.cargo) + '</small></span><span class="est ' + (a.pagado ? "ok" : "no") + '">' + (a.pagado ? "pagado" : "pendiente") + "</span><i>›</i></button>").join("") + "</div>";
-    const antes = (j.pagos || []).filter(p => p.mes && j.desde && p.mes < j.desde);
-    h += '<h2 class="sec">Antes de octubre de 2026</h2><div class="lista"><button class="fila-b" data-info="previo"><span><b>No se cobra</b><small>' + (antes.length ? "gracias por tu aportación de meses anteriores" : "la mesa no asume adeudos de la administración anterior") + '</small></span><span class="est ok">' + (antes.length ? "¡gracias!" : "$0") + "</span><i>›</i></button></div>";
-    if (j.pagos.length) h += '<h2 class="sec">Pagos que reportaste</h2><div class="lista">' + j.pagos.map((p, i) => '<button class="fila-b" data-pago="' + i + '"><span><b>' + (p.mes ? esc(mesDe(p.mes)) : esc(p.fecha)) + " · " + $0(p.total) + "</b><small>reportado el " + esc(p.fecha) + '</small></span><span class="est ' + estCls(p.estatus) + '">' + estTxt(p.estatus) + "</span><i>›</i></button>").join("") + "</div>";
-    h += '<section class="desac" id="desacuerdo"><h2>🤔 ¿No estás de acuerdo con lo que aparece?</h2><ol>' +
-      "<li><b>Toca el mes</b> que no te cuadra: verás qué tiene registrado la mesa y qué pagos reportaste.</li>" +
-      "<li>Si pagaste y no lo reportaste, <a href=\"pago.html?depto=" + j.depto + "\">regístralo con tu comprobante</a>. Cuenta en cuanto la mesa lo confirme en el banco.</li>" +
-      "<li>Si ya lo reportaste, aparece como <b>en revisión</b>: no hace falta volver a enviarlo.</li>" +
-      "<li>Si aun así no cuadra, escríbele a la mesa con el mes y tu comprobante:</li></ol>" +
-      '<a class="wa" href="' + wa("Hola, mesa directiva. Soy del depto " + j.depto + ". Revisé «Mi depto» en el sitio y no me cuadra: [MES]. Yo pagué el [FECHA] por $[MONTO]. Adjunto mi comprobante.") + '" target="_blank" rel="noopener">💬 Escribir a la mesa por WhatsApp</a>' +
-      '<p class="nota">El mensaje va con el texto listo; tú eliges el chat de la mesa y completas los datos.</p></section>';
-    return h + '<p class="nota">Para recibir cada mes el reporte, <a href="correo.html">registra tu correo</a>.</p>';
+  const L = (k, v, cls) => '<div class="cuenta-l' + (cls ? " " + cls : "") + '"><span>' + k + "</span><b>" + v + "</b></div>";
+  /* Normaliza lo que manda el script (también con una versión anterior): agua y totales solo desde octubre. */
+  function normal(j) {
+    const desde = j.desde || "2026-10";
+    j.agua = (j.agua || []).filter(a => a.mes >= desde);
+    j.aguaPendiente = j.agua.filter(a => !a.pagado).reduce((x, a) => x + a.cargo, 0);
+    const ex = j.extraordinaria && j.extraordinaria.monto > 0 ? j.extraordinaria : null;
+    j.total = j.debeManto + j.aguaPendiente + (ex ? ex.pendiente : 0);
+    return j;
   }
+  function pintar(j) {
+    J = normal(j);
+    const rev = (j.pagos || []).filter(enRev).reduce((a, p) => a + (p.mantenimiento || 0) + (p.agua || 0) + (p.extraordinario || 0), 0);
+    const pas = j.meses.filter(m => !m.futuro), fut = j.meses.filter(m => m.futuro), ex = j.extraordinaria && j.extraordinaria.monto > 0 ? j.extraordinaria : null;
+    const debe = j.total > 0.5;
+    const pieza = (ico, k, v, ok, info) => '<button class="pz ' + (ok ? "ok" : "") + '" data-info="' + info + '"><span>' + ico + "</span><b>" + (ok ? "✓" : $0(v)) + "</b><small>" + k + "</small></button>";
+    let h = '<section class="total"><div class="k">Depto ' + j.depto + " · debes hoy</div>" +
+      '<div class="big ' + (debe ? "mal" : "bien") + '">' + (debe ? $0(j.total) : "✓ Al corriente") + "</div>" +
+      '<div class="pzs">' + pieza("🧾", "Mantenimiento", j.debeManto, j.debeManto <= 0.5, "manto") + pieza("💧", "Agua", j.aguaPendiente, j.aguaPendiente <= 0.5, "agua") + (ex ? pieza("⭐", "Extraordinaria", ex.pendiente, ex.pendiente <= 0.5, "extra") : "") + "</div>" +
+      (rev > 0.5 ? '<button class="rev" data-info="revision">⏳ En revisión ' + $0(rev) + (debe ? " · si se confirma: " + $0(Math.max(0, j.total - rev)) : "") + "</button>" : "") +
+      (j.adelantado > 0.5 ? '<button class="rev ade" data-info="adelantado">⏩ Adelantado ' + $0(j.adelantado) + "</button>" : "") +
+      '<div class="acciones"><a class="prim" href="pago.html?depto=' + j.depto + '">💳 Pagar</a><button id="btnComo">🧮 Ver la cuenta</button></div></section>';
+    h += '<h2 class="sec">🧾 Mantenimiento</h2><div class="lista">' +
+      fut.map(m => '<button class="fila-b" data-mes="' + m.id + '"><b>' + esc(m.nombre) + '</b><span class="est ade">adelantado</span><i>›</i></button>').join("") +
+      pas.slice().reverse().map(m => { const pr = pagosDe(m.id).some(enRev); const st = m.diferencia < -0.5 ? (pr ? ["pen", "⏳ en revisión"] : m.enCurso ? ["pen", "por pagar"] : ["no", "falta " + $0(-m.diferencia)]) : ["ok", "✓ pagado"];
+        return '<button class="fila-b" data-mes="' + m.id + '"><b>' + esc(m.nombre) + '</b><span class="est ' + st[0] + '">' + st[1] + "</span><i>›</i></button>"; }).join("") + "</div>";
+    if (j.agua.length) h += '<h2 class="sec">💧 Agua</h2><div class="lista">' + j.agua.slice().reverse().map((a, i) => '<button class="fila-b" data-agua="' + (j.agua.length - 1 - i) + '"><b>' + esc(a.nombre) + '</b><span class="est ' + (a.pagado ? "ok" : "no") + '">' + (a.pagado ? "✓ pagado" : $0(a.cargo)) + "</span><i>›</i></button>").join("") + "</div>";
+    if (ex) h += '<h2 class="sec">⭐ Extraordinaria</h2><div class="lista"><button class="fila-b" data-info="extra"><b>' + esc(ex.nombre) + '</b><span class="est ' + (ex.pendiente <= 0.5 ? "ok" : "no") + '">' + (ex.pendiente <= 0.5 ? "✓ pagada" : "falta " + $0(ex.pendiente)) + "</span><i>›</i></button></div>";
+    if (j.pagos.length) h += '<h2 class="sec">📨 Tus pagos reportados</h2><div class="lista">' + j.pagos.map((p, i) => '<button class="fila-b" data-pago="' + i + '"><b>' + (p.mes ? esc(mesDe(p.mes)) : esc(p.fecha)) + " · " + $0(p.total) + '</b><span class="est ' + estCls(p.estatus) + '">' + estTxt(p.estatus) + "</span><i>›</i></button>").join("") + "</div>";
+    h += '<div class="lista" style="margin-top:1rem"><button class="fila-b" data-info="previo"><b>Antes de octubre 2026</b><span class="est ok">no se cobra</span><i>›</i></button></div>';
+    h += '<a class="wa" href="' + wa("Hola, mesa directiva. Soy del depto " + j.depto + " y no me cuadra: ") + '" target="_blank" rel="noopener">🤔 ¿No te cuadra? Escribe a la mesa</a>';
+    return h;
+  }
+  const pasos = st => '<div class="pasos"><span class="' + (/confirm/i.test(st) ? "ok" : "ok") + '">✓ Reportado</span><span class="' + (/confirm/i.test(st) ? "ok" : /rechaz/i.test(st) ? "no" : "pen") + '">' + (/rechaz/i.test(st) ? "✕ No encontrado" : "⏳ Revisión") + '</span><span class="' + (/confirm/i.test(st) ? "ok" : "") + '">' + (/confirm/i.test(st) ? "✓" : "○") + " Confirmado</span></div>";
   function detalleMes(id) {
-    const m = J.meses.find(x => x.id === id), ps = pagosDe(id);
-    let h = '<div class="cuenta-l"><span>Cuota de mantenimiento</span><b>' + $0(m.futuro ? J.cuota : m.cuota) + '</b></div><div class="cuenta-l"><span>Registrado en la hoja de la mesa</span><b>' + $0(m.manto) + "</b></div>" +
-      '<div class="cuenta-l tot"><span>' + (m.futuro ? "Pagado por adelantado" : m.diferencia < -0.5 ? "Falta" : "Diferencia") + "</span><span>" + $0(m.futuro ? m.manto : Math.abs(m.diferencia)) + "</span></div>";
-    if (ps.length) h += '<p class="exp" style="margin-top:.8rem"><b>Pagos que reportaste para este mes:</b></p>' + ps.map(p => '<div class="cuenta-l"><span>' + esc(p.fecha) + ' · <span class="est ' + estCls(p.estatus) + '">' + estTxt(p.estatus) + "</span></span><b>" + $0(p.total) + "</b></div>").join("");
-    const pend = ps.filter(p => !/confirm|rechaz/i.test(p.estatus)), rech = ps.filter(p => /rechaz/i.test(p.estatus));
-    let exp;
-    if (m.futuro) exp = "Pagaste este mes antes de que empezara. Cuando llegue, la cuota quedará cubierta.";
-    else if (m.diferencia >= -0.5) exp = "✓ La mesa tiene registrado tu pago completo de este mes." + (m.diferencia > 0.5 ? " Pagaste " + $0(m.diferencia) + " de más: cuenta a tu favor." : "");
-    else if (pend.length) exp = "Recibimos tu aviso de pago y está <b>en revisión</b>: la mesa lo compara con el estado de cuenta del banco. Cuando lo confirme, este mes quedará pagado. No necesitas volver a enviarlo.";
-    else if (rech.length) exp = "Reportaste un pago, pero la mesa <b>no lo encontró en el banco</b> con esos datos (monto o fecha). Revisa tu comprobante y escríbele a la mesa: con la captura lo aclaran rápido.";
-    else if (m.enCurso) exp = "Es el mes en curso: todavía estás a tiempo. Cuando pagues, regístralo aquí con tu comprobante.";
-    else exp = "La mesa <b>no tiene registrado</b> un pago tuyo para este mes y no encontramos un aviso de pago. Si ya pagaste, regístralo con tu comprobante; si no, aquí puedes hacerlo.";
-    h += '<p class="exp" style="margin-top:.9rem">' + exp + "</p>";
-    if (!m.futuro && m.diferencia < -0.5 && !pend.length) h += '<div class="acc"><a class="p" href="pago.html?depto=' + J.depto + "&mes=" + id + '">' + (rech.length ? "Registrar de nuevo con comprobante" : "Ya pagué: registrar mi pago") + '</a><a href="' + wa("Hola, mesa directiva. Soy del depto " + J.depto + ". En «Mi depto» aparece " + mesDe(id) + " sin pagar, pero yo pagué el [FECHA] por $[MONTO]. Adjunto mi comprobante.") + '" target="_blank" rel="noopener">💬 Escribir a la mesa</a></div>';
-    ventana("Mantenimiento de " + mesDe(id), h);
+    const m = J.meses.find(x => x.id === id), ps = pagosDe(id), pend = ps.filter(enRev), rech = ps.filter(p => /rechaz/i.test(p.estatus));
+    let h = m.futuro ? L("Pagaste por adelantado", $0(m.manto), "tot") : L("Cuota", $0(m.cuota)) + L("Registrado", $0(m.manto)) + L(m.diferencia < -0.5 ? "Falta" : "Diferencia", $0(Math.abs(m.diferencia)), "tot");
+    h += ps.map(p => L("Reportaste el " + esc(p.fecha), $0(p.total) + ' <span class="est ' + estCls(p.estatus) + '">' + estTxt(p.estatus) + "</span>")).join("");
+    const listo = m.futuro || m.diferencia >= -0.5;
+    if (!listo && !pend.length) h += '<div class="acc"><a class="p" href="pago.html?depto=' + J.depto + "&mes=" + id + '">' + (rech.length ? "Reportar de nuevo" : "Ya pagué: reportarlo") + '</a><a href="' + wa("Hola, mesa directiva. Depto " + J.depto + ": " + mesDe(id) + " aparece sin pagar, pero pagué el [fecha] por $[monto].") + '" target="_blank" rel="noopener">💬 Escribir a la mesa</a></div>';
+    else if (pend.length) h += pasos(pend[0].estatus);
+    ventana((listo ? "✓ " : pend.length ? "⏳ " : "✕ ") + mesDe(id), h);
   }
   function detalleAgua(i) {
     const a = J.agua[i];
-    ventana("Agua de " + a.nombre, '<div class="cuenta-l"><span>Tu consumo</span><b>' + a.consumo + ' m³</b></div><div class="cuenta-l tot"><span>Tu parte del recibo</span><span>' + $0(a.cargo) + "</span></div>" +
-      '<p class="exp" style="margin-top:.8rem">' + (a.pagado ? "✓ Ya está pagado." : "Está <b>pendiente</b>.") + " Lo que te toca sale de lo que marcó tu medidor más tu parte de las áreas comunes, a partir del recibo de la CEA. La lectura del día 9 corresponde al agua del mes anterior.</p>" +
-      '<div class="acc"><a href="agua.html">Ver mis lecturas y cómo se reparte</a>' + (a.pagado ? "" : '<a class="p" href="pago.html?depto=' + J.depto + "&agua=" + a.cargo + "&mes=" + a.mes + '">Registrar el pago del agua</a>') + "</div>");
+    ventana((a.pagado ? "✓ " : "") + "Agua de " + a.nombre, L("Consumo", a.consumo + " m³") + L(a.pagado ? "Pagado" : "A pagar", $0(a.cargo), "tot") +
+      '<div class="acc">' + (a.pagado ? "" : '<a class="p" href="pago.html?depto=' + J.depto + "&agua=" + a.cargo + "&mes=" + a.mes + '">💳 Pagar el agua</a>') + '<a href="agua.html">Ver mis lecturas</a></div>');
   }
   function detallePago(i) {
-    const p = J.pagos[i], partes = [["Mantenimiento", p.mantenimiento], ["Agua", p.agua], ["Extraordinario", p.extraordinario], ["Casa club", p.casaclub]].filter(x => x[1]);
-    if (p.mes && J.desde && p.mes < J.desde) return ventana("Aportación de " + mesDe(p.mes), '<div class="cuenta-l tot"><span>Total</span><span>' + $0(p.total) + '</span></div><p class="exp" style="margin-top:.8rem">🙏 <b>¡Gracias!</b> Es de un mes anterior a octubre de 2026, que la mesa no cobra. Se recibe como aportación y ayuda a sanear las cuentas del condominio. Estatus: <b>' + estTxt(p.estatus) + "</b>.</p>");
-    ventana("Pago reportado el " + p.fecha, partes.map(x => '<div class="cuenta-l"><span>' + x[0] + "</span><b>" + $0(x[1]) + "</b></div>").join("") + '<div class="cuenta-l tot"><span>Total</span><span>' + $0(p.total) + "</span></div>" +
-      '<p class="exp" style="margin-top:.8rem">' + (/confirm/i.test(p.estatus) ? "✓ <b>Confirmado</b>: la mesa lo encontró en el banco y ya cuenta en tu depto." : /rechaz/i.test(p.estatus) ? "✕ <b>No se encontró</b> en el banco con esos datos. Revisa el monto y la fecha de tu comprobante y escríbele a la mesa." : "⏳ <b>En revisión</b>: lo recibimos y la mesa lo está comparando con el banco. En cuanto lo confirme, se suma a tu depto.") + "</p>" +
-      '<p class="exp">Así avanza un pago: <b>1</b> lo reportas → <b>2</b> en revisión → <b>3</b> confirmado (cuenta en «Mi depto»).</p>');
+    const p = J.pagos[i];
+    const h = [["Mantenimiento", p.mantenimiento], ["Agua", p.agua], ["Extraordinaria", p.extraordinario], ["Casa club", p.casaclub]].filter(x => x[1]).map(x => L(x[0], $0(x[1]))).join("") + L("Total", $0(p.total), "tot") + pasos(p.estatus);
+    ventana((p.mes && J.desde && p.mes < J.desde ? "🙏 Aportación · " : "") + (p.mes ? mesDe(p.mes) : p.fecha), h + (/rechaz/i.test(p.estatus) ? '<div class="acc"><a href="' + wa("Hola, mesa directiva. Depto " + J.depto + ": mi pago del " + p.fecha + " por " + $0(p.total) + " aparece como no encontrado. Adjunto comprobante.") + '" target="_blank" rel="noopener">💬 Enviar mi comprobante a la mesa</a></div>' : ""));
   }
   const INFO = {
-    manto: () => ["Mantenimiento pendiente", '<p class="exp">Es la suma de las cuotas de $' + J.cuota.toLocaleString("es-MX") + " de cada mes desde octubre de 2026, menos lo que la mesa tiene registrado que pagaste. Toca cada mes para ver el detalle.</p>"],
-    agua: () => ["Agua pendiente", '<p class="exp">Es la suma de los recibos de agua que aún no están pagados. Toca cada recibo para ver tu consumo y tu parte.</p>'],
-    revision: () => ["Pagos en revisión", '<p class="exp">Son pagos que reportaste y que la mesa todavía no confirma contra el banco. <b>Aún no se restan</b> de lo que debes; en cuanto se confirmen, sí. No hace falta volver a enviarlos.</p>'],
-    adelantado: () => ["Pagado por adelantado", '<p class="exp">Pagaste meses que todavía no empiezan. Ese dinero cubrirá esas cuotas cuando lleguen; por eso no se resta de lo que debes hoy.</p>'],
-    favor: () => ["Saldo a favor", '<p class="exp">Pagaste más de lo que tocaba en los meses que ya pasaron. Ese saldo cubre tus siguientes cuotas.</p>'],
-    previo: () => ["Antes de octubre de 2026", '<p class="exp">La mesa directiva lleva las cuentas desde <b>octubre de 2026</b>. Como no recibió información completa de la administración anterior, <b>no asume ni cobra adeudos de antes</b>.</p><p class="exp">Si quieres aportar algo de esos meses, se recibe con gusto y se agradece: regístralo como cualquier pago, eligiendo el mes que corresponda. Aparecerá en «Pagos que reportaste».</p>'] || [J.previo ? '<div class="cuenta-l"><span>Mantenimiento</span><b>' + $0(J.previo.mantenimiento) + '</b></div><div class="cuenta-l"><span>Agua</span><b>' + $0(J.previo.agua) + '</b></div><div class="cuenta-l"><span>Cuotas extraordinarias</span><b>' + $0(J.previo.extraordinario) + '</b></div><div class="cuenta-l tot"><span>Total al corte</span><span>' + $0(J.previo.total) + '</span></div><p class="exp" style="margin-top:.8rem">Es lo que dejó registrado la administración anterior al corte del ' + esc(J.previo.corte) + '. Va <b>aparte</b> de lo de arriba. ¿Pagaste algo de esto y no se refleja? Dilo con tu comprobante en <a href="cuentas.html">Validar mis cuentas</a>.</p>' : '<p class="exp">La mesa directiva está revisando las cuentas que dejó la administración anterior. Mientras, puedes decir si reconoces tu adeudo y subir comprobantes en <a href="cuentas.html">Validar mis cuentas</a>.</p>']
+    manto: () => ["🧾 Mantenimiento", L("Pendiente", $0(J.debeManto), "tot") + '<p class="exp">Cuotas de ' + $0(J.cuota) + " desde octubre 2026, menos lo registrado.</p>"],
+    agua: () => ["💧 Agua", L("Pendiente", $0(J.aguaPendiente), "tot") + '<p class="exp">Recibos de agua sin pagar, desde octubre 2026.</p>'],
+    extra: () => { const ex = J.extraordinaria; return ["⭐ " + ex.nombre, L("Cuota", $0(ex.monto)) + L("Pagado", $0(ex.pagado)) + L(ex.pendiente > 0.5 ? "Falta" : "✓ Pagada", $0(ex.pendiente), "tot") + (ex.pendiente > 0.5 ? '<div class="acc"><a class="p" href="pago.html?depto=' + J.depto + '&extra=' + ex.pendiente + '">💳 Pagar la extraordinaria</a></div>' : "")]; },
+    revision: () => ["⏳ En revisión", '<p class="exp">Pagos que reportaste y la mesa está confirmando con el banco. Aún no se restan.</p>' + pasos("Pendiente")],
+    adelantado: () => ["⏩ Adelantado", '<p class="exp">Meses que pagaste antes de tiempo. Se aplican cuando lleguen.</p>'],
+    previo: () => ["Antes de octubre 2026", '<p class="exp"><b>No se cobra.</b> La mesa no asume adeudos de la administración anterior.</p><p class="exp">¿Quieres aportar algo de esos meses? Regístralo como pago. 🙏</p>']
   };
   function como() {
-    const pas = J.meses.filter(m => !m.futuro), cuotas = pas.reduce((a, m) => a + m.cuota, 0), reg = pas.reduce((a, m) => a + m.manto, 0);
-    const pend = J.agua.filter(a => !a.pagado);
-    ventana("Así se calcula lo que debes", '<p class="exp" style="margin-top:0"><b>Mantenimiento</b> (solo desde octubre de 2026)</p>' +
-      '<div class="cuenta-l"><span>' + pas.length + (pas.length === 1 ? " mes" : " meses") + " × " + $0(J.cuota) + "</span><b>" + $0(cuotas) + '</b></div><div class="cuenta-l"><span>− Lo que la mesa tiene registrado que pagaste</span><b>' + $0(reg) + '</b></div><div class="cuenta-l"><span>= Mantenimiento pendiente</span><b>' + $0(J.debeManto) + "</b></div>" +
-      (J.agua.length ? '<p class="exp" style="margin-top:.8rem"><b>Agua</b></p>' + (pend.length ? pend.map(a => '<div class="cuenta-l"><span>Recibo de ' + esc(a.nombre) + "</span><b>" + $0(a.cargo) + "</b></div>").join("") : '<div class="cuenta-l"><span>Todos tus recibos están pagados</span><b>$0</b></div>') : "") +
-      '<div class="cuenta-l tot"><span>Debes hoy</span><span>' + $0(J.total) + "</span></div>" +
-      '<p class="exp" style="margin-top:.8rem">Solo cuenta desde octubre de 2026: lo de antes no se cobra. Tampoco resta los pagos en revisión hasta que la mesa los confirme. Lo pagado por adelantado se aplica a los meses que vienen.</p>');
+    const pas = J.meses.filter(m => !m.futuro), ex = J.extraordinaria && J.extraordinaria.monto > 0 ? J.extraordinaria : null, pend = J.agua.filter(a => !a.pagado);
+    ventana("🧮 Tu cuenta", '<p class="exp" style="margin:0 0 .3rem"><b>🧾 Mantenimiento</b></p>' + L(pas.length + " × " + $0(J.cuota), $0(pas.reduce((a, m) => a + m.cuota, 0))) + L("− Registrado", $0(pas.reduce((a, m) => a + m.manto, 0))) + L("Pendiente", $0(J.debeManto)) +
+      (pend.length ? '<p class="exp" style="margin:.8rem 0 .3rem"><b>💧 Agua</b></p>' + pend.map(a => L(esc(a.nombre), $0(a.cargo))).join("") : "") +
+      (ex && ex.pendiente > 0.5 ? '<p class="exp" style="margin:.8rem 0 .3rem"><b>⭐ Extraordinaria</b></p>' + L(esc(ex.nombre), $0(ex.pendiente)) : "") +
+      L("Debes hoy", $0(J.total), "tot") + '<p class="exp" style="margin-top:.6rem">Desde octubre 2026.</p>');
   }
   document.addEventListener("click", e => {
     if (!J) return;
