@@ -1066,6 +1066,8 @@ function actualizarAgua_() {
 
 /* Al cambiar el estatus en la columna J de Pagos (Confirmado, Rechazado o Pendiente). */
 function onEdit(e) {
+  /* Cualquier cambio en la hoja borra la copia guardada: el sitio ve el dato nuevo al recargar, sin esperar 5 minutos. */
+  try { CacheService.getScriptCache().remove("finanzas"); } catch (err) {}
   try {
     const rg = e.range, h = rg.getSheet();
     if (h.getName() !== HOJA_PAGOS || rg.getColumn() !== 10 || rg.getRow() < 2) return;
