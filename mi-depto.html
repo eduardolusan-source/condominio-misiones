@@ -85,7 +85,7 @@
       const j = await r.json();
       if (!j.ok) throw new Error(j.error || "sin datos");
       if (n === depto) $("res").innerHTML = pintar(j);
-    } catch (e) { $("res").innerHTML = '<p class="nota">No pudimos leer la hoja en este momento (' + esc(e.message) + '). Intenta en unos minutos.</p>'; }
+    } catch (e) { $("res").innerHTML = '<p class="nota">La hoja de la mesa no respondió en este momento. Intenta en unos minutos; si sigue igual, avísale a la mesa directiva.</p>'; console.warn("[Mi depto] " + e.message); }
   }
   function pintar(j) {
     const debe = j.total > 0.5;
