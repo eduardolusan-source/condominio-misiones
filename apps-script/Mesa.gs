@@ -89,7 +89,7 @@ function reunionPublica_() {
 function panelMesa_(clave) {
   if (String(clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const hoy = Utilities.formatDate(new Date(), "America/Mexico_City", "yyyy-MM-dd");
-  const casa = filasRcc_().filter(f => /por confirmar/i.test(String(f[6] || "Por confirmar")) && diaIso_(f[2]) >= hoy && f[0])
+  const casa = (typeof filasRcc_ === "function" ? filasRcc_() : []).filter(f => /por confirmar/i.test(String(f[6] || "Por confirmar")) && diaIso_(f[2]) >= hoy && f[0])
     .map(f => ({ folio: String(f[0]), dia: diaIso_(f[2]), horario: String(f[3]), depto: Number(f[4]) }));
   const pend = pendientes_(clave);
   return Object.assign(reunionPublica_(), { pagos: pend.ok ? pend.total : 0, casa: casa });
@@ -212,6 +212,7 @@ function estadoAcuerdo_(d) {
 
 /* Casa club desde mesa.html: confirmar o rechazar; si el depto dejó correo, se le avisa. */
 function resolverCasa_(d) {
+  if (typeof filasRcc_ !== "function") return { ok: false, error: "Falta actualizar el archivo Condominio" };
   const folio = String(d.folio || "").trim().toUpperCase(), estatus = ["Confirmada", "Rechazada"].indexOf(d.estatus) >= 0 ? d.estatus : null;
   const h = SpreadsheetApp.getActive().getSheetByName(HOJA_RCC);
   const filas = filasRcc_(), i = filas.findIndex(f => String(f[0]).toUpperCase() === folio);
