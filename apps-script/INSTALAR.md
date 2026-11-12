@@ -332,3 +332,13 @@ Solo sitio (no hay que tocar el script):
 - Ayuda: «Palabras del condominio, en simple».
 - `llms.txt`: resumen en texto claro para que el asistente de IA de un vecino responda dudas básicas.
 - Guía de la mesa: plantillas de avisos amables listas para copiar.
+
+## Mi depto lee lo que hay en la hoja (13 de noviembre de 2026)
+- Cuenta como pagado todo lo que esté en las pestañas de mes, lo confirmes en la bandeja o lo captures a mano.
+- Un pago reportado y aún no confirmado **no** cuenta: la bandeja lo anota en amarillo y Mi depto lo resta hasta
+  que lo confirmes (usa la columna M de Pagos).
+- Agua: un recibo cuenta como pagado si tiene fecha en «Pagado el» o si lo cubre lo capturado en la columna Agua
+  de las pestañas desde octubre.
+- El agua de septiembre (lectura de octubre) y lo anterior no se cobran.
+- Cuota extraordinaria (Config → extraordinario_monto): pagado y pendiente por depto.
+Pega `Condominio.gs` nuevo → Nueva versión.

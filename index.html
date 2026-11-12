@@ -25,6 +25,12 @@
   .franja a { display: block; padding: .75rem 1rem; border-radius: 14px; background: color-mix(in srgb, #c9a227 12%, var(--surface)); border: 1px solid color-mix(in srgb, #c9a227 35%, var(--border)); color: var(--ink); text-decoration: none; font-size: .95rem; }
   .verde { display: flex; flex-wrap: wrap; gap: .4rem .9rem; align-items: center; margin: .8rem 0 0; padding: .9rem 1rem; border-radius: 16px; background: color-mix(in srgb, var(--good-text) 13%, var(--surface)); border: 1px solid color-mix(in srgb, var(--good-text) 35%, var(--border)); }
   .verde span { flex: 1 1 200px; color: var(--ink-2); } .verde a { font-weight: 800; }
+  .pvs { display: grid; gap: .5rem; } @media (min-width: 760px) { .pvs { grid-template-columns: 1fr 1fr; } }
+  .pv { display: grid; grid-template-columns: auto 1fr; gap: .2rem .8rem; align-items: center; padding: .8rem 1rem; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); }
+  .pv-i { font-size: 1.6rem; grid-row: span 2; } .pv-t b { display: block; } .pv-t small { color: var(--ink-2); }
+  .pv-a { grid-column: 2; display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .3rem; }
+  .pv-b { text-decoration: none; font-weight: 800; font-size: .92rem; padding: .5rem .9rem; border-radius: 999px; background: var(--accent); color: #fff; }
+  .pv-b.wa { background: #25d366; } @media (prefers-color-scheme: dark) { .pv-b { color: #0d0d0d; } }
   .kpi i { position: absolute; left: 0; bottom: 0; height: 5px; width: var(--w); background: var(--accent); }
 </style>
 </head>
@@ -92,85 +98,14 @@
     <p class="ref" style="margin:1rem 0 0">Reglamento de Condominio y Administración del Conjunto &ldquo;Misiones&rdquo;, Fraccionamiento Milenio III, protocolizado ante la Notaría Pública No. 7 de Querétaro.</p>
   </div>
 
-  <h2 class="section-title">Áreas comunes de un vistazo</h2>
-  <p class="section-sub">Son partes comunes del conjunto todos los elementos que no están comprendidos dentro de las unidades privativas (art. 5).</p>
-  <div class="cards">
-    <a class="card" href="areas-comunes.html#acceso">
-      <h3>🚪 Acceso y portón</h3>
-      <p>El área de acceso al conjunto y el mobiliario que se encuentre en ella. Puertas y portón no se bloquean ni se dejan abiertos.</p>
-    </a>
-    <a class="card" href="areas-comunes.html#salon">
-      <h3>🏠 Salón de usos múltiples</h3>
-      <p>En sus dos niveles. Es área común: su uso privado requiere autorización previa de la administración.</p>
-    </a>
-    <a class="card" href="areas-comunes.html#alberca">
-      <h3>🏊 Alberca</h3>
-      <p>La alberca y sus equipos son parte común del conjunto; su mantenimiento se cubre con el gasto común.</p>
-    </a>
-    <a class="card" href="areas-comunes.html#estacionamiento">
-      <h3>🚗 Estacionamiento</h3>
-      <p>Cada unidad privativa tiene su cajón. Nadie puede ocupar jardines, andadores o zonas de estacionamiento ajenas (art. 12).</p>
-    </a>
-    <a class="card" href="areas-comunes.html#elevador">
-      <h3>🛗 Elevador</h3>
-      <p>Su mantenimiento y reparación se cubren con el gasto común. Actualmente en proceso de reparación.</p>
-    </a>
-    <a class="card" href="areas-comunes.html#jardines">
-      <h3>🌳 Jardines y circulaciones</h3>
-      <p>Jardines, jardineras, banquetas y obras de ornato, más pórticos, galerías, escaleras y marquesinas.</p>
-    </a>
-  </div>
-
-  <h2 class="section-title">Avisos</h2>
-  <p class="section-sub">De los acuerdos de asamblea, del seguimiento de la reunión del 10 de agosto de 2026 y de la rendición de cuentas.</p>
-  <div class="cards">
-    <a class="card" href="finanzas.html">
-      <h3>📊 Finanzas actualizadas a junio</h3>
-      <p>Ya se publican las cifras de 2025 y de enero a junio de 2026: el saldo cerró junio en <strong>$18,452</strong>. Falta que el administrador reporte los cambios y los datos de julio y de agosto a la fecha, y aclare las incongruencias detectadas entre las tablas y los estados de cuenta.</p>
-    </a>
-    <a class="card" href="pendientes.html#protocolizacion">
-      <h3>📜 Protocolización de la mesa directiva</h3>
-      <p>La asamblea aprobó por unanimidad una cuota extraordinaria de <strong>$1,000 por departamento</strong> para protocolizar la mesa directiva, abrir la cuenta bancaria del condominio y automatizar la puerta peatonal interna. Mientras concluye el trámite (unos tres meses y medio), los pagos siguen en la cuenta actual de la administración.</p>
-    </a>
-    <a class="card" href="pendientes.html#elevador">
-      <h3>🛗 Reparación del elevador</h3>
-      <p>Se agenda cita con el proveedor para avanzar en la reparación y se explora la opción de botoneras genéricas para reducir costos. La administración informará costos actualizados y perspectivas de tiempo para su puesta en marcha.</p>
-    </a>
-    <a class="card" href="pendientes.html#acceso">
-      <h3>🔐 Nuevo acceso de la puerta</h3>
-      <p>La administración informará el estatus del nuevo acceso del edificio y la relación de quiénes faltan de cubrir la cuota extraordinaria.</p>
-    </a>
-    <a class="card" href="reglamento.html#convivencia">
-      <h3>📌 Acuerdos de convivencia</h3>
-      <p>Se propone volver a colocar el reglamento junto a la puerta, como se tenía antes, y recoger ideas de los vecinos en el grupo. Las primeras propuestas ya están planteadas.</p>
-    </a>
-    <a class="card" href="pendientes.html#proxima">
-      <h3>🗓️ Próxima reunión</h3>
-      <p>Lunes <strong>7 de septiembre de 2026, 12:00 h</strong>. Se revisan los acuerdos abiertos y se llega con ideas de mejora para este sitio.</p>
-    </a>
-  </div>
-
-  <h2 class="section-title">Quién es quién</h2>
-  <div class="panel">
-    <p style="margin:0.2rem 0"><strong>Asamblea de condóminos:</strong> <span style="color:var(--ink-2)">órgano supremo del condominio. Resuelve todo asunto de interés común que no esté entre las facultades del administrador (art. 22).</span></p>
-    <p style="margin:0.2rem 0"><strong>Mesa directiva:</strong> <span style="color:var(--ink-2)">Ale, Naydelin y Eduardo. Da seguimiento mensual a los acuerdos junto con la administración.</span></p>
-    <p style="margin:0.2rem 0"><strong>Comité de vigilancia:</strong> <span style="color:var(--ink-2)">de una y hasta tres personas nombradas por la asamblea. Verifica los estados de cuenta que rinde el administrador (arts. 21 y 24-III).</span></p>
-    <p style="margin:0.2rem 0"><strong>Administración:</strong> <span style="color:var(--ink-2)">Admin-Solutions. Recauda las cuotas, ejecuta los acuerdos de la asamblea, atiende la operación de instalaciones y servicios y rinde el estado de cuenta mensual (art. 19).</span></p>
-  </div>
-
-  <h2 class="section-title">Contacto</h2>
-  <div class="panel">
-    <p style="margin:0.2rem 0"><strong>Administración:</strong> Admin-Solutions</p>
-    <p style="margin:0.2rem 0; color:var(--ink-2)">Reportes, aclaraciones, autorizaciones y solicitudes: por escrito a la administración. Está en proceso de creación una cuenta de correo común de la mesa directiva, con su carpeta compartida para informes, minutas y documentos.</p>
-    <p style="margin:0.6rem 0 0; color:var(--ink-2)"><strong>Horario de oficina (propuesta):</strong> lunes a viernes de 9:00 a 14:00 h · <strong>Correo y WhatsApp de administración:</strong> por definir.</p>
-    <p style="margin:0.6rem 0 0"><strong>Cámaras y nuevo sistema de entrada:</strong> Technosecurity · <a href="tel:+524427493002">+52 1 442 749 3002</a> · <a href="https://wa.me/5214427493002" target="_blank" rel="noopener">WhatsApp</a>. <span style="color:var(--ink-2)">Las fallas se reportan a la mesa directiva, que coordina con el proveedor.</span></p>
-    <p class="ref" style="margin:0.6rem 0 0">Cada condómino tiene cinco días, contados a partir de que recibe el estado de cuenta mensual, para formular observaciones y objeciones (art. 19, XI).</p>
-  </div>
+  <h2 class="section-title">📞 Proveedores y contactos</h2>
+  <div class="pvs"><div class="pv"><span class="pv-i">🧹</span><div class="pv-t"><b>Conserje</b><small>Don Jorge · 442 657 1663</small></div><div class="pv-a"><a class="pv-b" href="tel:+5214426571663">📞 Llamar</a><a class="pv-b wa" href="https://wa.me/5214426571663" target="_blank" rel="noopener">💬 WhatsApp</a></div></div><div class="pv"><span class="pv-i">🚪</span><div class="pv-t"><b>Acceso y cámaras</b><small>Technosecurity · 442 749 3002</small></div><div class="pv-a"><a class="pv-b" href="tel:+5214427493002">📞 Llamar</a><a class="pv-b wa" href="https://wa.me/5214427493002" target="_blank" rel="noopener">💬 WhatsApp</a></div></div><div class="pv"><span class="pv-i">🚨</span><div class="pv-t"><b>Emergencias</b><small>911</small></div><div class="pv-a"><a class="pv-b" href="tel:911">📞 Llamar</a></div></div><div class="pv"><span class="pv-i">⚡</span><div class="pv-t"><b>Luz (CFE)</b><small>071</small></div><div class="pv-a"><a class="pv-b" href="tel:071">📞 Llamar</a></div></div></div>
+  <p class="section-sub" style="margin-top:.6rem"><a href="proveedores.html">Ver todos ›</a> · Fallas y reportes, también a la mesa directiva.</p>
 </main>
 
 <footer class="site-footer">
   <div class="inner">
-    Las Misiones Residencial · Senda Eterna 444, Fraccionamiento Milenio III, Santiago de Querétaro, Qro. · Contenido basado en el Reglamento de Condominio y Administración del Conjunto &ldquo;Misiones&rdquo;, en la minuta de la mesa directiva del 10 de agosto de 2026 y en las tablas contables y estados de cuenta entregados por la administración (corte: junio de 2026). Los datos señalados como propuesta o por definir son ilustrativos y no forman parte del reglamento vigente. Sitio informativo temporal. · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a> · <a href="guia-mesa.html">Guía de la mesa directiva</a>
+    Las Misiones Residencial · Senda Eterna 444, Milenio III, Querétaro · <a href="ayuda.html">Ayuda</a> · <a href="proveedores.html">Proveedores</a> · <a href="privacidad.html">Aviso de privacidad</a> · <a href="guia-mesa.html">Guía de la mesa</a>
   </div>
 </footer>
 <script>

@@ -290,7 +290,8 @@ function miDepto_(depto) {
   const ss = SpreadsheetApp.getActive(), cfg = config_(), zona = "America/Mexico_City";
   const cuota = Number(cfg.cuota_mantenimiento) || 1500, desde = mesTexto_(cfg.finanzas_desde).trim();
   const hoyId = Utilities.formatDate(new Date(), zona, "yyyy-MM");
-  const meses = [], vistos = {};
+  const meses = [], vistos = {}, pend = pendientesPorCelda_(ss);
+  const neto = (h, fila, col, v) => Math.max(0, (Number(v) || 0) - (pend[h.getName() + "!" + "ABCDEFGH".charAt(col - 1) + fila] || 0));
   ss.getSheets().forEach(h => {
     if (!esHojaMes_(h) || h.getName() === PLANTILLA) return;
     const id = idDeHojaMes_(h);
@@ -300,7 +301,7 @@ function miDepto_(depto) {
     const fC = et.indexOf("cobrospordepartamento");
     let manto = 0, agua = 0, extra = 0;
     if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) {
-      if (et[i] === "depto" + depto) { manto = Number(vals[i][1]) || 0; agua = Number(vals[i][2]) || 0; extra = Number(vals[i][3]) || 0; break; }
+      if (et[i] === "depto" + depto) { manto = neto(h, i + 1, 3, vals[i][1]); agua = neto(h, i + 1, 4, vals[i][2]); extra = neto(h, i + 1, 5, vals[i][3]); break; }
     }
     meses.push({ id: id, nombre: capitalizar_(MESES[parseInt(id.slice(5), 10) - 1]) + " " + id.slice(0, 4), futuro: id > hoyId, enCurso: id === hoyId, cuota: id > hoyId ? 0 : cuota, manto: manto, aguaPagada: agua, extra: extra });
   });
@@ -318,13 +319,17 @@ function miDepto_(depto) {
   /* El agua de antes de finanzas_desde (p. ej. la de septiembre, que se lee el 9 de octubre) es de la
      administración anterior: no se cobra. */
   for (let i = agua.length - 1; i >= 0; i--) if (desde && agua[i].mes < desde) agua.splice(i, 1);
+  /* Lo que la hoja tiene de agua pagada (columna Agua de las pestañas desde octubre, ya sin lo que está
+     en revisión) cubre los recibos sin fecha de pago, del más viejo al más nuevo. */
+  let bolsa = meses.reduce((a, m) => a + m.aguaPagada, 0) - agua.filter(a => a.pagado).reduce((a, x) => a + x.cargo, 0);
+  agua.forEach(a => { if (a.pagado) return; if (bolsa >= a.cargo - 0.5) { a.pagado = true; a.enHoja = true; bolsa -= a.cargo; } });
   /* Cuota extraordinaria (Config): lo pagado en la columna Extraordinario de cualquier pestaña de mes. */
   const exMonto = Number(cfg.extraordinario_monto) || 0, exNombre = String(cfg.extraordinario_nombre || "Cuota extraordinaria").trim();
   let exPagado = 0;
   ss.getSheets().forEach(h => {
     if (!esHojaMes_(h) || h.getName() === PLANTILLA) return;
     const vals = h.getRange(1, 2, 120, 4).getValues(), et = vals.map(f => normEt_(f[0])), fC = et.indexOf("cobrospordepartamento");
-    if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) if (et[i] === "depto" + depto) { exPagado += Number(vals[i][3]) || 0; break; }
+    if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) if (et[i] === "depto" + depto) { exPagado += neto(h, i + 1, 5, vals[i][3]); break; }
   });
   const extraordinaria = exMonto > 0 ? { nombre: exNombre, monto: exMonto, pagado: Math.round(exPagado * 100) / 100, pendiente: Math.round(Math.max(0, exMonto - exPagado) * 100) / 100 } : null;
   let saldoManto = 0, adelantado = 0;
@@ -345,4 +350,18 @@ function miDepto_(depto) {
     total: Math.round((debeManto + aguaPendiente + (extraordinaria ? extraordinaria.pendiente : 0)) * 100) / 100, extraordinaria: extraordinaria, debeManto: Math.round(debeManto * 100) / 100, aFavor: Math.round(aFavor * 100) / 100, adelantado: Math.round(adelantado * 100) / 100, aguaPendiente: Math.round(aguaPendiente * 100) / 100,
     meses: meses, agua: agua, previo: previo, previoEnRevision: !previo, pagos: est.pagos || [], cuenta: est.cuenta || ""
   };
+}
+
+/* Lo que un pago reportado y aún NO confirmado escribió en la hoja, por celda ("Octubre!C20" → 1500).
+   La bandeja anota el monto en amarillo al recibirlo (columna M de Pagos guarda dónde); mientras no se
+   confirme, no cuenta como pagado en Mi depto. Lo capturado a mano en la hoja sí cuenta. */
+function pendientesPorCelda_(ss) {
+  const out = {}, h = ss.getSheetByName(HOJA_PAGOS);
+  if (!h || h.getLastRow() < 2) return out;
+  h.getRange(2, 1, h.getLastRow() - 1, ENC_PAGOS.length).getValues().forEach(f => {
+    const est = String(f[9] || "Pendiente").trim(), celdas = String(f[12] || "");
+    if (/confirm|rechaz/i.test(est) || !celdas || celdas.indexOf(RETIRADO) === 0) return;
+    celdas.split(";").forEach(r => { const p = r.split("="); const m = Number(p[p.length - 1]); if (p[0] && isFinite(m)) out[p[0]] = (out[p[0]] || 0) + m; });
+  });
+  return out;
 }

@@ -9,7 +9,9 @@
 - El reporte de cuentas sale cada día 10; para recibirlo se registra el correo en correo.html.
 - Retraso en el pago: interés moratorio de CPP × 1.5 (art. 17 del reglamento).
 - Uso de los departamentos: solo casa habitación. Si se renta, el propietario entrega copia del contrato.
+- Conserje: Don Jorge, +52 1 442 657 1663.
 - Cámaras y sistema de entrada: Technosecurity, +52 1 442 749 3002.
+- [Proveedores y contactos](proveedores.html)
 
 ## Páginas
 - [Mi depto](mi-depto.html): lo que debe cada departamento, mes por mes
