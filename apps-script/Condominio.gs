@@ -338,7 +338,14 @@ function miDepto_(depto) {
   /* Varias cuotas extraordinarias: Config → extraordinarias = «Nombre=monto | Nombre=monto», de la más vieja a la
      más nueva. Lo pagado en la columna Extraordinario cubre primero la más vieja. Sin esa celda se usa la de siempre
      (extraordinario_nombre / extraordinario_monto). */
-  const lista = String(cfg.extraordinarias || "").split("|").map(x => x.trim()).filter(Boolean).map(x => { const k = x.lastIndexOf("="); return { nombre: x.slice(0, k).trim(), monto: Number(String(x.slice(k + 1)).replace(/[^\d.]/g, "")) || 0 }; }).filter(x => x.nombre && x.monto > 0);
+  /* «Nombre=monto» aplica a todos; «Nombre=monto [3, 5, 9]» solo a esos deptos (p. ej. una cuota que solo algunos
+     vecinos aceptaron pagar). A los demás ni se les muestra. */
+  const lista = String(cfg.extraordinarias || "").split("|").map(x => x.trim()).filter(Boolean).map(x => {
+    const m = x.match(/^(.*?)=\s*\$?\s*([\d,.]+)\s*(?:\[(.*?)\])?\s*$/);
+    if (!m) return null;
+    const solo = m[3] ? m[3].split(/[,\s]+/).map(Number).filter(n => n >= 1) : null;
+    return { nombre: m[1].trim(), monto: Number(m[2].replace(/,/g, "")) || 0, solo: solo };
+  }).filter(x => x && x.nombre && x.monto > 0 && (!x.solo || x.solo.indexOf(depto) >= 0));
   if (!lista.length && exMonto > 0) lista.push({ nombre: exNombre, monto: exMonto });
   let bolsaEx = exPagado;
   const extraordinarias = lista.map(x => { const pag = Math.min(x.monto, Math.max(0, bolsaEx)); bolsaEx -= pag; return { nombre: x.nombre, monto: x.monto, pagado: Math.round(pag * 100) / 100, pendiente: Math.round((x.monto - pag) * 100) / 100 }; });
