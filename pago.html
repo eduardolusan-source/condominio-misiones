@@ -30,6 +30,17 @@
   .meses { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
   .meses button { font: inherit; font-weight: 700; font-size: 1rem; min-height: 48px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
   .meses button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .meses button.sel::before, .concepto.on .nom::before { content: "✓ "; }
+  .q { font: inherit; font-size: .85rem; font-weight: 700; border: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; padding: 0; }
+  .debes { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .9rem 1rem; margin: 0 0 1rem; box-shadow: var(--shadow); }
+  .debes .big { font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; } .debes .big.mal { color: var(--bad-text); } .debes .big.bien { color: var(--good-text); }
+  .debes ul { margin: .3rem 0 .6rem 1.1rem; padding: 0; color: var(--ink-2); font-size: .95rem; }
+  .debes button { width: 100%; font: inherit; font-weight: 800; min-height: 50px; border-radius: 14px; border: 0; background: var(--accent); color: #fff; cursor: pointer; }
+  .linea { list-style: none; margin: 1rem 0; padding: 0; display: grid; gap: .5rem; text-align: left; }
+  .linea li { position: relative; padding: .55rem .8rem .55rem 2.4rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); }
+  .linea li::before { content: "○"; position: absolute; left: .8rem; top: .55rem; font-weight: 800; color: var(--muted); }
+  .linea li.hecho::before { content: "✓"; color: var(--good-text); } .linea li.ahora::before { content: "⏳"; }
+  .linea b { display: block; } .linea span { font-size: .85rem; color: var(--ink-2); }
   .meses.todos { grid-template-columns: repeat(3, 1fr); }
   .meses.todos button { font-size: 0.9rem; min-height: 44px; }
   .otro { display: block; width: 100%; margin-top: 0.5rem; font: inherit; font-size: 0.95rem; padding: 0.5rem; background: none; border: 1px dashed var(--baseline); border-radius: 10px; color: var(--ink-2); cursor: pointer; }
@@ -93,15 +104,16 @@
     <section class="paso">
       <h2><span>1</span>¿Qué departamento eres?</h2>
       <div class="deptos" id="deptos"></div>
+      <div id="debes" class="debes hidden" style="margin-top:1rem"></div>
       <div id="cuenta" class="cuenta hidden"></div>
     </section>
 
     <section class="paso">
       <h2><span>2</span>¿Qué pagaste?</h2>
-      <p class="pista" style="text-align:left;margin:0 0 0.4rem">¿De qué mes es el pago? <small>Si pagas varios meses, toca cada uno.</small></p>
+      <p class="pista" style="text-align:left;margin:0 0 0.4rem">¿De qué mes es el pago? <small>El mes con <b>✓</b> ya está elegido. Toca otro para agregarlo o tócalo de nuevo para quitarlo.</small></p>
       <div class="meses" id="meses"></div>
       <button type="button" class="otro" id="btnOtroMes">Otro mes…</button>
-      <p class="pista" style="text-align:left;margin:0.9rem 0 0.6rem">Toca lo que aplique. Puedes cambiar la cantidad.</p>
+      <p class="pista" style="text-align:left;margin:0.9rem 0 0.6rem">Toca lo que pagaste (se marca con ✓) y corrige la cantidad si hace falta. <button type="button" class="q" data-q="conceptos">¿Qué es cada uno?</button></p>
       <div id="conceptos"></div>
       <div class="total"><small>Total que debe coincidir con tu transferencia</small><strong id="total">$0.00</strong></div>
       <div class="nota"><input id="nota" type="text" maxlength="200" placeholder="Algo que quieras aclarar (opcional)"></div>
@@ -119,9 +131,11 @@
   </div>
 
   <div id="listo" class="ok hidden">
-    <h2>¡Recibido!</h2>
+    <h2>¡Recibido! ✓</h2>
     <p id="resumen"></p>
-    <p>Queda <span class="badge">en espera</span> hasta que se confirme en el banco. Folio <strong id="folio"></strong>.</p>
+    <p>Folio <strong id="folio"></strong>. Guárdalo por si necesitas aclarar algo.</p>
+    <ol class="linea"><li class="hecho"><b>Reportado</b><span>hoy</span></li><li class="ahora"><b>En revisión</b><span>la mesa lo compara con el banco</span></li><li><b>Confirmado</b><span>se resta de lo que debes</span></li></ol>
+    <p style="font-size:.95rem;color:var(--ink-2)">No hace falta enviarlo otra vez ni avisar por el grupo. Puedes seguirlo en <a id="lnkDepto" href="mi-depto.html">Mi depto</a>.</p>
     <button id="btnOtro">Registrar otro pago</button>
   </div>
 
@@ -200,7 +214,7 @@ function elegirDepto(n) {
   [...deptos.children].forEach(x => x.classList.toggle("sel", +x.dataset.n === n));
   try { localStorage.setItem("misiones_depto", n); } catch (e) {}
   const vd = document.getElementById("verDepto"); if (vd) { vd.href = "mi-depto.html?depto=" + n; vd.firstChild.textContent = "🏠 ¿Cuánto debe el depto " + n + "? Ver mes por mes "; }
-  cargarEstado(n);
+  cargarEstado(n); cargarDebes(n);
   validar();
 }
 
@@ -240,6 +254,41 @@ function validar() {
   $("pista").textContent = !depto ? "Primero toca tu departamento." : (!n ? "Toca al menos un mes." : (d.total > 0 ? "" : "Toca lo que pagaste."));
 }
 
+/* --- Lo que debe hoy (Mi depto) y botón para llenar el formulario con eso --- */
+let MD = null;
+async function cargarDebes(n) {
+  const caja = $("debes"); if (!caja) return;
+  caja.classList.remove("hidden"); caja.innerHTML = '<p class="pista" style="text-align:left;margin:0">Consultando lo que debe el depto ' + n + '…</p>';
+  try {
+    const r = await fetch(SCRIPT_URL + "?accion=midepto&depto=" + n + "&t=" + Date.now()); const j = await r.json();
+    if (!j.ok) throw new Error(j.error); if (n !== depto) return; MD = j;
+    const enRev = id => (j.pagos || []).some(p => p.mes === id && !/confirm|rechaz/i.test(p.estatus));
+    const revAgua = (j.pagos || []).filter(p => !/confirm|rechaz/i.test(p.estatus)).reduce((a, p) => a + (p.agua || 0), 0);
+    const faltan = j.meses.filter(m => !m.futuro && m.diferencia < -0.5 && !enRev(m.id)), enRevision = j.meses.filter(m => !m.futuro && m.diferencia < -0.5 && enRev(m.id));
+    const agua = revAgua > 0.5 ? [] : j.agua.filter(a => !a.pagado);
+    MD.faltan = faltan; MD.aguaFalta = agua;
+    caja.innerHTML = '<small style="font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2)">Depto ' + n + ' · debes hoy</small><div class="big ' + (j.total > 0.5 ? "mal" : "bien") + '">' + (j.total > 0.5 ? fmt(j.total) : "✓ Al corriente") + "</div>" +
+      (enRevision.length || revAgua > 0.5 ? '<p class="pista" style="text-align:left;margin:.3rem 0">⏳ Ya reportaste ' + [enRevision.map(m => m.nombre.toLowerCase()).join(", "), revAgua > 0.5 ? "agua" : ""].filter(Boolean).join(" y ") + ": está <b>en revisión</b>, no lo vuelvas a enviar.</p>" : "") +
+      (faltan.length || agua.length ? "<ul>" + faltan.map(m => "<li>Mantenimiento de " + m.nombre.toLowerCase() + ": " + fmt(-m.diferencia) + "</li>").join("") + agua.map(a => "<li>Agua de " + a.nombre.toLowerCase() + ": " + fmt(a.cargo) + "</li>").join("") + "</ul>" +
+        '<button type="button" id="btnLlenar">Llenar con lo que debo</button><p class="pista" style="text-align:left;margin:.5rem 0 0">Si pagaste otra cantidad, llénalo a mano abajo. <a href="mi-depto.html?depto=' + n + '">Ver el detalle en Mi depto</a></p>'
+        : '<p class="pista" style="text-align:left;margin:.3rem 0 0">¿Vas a pagar por adelantado? Elige abajo el mes o meses. <a href="mi-depto.html?depto=' + n + '">Ver Mi depto</a></p>');
+  } catch (e) { caja.classList.add("hidden"); }
+}
+function llenarConDeuda() {
+  if (!MD) return;
+  const faltan = MD.faltan || [], agua = MD.aguaFalta || [];
+  mesesSel.clear(); faltan.forEach(m => mesesSel.add(m.id)); if (!mesesSel.size) mesesSel.add(agua.length ? agua[agua.length - 1].mes : cortos[2]);
+  const ids = mesesElegidos(); if (ids.some(id => cortos.indexOf(id) < 0)) { meses.classList.add("todos"); $("btnOtroMes").onclick(); } else pintarMeses(cortos);
+  $("i_mantenimiento").value = faltan.length ? MD.cuota : "";
+  $("i_agua").value = agua.length ? Math.round(agua.reduce((a, x) => a + x.cargo, 0) * 100) / 100 : "";
+  validar(); $("meses").scrollIntoView({ behavior: "smooth", block: "center" });
+}
+document.addEventListener("click", e => {
+  if (e.target.id === "btnLlenar") return llenarConDeuda();
+  const q = e.target.closest("[data-q]"); if (!q) return;
+  if (q.dataset.q === "conceptos") ventana("¿Qué es cada concepto?", '<p class="exp"><b>Mantenimiento:</b> la cuota mensual de ' + fmt(CONCEPTOS[0].sug) + ' por departamento. Si eliges varios meses, se multiplica.</p><p class="exp"><b>Agua:</b> tu parte del recibo de la CEA, según tu medidor. La ves en <a href="agua.html">Agua</a>.</p><p class="exp"><b>Extraordinario:</b> una cuota aparte aprobada en asamblea' + (estado && estado.extraordinario && estado.extraordinario.nombre ? " (" + estado.extraordinario.nombre + ")" : "") + '.</p><p class="exp"><b>Casa club:</b> el uso del salón de usos múltiples.</p><p class="exp">El <b>total</b> debe ser igual a lo que transferiste: así la mesa lo encuentra rápido en el banco.</p>');
+});
+
 /* --- Estado del departamento (lo que debe y lo que ha reportado) --- */
 async function cargarEstado(n) {
   const caja = $("cuenta");
@@ -253,24 +302,14 @@ async function cargarEstado(n) {
     estado = j;
     aplicarConfig(j);
     let html = "<h3>Depto " + n + "</h3>";
-    if (!j.adeudo || !j.adeudo.mostrar) {
-      html += '<div class="fila"><span>Adeudo anterior</span><span class="badge">pendiente</span></div><p class="corte">Se publicará cuando la administración anterior entregue las cuentas.</p>';
-    } else if (j.adeudo.total > 0) {
-      html += '<div class="fila"><span>Adeudo anterior</span><span class="tot">' + fmt(j.adeudo.total) + "</span></div>";
-      [["Mantenimiento", j.adeudo.mantenimiento], ["Agua", j.adeudo.agua], ["Extraordinario", j.adeudo.extraordinario]].forEach(([k, v]) => {
-        if (v > 0) html += '<div class="fila"><span>&nbsp;&nbsp;' + k + "</span><span>" + fmt(v) + "</span></div>";
-      });
-      html += '<p class="corte">' + (j.adeudo.corte ? "Según el corte del " + j.adeudo.corte + "; no" : "No") + " incluye los pagos de abajo.</p>";
-    } else {
-      html += '<div class="fila"><span>Adeudo anterior</span><span class="badge si">al corriente</span></div>' + (j.adeudo.corte ? '<p class="corte">Según el corte del ' + j.adeudo.corte + ".</p>" : "");
-    }
+    html += '<div class="fila"><span>Antes de octubre de 2026</span><span class="badge si">no se cobra</span></div><p class="corte">La mesa no asume adeudos de la administración anterior. Si quieres aportar algo de esos meses, elige el mes en el paso 2: se agradece.</p>';
     if (j.pagos.length) {
       html += '<h3 style="margin-top:0.7rem">Pagos reportados</h3>';
       j.pagos.forEach(p => {
         const partes = [p.mantenimiento && "mantenimiento", p.agua && "agua", p.extraordinario && "extraordinario", p.casaclub && "casa club"].filter(Boolean).join(", ");
         const cls = p.estatus === "Confirmado" ? "si" : (p.estatus === "Rechazado" ? "no" : "");
         const txt = p.estatus === "Confirmado" ? "confirmado" : (p.estatus === "Rechazado" ? "no se encontró" : "en espera");
-        html += '<div class="fila"><span>' + (p.mes ? nombreMes(p.mes) : p.fecha) + " · " + fmt(p.total) + '<br><small style="color:var(--muted)">' + partes + " · reportado el " + p.fecha + '</small></span><span class="badge ' + cls + '">' + txt + "</span></div>";
+        html += '<div class="fila"><span>' + (p.mes ? nombreMes(p.mes) + (p.mes < "2026-10" ? " 🙏" : "") : p.fecha) + " · " + fmt(p.total) + '<br><small style="color:var(--muted)">' + partes + " · reportado el " + p.fecha + '</small></span><span class="badge ' + cls + '">' + txt + "</span></div>";
       });
       if (j.pagos.some(p => p.estatus === "Rechazado")) html += '<p class="corte"><strong>No se encontró</strong>: la mesa directiva no ubicó ese pago en el banco con esos datos. Si sí lo hiciste, mándale la captura por WhatsApp; si fue un reporte repetido o de prueba, no tienes que hacer nada.</p>';
     }
@@ -322,6 +361,7 @@ async function enviar() {
     const j = await r.json(); if (!j.ok) throw new Error(j.error || "error");
     $("formulario").classList.add("hidden"); $("fallo").classList.add("hidden");
     $("resumen").textContent = textoResumen(d); $("folio").textContent = j.folio;
+    $("lnkDepto").href = "mi-depto.html?depto=" + depto;
     $("listo").classList.remove("hidden"); window.scrollTo(0, 0);
   } catch (e) {
     $("mensaje").value = textoResumen(d) + ($("nota").value.trim() ? " Nota: " + $("nota").value.trim() : "");
@@ -329,7 +369,14 @@ async function enviar() {
     $("btnEnviar").textContent = "Enviar"; validar();
   }
 }
-$("btnEnviar").onclick = enviar;
+$("btnEnviar").onclick = () => {
+  const d = leer(), ids = mesesElegidos();
+  const lineas = CONCEPTOS.filter(c => d[c.id] > 0).map(c => '<div class="cuenta-l"><span>' + c.nom + (c.id === "mantenimiento" && ids.length > 1 ? " × " + ids.length + " meses" : "") + "</span><b>" + fmt(c.id === "mantenimiento" ? d[c.id] * Math.max(1, ids.length) : d[c.id]) + "</b></div>").join("");
+  ventana("Revisa antes de enviar", '<p class="exp" style="margin-top:0"><b>Depto ' + depto + "</b> · " + nombresMeses(ids) + "</p>" + lineas + '<div class="cuenta-l tot"><span>Total</span><span>' + fmt(d.total) + "</span></div>" +
+    '<p class="exp" style="margin-top:.8rem">¿Es <b>la misma cantidad</b> que transferiste?' + (imagen ? " Va con tu comprobante." : " <b>No agregaste comprobante</b>: con él la mesa lo confirma más rápido.") + "</p>" +
+    '<div class="acc"><a class="p" href="#" id="btnConfirmar">Sí, enviar</a></div>', "Corregir");
+};
+document.addEventListener("click", e => { if (e.target.id === "btnConfirmar") { e.preventDefault(); document.querySelector("dialog.ve").close(); enviar(); } });
 $("btnReintentar").onclick = () => { $("fallo").classList.add("hidden"); enviar(); };
 $("btnOtro").onclick = () => {
   CONCEPTOS.forEach(c => $("i_" + c.id).value = ""); $("nota").value = ""; $("btnQuitar").onclick();
@@ -341,7 +388,8 @@ $("btnOtro").onclick = () => {
 /* Si se llega desde agua.html con ?agua=monto&mes=AAAA-MM, el agua y el mes vienen puestos */
 try {
   const q = new URLSearchParams(location.search);
-  const qa = num(q.get("agua") || ""), qm = q.get("mes") || "";
+  const qa = num(q.get("agua") || ""), qm = q.get("mes") || "", qd = parseInt(q.get("depto") || "", 10);
+  if (qd >= 1 && qd <= UNIDADES) try { localStorage.setItem("misiones_depto", qd); } catch (e) {}
   if (qa > 0) $("i_agua").value = qa;
   if (/^\d{4}-(0[1-9]|1[0-2])$/.test(qm)) {
     mesesSel.clear(); mesesSel.add(qm);
@@ -353,5 +401,6 @@ try { const g = parseInt(localStorage.getItem("misiones_depto"), 10); if (g >= 1
 validar();
 </script>
 <script src="js/letra.js"></script>
+<script src="js/ventana.js"></script>
 </body>
 </html>
