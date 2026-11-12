@@ -338,15 +338,20 @@ function miDepto_(depto) {
   /* Varias cuotas extraordinarias: Config → extraordinarias = «Nombre=monto | Nombre=monto», de la más vieja a la
      más nueva. Lo pagado en la columna Extraordinario cubre primero la más vieja. Sin esa celda se usa la de siempre
      (extraordinario_nombre / extraordinario_monto). */
-  /* «Nombre=monto» aplica a todos; «Nombre=monto [3, 5, 9]» solo a esos deptos (p. ej. una cuota que solo algunos
-     vecinos aceptaron pagar). A los demás ni se les muestra. */
-  const lista = String(cfg.extraordinarias || "").split("|").map(x => x.trim()).filter(Boolean).map(x => {
+  /* Cuotas extraordinarias (de la más vieja a la más nueva; lo pagado cubre primero la más vieja):
+     - Config → extraordinarias = «Nombre=monto | Nombre=monto [15, 3]». Sin corchetes aplica a todos; con corchetes,
+       solo a esos deptos MÁS los que respondieron «debo» a esa cuota en «Validar mis cuentas» (pestaña Validaciones).
+     - Sin esa celda: la de la CEA ($1,905) a todos y la de Config extraordinario_nombre/monto solo al depto 15 (que
+       la reconoció) y a quien responda «debo» en Validaciones. A los demás ni se les muestra. */
+  const reconoce = reconocenExtra_(ss);
+  let texto = String(cfg.extraordinarias || "").trim();
+  if (!texto) texto = "Deuda con la CEA (cuota única)=1905" + (exMonto > 0 ? " | " + exNombre + "=" + exMonto + " [15]" : "");
+  const lista = texto.split("|").map(x => x.trim()).filter(Boolean).map(x => {
     const m = x.match(/^(.*?)=\s*\$?\s*([\d,.]+)\s*(?:\[(.*?)\])?\s*$/);
     if (!m) return null;
-    const solo = m[3] ? m[3].split(/[,\s]+/).map(Number).filter(n => n >= 1) : null;
+    const solo = m[3] != null ? m[3].split(/[,\s]+/).map(Number).filter(n => n >= 1).concat(reconoce) : null;
     return { nombre: m[1].trim(), monto: Number(m[2].replace(/,/g, "")) || 0, solo: solo };
   }).filter(x => x && x.nombre && x.monto > 0 && (!x.solo || x.solo.indexOf(depto) >= 0));
-  if (!lista.length && exMonto > 0) lista.push({ nombre: exNombre, monto: exMonto });
   let bolsaEx = exPagado;
   const extraordinarias = lista.map(x => { const pag = Math.min(x.monto, Math.max(0, bolsaEx)); bolsaEx -= pag; return { nombre: x.nombre, monto: x.monto, pagado: Math.round(pag * 100) / 100, pendiente: Math.round((x.monto - pag) * 100) / 100 }; });
   const pendEx = extraordinarias.filter(x => x.pendiente > 0.5);
@@ -452,4 +457,16 @@ function cancelarCasa_(d) {
   const cfg = config_();
   MailApp.sendEmail(String(cfg.reporte_copia || Session.getEffectiveUser().getEmail()), "Casa club: reserva cancelada " + folio, "Depto " + depto + " canceló su reserva del " + diaIso_(filas[i][2]) + " (" + filas[i][3] + "). El horario quedó libre.", { name: REP_REMITENTE });
   return { ok: true };
+}
+
+/* Deptos que en «Validar mis cuentas» respondieron «debo» a una cuota extraordinaria (vale su respuesta más reciente). */
+function reconocenExtra_(ss) {
+  const h = ss.getSheetByName(HOJA_VALID); if (!h || h.getLastRow() < 2) return [];
+  const ultima = {};
+  h.getRange(2, 1, h.getLastRow() - 1, 4).getValues().forEach(f => {
+    if (!/extraordinaria/i.test(String(f[2] || ""))) return;
+    const d = Number(f[1]), t = new Date(f[0]).getTime() || 0;
+    if (d >= 1 && (!ultima[d] || t >= ultima[d].t)) ultima[d] = { t: t, debo: /debo/i.test(String(f[3] || "")) };
+  });
+  return Object.keys(ultima).filter(d => ultima[d].debo).map(Number);
 }
