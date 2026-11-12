@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Acuerdos y minutas · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  .pg { max-width: 680px; margin: 0 auto; padding: 1.1rem 1rem 4rem; } .pg h1 { font-size: 1.7rem; margin: .4rem 0 .8rem; }
+  .sum { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: 1rem; }
+  .sum button { font: inherit; text-align: left; background: var(--surface); border: 2px solid var(--border); border-radius: 16px; padding: .75rem .8rem; cursor: pointer; color: var(--ink); }
+  .sum button b { display: block; font-size: 1.6rem; line-height: 1.1; } .sum button span { font-size: .82rem; color: var(--ink-2); }
+  .sum button.sel { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
+  .av { display: grid; grid-template-columns: 1fr auto; gap: .7rem; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .75rem .9rem; margin-bottom: .45rem; }
+  .av b { display: block; line-height: 1.35; } .av small { display: block; color: var(--muted); margin-top: .15rem; } .av.Cumplido b { color: var(--ink-2); }
+  .est { font-size: .78rem; font-weight: 800; padding: .25rem .65rem; border-radius: 999px; white-space: nowrap; }
+  .est.Pendiente { background: #fff3cd; color: #7a5a00; } .est.En { background: #d6e2ee; color: #12293f; } .est.Cumplido { background: #d4edda; color: #1d5a2a; }
+  h2.t { font-size: 1.15rem; margin: 1.6rem 0 .6rem; }
+  .ru { display: grid; grid-template-columns: auto 1fr auto; gap: .8rem; align-items: center; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .8rem .9rem; margin-bottom: .5rem; text-decoration: none; cursor: pointer; box-shadow: var(--shadow); }
+  .ru .d { width: 3.1rem; text-align: center; border-radius: 12px; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); padding: .3rem 0; line-height: 1.05; }
+  .ru .d b { display: block; font-size: 1.3rem; } .ru .d small { font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+  .ru small.s { display: block; color: var(--muted); } .ru .fl { color: var(--muted); font-size: 1.3rem; }
+  .vacio { color: var(--ink-2); text-align: center; padding: 1.2rem; border: 1px dashed var(--baseline); border-radius: 16px; }
+  .ve .ac { border-left: 4px solid var(--good-text); padding: .3rem 0 .3rem .8rem; margin: .55rem 0; } .ve .ac small { display: block; color: var(--ink-2); }
+  .ve .rq { font-weight: 800; margin: 1rem 0 .5rem; }
+  @media (prefers-color-scheme: dark) { .est.Pendiente { background: #5a4300; color: #ffe08a; } .est.Cumplido { background: #1d4a2a; color: #b9f0c6; } .est.En { background: #12293f; color: #c3d9ee; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="mi-depto.html">Mi depto</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="reunion.html">Reunión</a>
+      <a href="minutas.html" class="active">Acuerdos y minutas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="ayuda.html">Ayuda</a>
+    </nav>
+  </div>
+</header>
+<main class="pg">
+  <h1>📚 Acuerdos y minutas</h1>
+  <div class="sum" id="sum"></div>
+  <div id="lista"><p class="vacio">Cargando…</p></div>
+  <h2 class="t">🗓️ Reuniones</h2>
+  <div id="reus"></div>
+</main>
+<script src="js/ventana.js"></script>
+<script src="js/reunion.js"></script>
+<script>
+(function () {
+  "use strict";
+  const R = window.Reunion, esc = R.esc, $ = id => document.getElementById(id);
+  const MS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  let J = null, filtro = "abiertos";
+  const OCTUBRE = { id: "oct", titulo: "Asamblea del 13 de octubre", fecha: "2026-10-13", estatica: true };
+
+  function pintar(j) {
+    J = j; const A = j.acuerdos || [];
+    const ab = A.filter(a => a.estado !== "Cumplido"), cu = A.filter(a => a.estado === "Cumplido");
+    $("sum").innerHTML = [["abiertos", ab.length, "por cumplir"], ["cumplidos", cu.length, "cumplidos ✓"], ["todos", A.length, "en total"]].map(x =>
+      '<button type="button" data-f="' + x[0] + '" class="' + (filtro === x[0] ? "sel" : "") + '"><b>' + x[1] + "</b><span>" + x[2] + "</span></button>").join("");
+    const L = filtro === "abiertos" ? ab : filtro === "cumplidos" ? cu : A;
+    $("lista").innerHTML = L.length ? L.slice().sort((x, y) => (y.fecha > x.fecha ? 1 : -1)).map(a => '<div class="av ' + esc(a.estado.split(" ")[0]) + '"><div><b>' + esc(a.acuerdo) + "</b><small>" +
+      esc([a.responsable && "👤 " + a.responsable, a.compromiso && "📅 " + a.compromiso, a.reunion.replace(/ · \d{4}-\d{2}-\d{2}$/, "")].filter(Boolean).join(" · ")) + '</small></div><span class="est ' + esc(a.estado.split(" ")[0]) + '">' + esc(a.estado) + "</span></div>").join("")
+      : '<p class="vacio">' + (filtro === "abiertos" ? "🎉 Nada pendiente." : "Todavía no hay acuerdos aquí.") + "</p>";
+    const reus = [], r = j.reunion;
+    if (r) reus.push(Object.assign({ actual: true }, r));
+    (j.anteriores || []).forEach(x => reus.push(x));
+    reus.push(OCTUBRE);
+    $("reus").innerHTML = reus.map((x, i) => { const d = new Date(x.fecha + "T12:00:00");
+      const sub = x.actual && x.estado !== "Cerrada" ? (x.estado === "En curso" ? "🔴 En vivo ahora" : "Próxima · " + R.cuando(x).t) : x.estatica ? "Presentación, votos y acuerdos" : (x.minuta ? "📄 Minuta" : "Minuta en camino") + " · " + (x.temas || []).filter(t => t.acuerdo).length + " acuerdos";
+      return (x.actual && x.estado !== "Cerrada" ? '<a class="ru" href="reunion.html">' : x.estatica ? '<a class="ru" href="acuerdos.html">' : '<button type="button" class="ru" data-r="' + i + '">') +
+        '<span class="d"><b>' + d.getDate() + "</b><small>" + MS[d.getMonth()] + "</small></span><span><b>" + esc(x.titulo) + '</b><small class="s">' + esc(sub) + '</small></span><span class="fl">›</span>' + (x.actual && x.estado !== "Cerrada" || x.estatica ? "</a>" : "</button>"); }).join("");
+    window.__reus = reus;
+  }
+
+  document.addEventListener("click", e => {
+    const f = e.target.closest("[data-f]"); if (f) { filtro = f.dataset.f; pintar(J); return; }
+    const b = e.target.closest("[data-r]"); if (!b) return;
+    const x = window.__reus[+b.dataset.r], temas = x.temas || [], res = x.resultados || x.votos || {};
+    let h = x.minuta ? '<div class="acc"><a class="p" href="' + esc(x.minuta) + '" target="_blank" rel="noopener">📄 Leer la minuta</a></div>' : '<p class="exp">La minuta todavía no se publica.</p>';
+    const ac = temas.filter(t => t.acuerdo);
+    if (ac.length) h += '<p class="rq">✅ Acuerdos</p>' + ac.map(t => '<div class="ac"><b>' + esc(t.acuerdo) + "</b>" + (t.responsable || t.compromiso ? "<small>" + esc([t.responsable, t.compromiso].filter(Boolean).join(" · ")) + "</small>" : "") + "</div>").join("");
+    const conV = (x.temas || []).map((t, i) => ({ t, v: res[t.id] })).filter(o => o.v);
+    if (conV.length) h += conV.map(o => '<p class="rq">🗳️ ' + esc(o.t.pregunta || o.t.titulo) + "</p>" + R.barras(Object.assign({ opciones: o.t.opciones || Object.keys(o.v.conteo) }, o.t), o.v, { deptos: true })).join("");
+    window.ventana(x.titulo + " · " + R.fechaCorta(x.fecha), h);
+  });
+
+  try { const g = JSON.parse(localStorage.getItem("misiones.reunion") || "null"); if (g && g.ok) pintar(g); } catch (e) {}
+  R.cargar().then(j => { if (j && j.ok) { pintar(j); try { localStorage.setItem("misiones.reunion", JSON.stringify(j)); } catch (e) {} } })
+    .catch(() => { if (!J) $("lista").innerHTML = '<p class="vacio">No pudimos leer los acuerdos. Intenta en un momento.</p>'; });
+})();
+</script>
+<script src="js/letra.js"></script>
+</body>
+</html>

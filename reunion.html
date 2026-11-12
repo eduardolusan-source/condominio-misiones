@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Reunión · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  .pg { max-width: 680px; margin: 0 auto; padding: 1.1rem 1rem 4rem; }
+  .hero-r { position: relative; overflow: hidden; background: linear-gradient(140deg, #1d3f63, #12293f); color: #fff; border-radius: 24px; padding: 1.4rem 1.3rem 1.2rem; box-shadow: var(--shadow); }
+  .hero-r::after { content: ""; position: absolute; right: -40px; top: -40px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255,255,255,.06); }
+  .hero-r .k { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #c3d9ee; margin: 0; }
+  .chip { font-size: .78rem; letter-spacing: 0; text-transform: none; font-weight: 800; padding: .2rem .7rem; border-radius: 999px; background: rgba(255,255,255,.16); color: #fff; }
+  .chip.vivo { background: #b3261e; animation: lat 1.4s infinite; } .chip.pronto { background: #c08a3e; } @keyframes lat { 50% { opacity: .7; } }
+  .hero-r h1 { font-size: 1.85rem; line-height: 1.12; margin: .45rem 0 .5rem; color: #fff; }
+  .hero-r .cu { font-size: 1.2rem; font-weight: 700; margin: 0; } .hero-r .lu { margin: .2rem 0 0; opacity: .88; }
+  .hero-r .conv { margin: .7rem 0 0; opacity: .92; font-size: .95rem; line-height: 1.5; }
+  .bts { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin-top: 1rem; position: relative; z-index: 1; }
+  .bt { display: flex; align-items: center; justify-content: center; gap: .4rem; font: inherit; font-weight: 800; font-size: .98rem; min-height: 50px; padding: .5rem .7rem; border-radius: 14px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.1); color: #fff; text-decoration: none; cursor: pointer; text-align: center; }
+  .bt.p { background: #fff; color: #12293f; border-color: #fff; } .bt.full { grid-column: 1 / -1; }
+  .qr { display: flex; align-items: center; gap: .7rem; margin-top: 1rem; font-size: .92rem; position: relative; z-index: 1; } .qr i { flex: 1; height: 8px; border-radius: 999px; background: rgba(255,255,255,.2); overflow: hidden; } .qr i u { display: block; height: 100%; background: #6fd08c; }
+  h2.t { font-size: 1.15rem; margin: 1.5rem 0 .6rem; }
+  .od { display: grid; gap: .5rem; counter-reset: o; }
+  .ti { display: grid; grid-template-columns: 2.3rem 1fr auto; gap: .7rem; align-items: center; width: 100%; text-align: left; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .8rem .9rem; cursor: pointer; box-shadow: var(--shadow); counter-increment: o; }
+  .ti::before { content: counter(o); width: 2.3rem; height: 2.3rem; border-radius: 50%; display: grid; place-items: center; font-weight: 900; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); }
+  .ti b { display: block; font-size: 1.02rem; } .ti small { color: var(--muted); } .ti .fl { color: var(--muted); font-size: 1.3rem; }
+  .tg { display: inline-block; font-size: .7rem; font-weight: 800; padding: .1rem .5rem; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; background: #fff3cd; color: #7a5a00; margin-left: .3rem; vertical-align: 1px; }
+  .card-v { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 1rem 1.05rem; box-shadow: var(--shadow); margin-bottom: .7rem; }
+  .card-v .q { font-weight: 800; font-size: 1.05rem; margin: 0 0 .7rem; } .card-v .kk { font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 0 0 .2rem; }
+  .ac { border-left: 4px solid var(--good-text); padding: .3rem 0 .3rem .8rem; margin: .55rem 0; } .ac b { display: block; } .ac small { color: var(--ink-2); }
+  .min { display: flex; align-items: center; gap: .8rem; text-decoration: none; color: var(--ink); background: var(--surface); border: 2px solid var(--accent); border-radius: 18px; padding: .9rem 1rem; font-weight: 800; }
+  .min span { font-size: 1.8rem; } .min small { display: block; font-weight: 400; color: var(--ink-2); }
+  .min.no { border-style: dashed; border-color: var(--baseline); color: var(--ink-2); }
+  .vacio { text-align: center; padding: 2.2rem 1rem; background: var(--surface); border: 1px dashed var(--baseline); border-radius: 20px; } .vacio .big { font-size: 2.6rem; }
+  .mas { display: block; text-align: center; margin-top: 1.4rem; font-weight: 800; }
+  .ve .ex li { margin: .3rem 0; line-height: 1.5; }
+  @media (prefers-color-scheme: dark) { .tg { background: #5a4300; color: #ffe08a; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="mi-depto.html">Mi depto</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="reunion.html" class="active">Reunión</a>
+      <a href="minutas.html">Acuerdos y minutas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="ayuda.html">Ayuda</a>
+    </nav>
+  </div>
+</header>
+<main class="pg">
+  <div id="app"><div class="vacio"><div class="big">⏳</div><p>Cargando la reunión…</p></div></div>
+  <a class="mas" href="minutas.html">📚 Acuerdos y minutas anteriores ›</a>
+</main>
+<script src="js/ventana.js"></script>
+<script src="js/reunion.js"></script>
+<script>
+(function () {
+  "use strict";
+  const R = window.Reunion, esc = R.esc, app = document.getElementById("app");
+  let J = null, tm = null;
+
+  function pintar(j) {
+    J = j; const r = j.reunion;
+    if (!r) { app.innerHTML = '<div class="vacio"><div class="big">🗓️</div><h2 style="margin:.3rem 0">Sin reunión programada</h2><p style="color:var(--ink-2)">Cuando la mesa directiva convoque, aquí verás la fecha, el orden del día y la votación.</p></div>'; return; }
+    const c = R.cuando(r), cerr = r.estado === "Cerrada", vivo = r.estado === "En curso", vot = r.temas.filter(t => t.tipo === "vota");
+    const fecha = R.fecha(r.fecha).replace(/^./, x => x.toUpperCase()) + (r.hora ? " · " + R.hora(r.hora) : "");
+    let h = '<section class="hero-r"><p class="k">' + esc(r.tipo === "Asamblea" ? "Asamblea" : "Reunión") + ' <span class="chip ' + c.c + '">' + c.t + "</span></p><h1>" + esc(r.titulo) + '</h1><p class="cu">🗓️ ' + esc(fecha) + "</p>" +
+      (r.lugar ? '<p class="lu">📍 ' + esc(r.lugar) + "</p>" : "") + (r.convocatoria && !cerr ? '<p class="conv">' + esc(r.convocatoria) + "</p>" : "") + '<div class="bts">';
+    if (r.enlace && !cerr) h += '<a class="bt p full" href="' + esc(r.enlace) + '" target="_blank" rel="noopener">🎥 ' + (vivo ? "Entrar ahora a la videollamada" : "Liga de la videollamada") + "</a>";
+    if (!cerr) h += '<button type="button" class="bt" id="bCal">📅 A mi calendario</button><a class="bt" href="' + R.wa(r) + '" target="_blank" rel="noopener">💬 Compartir</a>';
+    h += '<button type="button" class="bt' + (cerr ? "" : " full") + '" id="bPres">▶ Ver la presentación</button>' + (cerr && r.minuta ? '<a class="bt p" href="' + esc(r.minuta) + '" target="_blank" rel="noopener">📄 Minuta</a>' : "") + "</div>";
+    if (vivo || (r.asistencia || []).length) { const a = (r.asistencia || []).length, u = j.unidades || 16;
+      h += '<div class="qr"><span>👥 ' + a + " de " + u + '</span><i><u style="width:' + Math.round(a / u * 100) + '%"></u></i><b>' + (a >= j.quorum ? "✅ Quórum" : "Quórum " + j.quorum) + "</b></div>"; }
+    h += "</section>";
+
+    if (cerr) {
+      const ac = r.temas.filter(t => t.acuerdo);
+      h += '<h2 class="t">✅ Lo que se acordó</h2>' + (ac.length ? '<div class="card-v">' + ac.map(t => '<div class="ac"><b>' + esc(t.acuerdo) + "</b><small>" + esc([t.responsable && "👤 " + t.responsable, t.compromiso && "📅 " + t.compromiso].filter(Boolean).join(" · ")) + "</small></div>").join("") + "</div>" : '<p style="color:var(--ink-2)">Sin acuerdos registrados.</p>');
+      h += r.minuta ? '<a class="min" href="' + esc(r.minuta) + '" target="_blank" rel="noopener"><span>📄</span><div>Leer la minuta<small>' + esc(R.fechaCorta(r.fecha)) + "</small></div></a>"
+        : '<div class="min no"><span>📄</span><div>Minuta en camino<small>La mesa la sube en cuanto esté lista.</small></div></div>';
+    }
+    if ((vivo || cerr) && vot.length) {
+      h += '<h2 class="t">🗳️ ' + (vivo ? "Votación en vivo" : "Resultados") + "</h2>";
+      vot.forEach(t => { h += '<div class="card-v"><p class="kk">Tema ' + (r.temas.indexOf(t) + 1) + '</p><p class="q">' + esc(t.pregunta || t.titulo) + "</p>" + R.barras(t, (r.votos || {})[t.id], { unidades: j.unidades, deptos: true }) + "</div>"; });
+    }
+    h += '<h2 class="t">📋 Orden del día</h2><div class="od">' + r.temas.map((t, i) => '<button type="button" class="ti" data-t="' + i + '"><span><b>' + esc(t.titulo) + (t.tipo === "vota" ? '<span class="tg">se vota</span>' : "") + "</b>" +
+      (t.texto ? "<small>" + esc(String(t.texto).split(/\n/)[0].slice(0, 70)) + "</small>" : "") + '</span><span class="fl">›</span></button>').join("") + "</div>";
+    if (cerr) h += '<p style="text-align:center;color:var(--muted);margin-top:1.2rem">🗓️ Próxima reunión: por definir</p>';
+    app.innerHTML = h;
+    const bc = document.getElementById("bCal"); if (bc) bc.onclick = () => R.ics(r);
+    document.getElementById("bPres").onclick = () => R.presentar(r, { quorum: j.quorum, unidades: j.unidades }, () => R.cargar().then(n => n.reunion));
+    clearTimeout(tm); if (vivo) tm = setTimeout(cargar, 8000);
+  }
+
+  app.addEventListener("click", e => {
+    const b = e.target.closest("[data-t]"); if (!b || !J) return;
+    const r = J.reunion, t = r.temas[+b.dataset.t];
+    const lineas = String(t.texto || "").split(/\n+/).map(s => s.replace(/^[-•·*]\s*/, "").trim()).filter(Boolean);
+    let h = lineas.length ? '<ul class="ex">' + lineas.map(s => "<li>" + esc(s) + "</li>").join("") + "</ul>" : "";
+    if (t.tipo === "vota") h += '<div class="card-v" style="margin-top:.8rem"><p class="q">🗳️ ' + esc(t.pregunta || t.titulo) + "</p>" + (r.estado === "Convocada" ? '<p style="margin:0">' + t.opciones.map(o => '<span class="chip" style="background:var(--page);color:var(--ink);border:1px solid var(--border);margin:.15rem">' + esc(o) + "</span>").join("") + "</p>" : R.barras(t, (r.votos || {})[t.id], { unidades: J.unidades, deptos: true })) + "</div>";
+    if (t.acuerdo) h += '<div class="ac"><b>✅ ' + esc(t.acuerdo) + "</b><small>" + esc([t.responsable, t.compromiso].filter(Boolean).join(" · ")) + "</small></div>";
+    window.ventana((+b.dataset.t + 1) + ". " + t.titulo, h || '<p class="exp">Se platica en la reunión.</p>');
+  });
+
+  function cargar() {
+    R.cargar().then(j => { if (j && j.ok) { pintar(j); try { localStorage.setItem("misiones.reunion", JSON.stringify(j)); } catch (e) {} } else throw new Error(j && j.error); })
+      .catch(() => { if (!J) app.innerHTML = '<div class="vacio"><div class="big">📡</div><p>No pudimos leer la reunión. Intenta en un momento.</p></div>'; else tm = setTimeout(cargar, 15000); });
+  }
+  try { const g = JSON.parse(localStorage.getItem("misiones.reunion") || "null"); if (g && g.ok) pintar(g); } catch (e) {}
+  cargar();
+})();
+</script>
+<script src="js/letra.js"></script>
+</body>
+</html>
