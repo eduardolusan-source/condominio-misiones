@@ -392,6 +392,7 @@ try {
   const q = new URLSearchParams(location.search);
   const qa = num(q.get("agua") || ""), qm = q.get("mes") || "", qd = parseInt(q.get("depto") || "", 10), qx = num(q.get("extra") || "");
   if (qx > 0) $("i_extraordinario").value = qx;
+  const qc = num(q.get("casa") || ""); if (qc > 0) $("i_casaclub").value = qc;
   if (qd >= 1 && qd <= UNIDADES) try { localStorage.setItem("misiones_depto", qd); } catch (e) {}
   if (qa > 0) $("i_agua").value = qa;
   if (/^\d{4}-(0[1-9]|1[0-2])$/.test(qm)) {

@@ -368,6 +368,7 @@ function doGet(e) {
     if (p.accion === "imagen") return json_(imagen_(p.clave, p.folio));
     if (p.accion === "cuentas") return json_(cuentasDepto_(parseInt(p.depto, 10)));
     if (p.accion === "midepto") return json_(miDepto_(parseInt(p.depto, 10)));      // mi-depto.html (Condominio.gs)
+    if (p.accion === "reservas") return json_(reservasCasa_(p.depto));               // casa-club.html (Condominio.gs)
     if (p.accion === "lecturas") { asegurarAgua_(true); return json_(lecturasMes_(p.mes, p.clave)); }
     if (p.accion === "agua") { asegurarAgua_(true); return json_(aguaDepto_(parseInt(p.depto, 10))); }
     if (p.accion === "votos") return json_(votos_());
@@ -394,6 +395,8 @@ function doPost(e) {
     if (d.accion === "egreso") { lock.waitLock(10000); return json_(registrarEgreso_(d)); }
     if (d.accion === "anularEgreso") { lock.waitLock(10000); return json_(anularEgreso_(d)); }
     if (d.accion === "correo") { lock.waitLock(10000); return json_(registrarCorreo_(d)); }   // correo.html (Condominio.gs)
+    if (d.accion === "reservaCasa") { lock.waitLock(10000); return json_(reservarCasa_(d)); }  // casa-club.html
+    if (d.accion === "cancelarCasa") { lock.waitLock(10000); return json_(cancelarCasa_(d)); }
     if (d.clave !== CLAVE) return json_({ ok: false, error: "clave" });
     if (d.accion === "validar") { lock.waitLock(10000); return json_(validar_(d)); }
     const depto = parseInt(d.depto, 10);

@@ -342,3 +342,11 @@ Solo sitio (no hay que tocar el script):
 - El agua de septiembre (lectura de octubre) y lo anterior no se cobran.
 - Cuota extraordinaria (Config → extraordinario_monto): pagado y pendiente por depto.
 Pega `Condominio.gs` nuevo → Nueva versión.
+
+## Casa club con calendario (13 de noviembre de 2026)
+Página `casa-club.html`: calendario del mes con días libres, apartados en parte y ocupados; el vecino elige día,
+horario (mañana, tarde, noche o día completo) y depto, y pide la reserva. Cae en la pestaña nueva **«Reservas casa
+club»** como «Por confirmar» y te llega un correo. Tú cambias el Estatus a Confirmada o Rechazada. Candados: horarios
+que se traslapan, hasta 90 días antes, 2 reservas activas por depto; el vecino puede cancelar la suya. El semáforo
+avisa reservas por confirmar. Costo: Config → casa_club_monto. Reglas (opcional): Config → reglas_casa_club.
+Pega `Code.gs` y `Condominio.gs` nuevos → Nueva versión.
