@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Mi depto · Las Misiones Residencial</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  .md { max-width: 620px; margin: 0 auto; padding: 1.25rem 1rem 4rem; }
+  .md h1 { font-size: 1.7rem; margin: .4rem 0 .2rem; }
+  .md .lead { color: var(--ink-2); margin: 0 0 1rem; }
+  .deptos { display: grid; grid-template-columns: repeat(8, 1fr); gap: .4rem; }
+  @media (max-width: 520px) { .deptos { grid-template-columns: repeat(4, 1fr); } }
+  .deptos button { font: inherit; font-weight: 700; font-size: 1.1rem; min-height: 50px; border: 2px solid var(--baseline); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .deptos button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .total { margin: 1.2rem 0 .6rem; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.2rem 1.3rem; box-shadow: var(--shadow); }
+  .total .k { font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+  .total .big { font-size: 2.6rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; margin: .2rem 0; }
+  .total .big.mal { color: var(--bad-text); } .total .big.bien { color: var(--good-text); }
+  .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .4rem 0 .2rem; }
+  .chip { font-size: .85rem; font-weight: 700; padding: .25rem .7rem; border-radius: 999px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); }
+  .chip.verde { background: color-mix(in srgb, var(--good-text) 15%, var(--surface)); }
+  .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: .8rem 0 1rem; }
+  .acciones a { text-align: center; text-decoration: none; font-weight: 800; padding: .85rem; border-radius: 14px; border: 1px solid var(--border); color: var(--ink); background: var(--surface); }
+  .acciones a.prim { background: var(--accent); border-color: var(--accent); color: #fff; }
+  details.bloque { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; margin: .6rem 0; padding: 0 1rem; }
+  details.bloque summary { cursor: pointer; list-style: none; padding: .95rem 0; font-weight: 700; display: flex; justify-content: space-between; gap: .5rem; }
+  details.bloque summary::after { content: "▾"; color: var(--muted); } details.bloque[open] summary::after { content: "▴"; }
+  details.bloque summary b { font-variant-numeric: tabular-nums; }
+  .fila { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .55rem 0; border-top: 1px dashed var(--grid); font-size: .95rem; }
+  .fila small { display: block; color: var(--muted); font-size: .8rem; }
+  .est { font-size: .78rem; font-weight: 800; padding: .15rem .55rem; border-radius: 999px; white-space: nowrap; }
+  .est.ok { background: #d4edda; color: #1d5a2a; } .est.no { background: #f8d7da; color: #7a1c24; } .est.ade { background: #dbe8f7; color: #1d3f63; } .est.pen { background: #fff3cd; color: #7a5a00; }
+  .nota { font-size: .85rem; color: var(--ink-2); margin: .6rem 0 1rem; }
+  @media (prefers-color-scheme: dark) { .deptos button.sel, .acciones a.prim { color: #0d0d0d; } .est.ok { background: #1d4a2a; color: #b8f0c6; } .est.no { background: #5a1d22; color: #ffb3b9; } .est.ade { background: #1d3354; color: #bcd6f5; } .est.pen { background: #5a4300; color: #ffe08a; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+    <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
+    <label for="nav-toggle" class="nav-btn" aria-label="Abrir o cerrar el menú"><span class="bars">☰</span> Menú</label>
+    <nav class="main">
+      <a href="index.html">Inicio</a>
+      <a href="mi-depto.html" class="active">Mi depto</a>
+      <a href="pago.html">Registrar pago</a>
+      <a href="agua.html">Agua</a>
+      <a href="finanzas.html">Finanzas</a>
+      <a href="pendientes.html">Pendientes</a>
+      <a href="reglamento.html">Reglamento</a>
+      <a href="areas-comunes.html">Áreas comunes</a>
+      <a href="ayuda.html">Ayuda</a>
+    </nav>
+  </div>
+</header>
+<main class="md">
+  <h1>🏠 Mi depto</h1>
+  <p class="lead">Lo que tienes pendiente, mes por mes, y lo que ya reportaste. Toca tu departamento.</p>
+  <div class="deptos" id="deptos"></div>
+  <div id="res"></div>
+</main>
+<script>
+(function () {
+  "use strict";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+  const $ = id => document.getElementById(id);
+  const $0 = v => "$" + Math.round(Math.abs(v)).toLocaleString("es-MX");
+  const esc = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+  let depto = null;
+  try { const g = +localStorage.getItem("misiones_depto"); if (g >= 1 && g <= 16) depto = g; } catch (e) {}
+  for (let i = 1; i <= 16; i++) { const b = document.createElement("button"); b.type = "button"; b.textContent = i; b.dataset.n = i; b.setAttribute("aria-label", "Departamento " + i); b.onclick = () => elegir(i); $("deptos").appendChild(b); }
+  function elegir(n) {
+    depto = n; try { localStorage.setItem("misiones_depto", n); } catch (e) {}
+    [...$("deptos").children].forEach(x => { x.classList.toggle("sel", +x.dataset.n === n); x.setAttribute("aria-pressed", +x.dataset.n === n); });
+    history.replaceState(null, "", "?depto=" + n);
+    cargar(n);
+  }
+  async function cargar(n) {
+    $("res").innerHTML = '<p class="nota" style="padding:1rem 0">Consultando la hoja de la mesa…</p>';
+    try {
+      const r = await fetch(SCRIPT_URL + "?accion=midepto&depto=" + n + "&t=" + Date.now(), { cache: "no-store" });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || "sin datos");
+      if (n === depto) $("res").innerHTML = pintar(j);
+    } catch (e) { $("res").innerHTML = '<p class="nota">No pudimos leer la hoja en este momento (' + esc(e.message) + '). Intenta en unos minutos.</p>'; }
+  }
+  function pintar(j) {
+    const debe = j.total > 0.5;
+    const pas = j.meses.filter(m => !m.futuro), fut = j.meses.filter(m => m.futuro);
+    let h = '<section class="total"><div class="k">Depto ' + j.depto + ' · lo que debes hoy</div><div class="big ' + (debe ? "mal" : "bien") + '">' + (debe ? $0(j.total) : "✓ Al corriente") + "</div>" +
+      '<div class="chips">' + (j.debeManto > 0.5 ? '<span class="chip">Mantenimiento ' + $0(j.debeManto) + "</span>" : "") + (j.aguaPendiente > 0.5 ? '<span class="chip">Agua ' + $0(j.aguaPendiente) + "</span>" : "") +
+      (j.aFavor > 0.5 ? '<span class="chip verde">A favor ' + $0(j.aFavor) + "</span>" : "") + (j.adelantado > 0.5 ? '<span class="chip verde">Pagado por adelantado ' + $0(j.adelantado) + "</span>" : "") + "</div>" +
+      '<div class="nota" style="margin:.4rem 0 0">Desde que la mesa directiva lleva las cuentas. Lo de antes va aparte, abajo.</div></section>' +
+      '<div class="acciones"><a class="prim" href="pago.html">Registrar un pago</a><a href="' + (j.agua.length ? "agua.html" : "finanzas.html") + '">' + (j.agua.length ? "Ver mi recibo de agua" : "Ver las finanzas") + "</a></div>";
+    const faltaM = pas.filter(m => m.diferencia < -0.5).length;
+    h += '<details class="bloque"' + (faltaM ? " open" : "") + '><summary><span>Mantenimiento, mes por mes</span><b>' + (j.debeManto > 0.5 ? "faltan " + $0(j.debeManto) : "al corriente") + "</b></summary>" +
+fut.map(m => '<div class="fila"><span>' + esc(m.nombre) + "<small>pagaste " + $0(m.manto) + ' por adelantado</small></span><span class="est ade">adelantado</span></div>').join("") +
+      pas.slice().reverse().map(m => '<div class="fila"><span>' + esc(m.nombre) + (m.enCurso ? " <small>mes en curso</small>" : "") + "<small>cuota " + $0(m.cuota) + " · pagaste " + $0(m.manto) + "</small></span>" +
+        (m.diferencia < -0.5 ? '<span class="est ' + (m.enCurso ? "pen" : "no") + '">' + (m.enCurso ? "por pagar " : "faltan ") + $0(-m.diferencia) + "</span>" : m.diferencia > 0.5 ? '<span class="est ok">pagado +' + $0(m.diferencia) + "</span>" : '<span class="est ok">pagado</span>') + "</div>").join("") + "</details>";
+    if (j.agua.length) h += '<details class="bloque"' + (j.aguaPendiente > 0.5 ? " open" : "") + '><summary><span>Agua, recibo por recibo</span><b>' + (j.aguaPendiente > 0.5 ? "pendiente " + $0(j.aguaPendiente) : "al corriente") + "</b></summary>" +
+      j.agua.slice().reverse().map(a => '<div class="fila"><span>Agua de ' + esc(a.nombre) + "<small>" + a.consumo + " m³ · " + $0(a.cargo) + '</small></span><span class="est ' + (a.pagado ? "ok" : "no") + '">' + (a.pagado ? "pagado" : "pendiente") + "</span></div>").join("") +
+      '<p class="nota">El detalle de cada lectura y cómo se reparte el recibo de la CEA está en <a href="agua.html">Agua</a>.</p></details>';
+    h += '<details class="bloque"><summary><span>Antes de octubre (administración anterior)</span><b>' + (j.previo ? $0(j.previo.total) : "en revisión") + "</b></summary>" +
+      (j.previo ? '<div class="fila"><span>Mantenimiento</span><b>' + $0(j.previo.mantenimiento) + '</b></div><div class="fila"><span>Agua</span><b>' + $0(j.previo.agua) + '</b></div><div class="fila"><span>Cuotas extraordinarias</span><b>' + $0(j.previo.extraordinario) + "</b></div>" +
+        '<p class="nota">Corte del ' + esc(j.previo.corte) + ', según la hoja maestra que entregó la administración anterior. ¿No coincide con lo que pagaste? Dilo y sube tus comprobantes en <a href="cuentas.html">Validar mis cuentas</a>.</p>'
+        : '<p class="nota">La mesa directiva está revisando las cuentas que dejó la administración anterior. Mientras, puedes validar las tuyas y subir comprobantes en <a href="cuentas.html">Validar mis cuentas</a>.</p>') + "</details>";
+    if (j.pagos.length) h += '<details class="bloque"><summary><span>Pagos que reportaste</span><b>' + j.pagos.length + "</b></summary>" +
+      j.pagos.map(p => '<div class="fila"><span>' + esc(p.fecha) + "<small>" + [p.mantenimiento ? "mantenimiento " + $0(p.mantenimiento) : "", p.agua ? "agua " + $0(p.agua) : "", p.extraordinario ? "extraordinario " + $0(p.extraordinario) : "", p.casaclub ? "casa club " + $0(p.casaclub) : ""].filter(Boolean).join(" · ") + '</small></span><span class="est ' + (/confirm/i.test(p.estatus) ? "ok" : /rechaz/i.test(p.estatus) ? "no" : "pen") + '">' + esc(p.estatus.toLowerCase()) + "</span></div>").join("") +
+      '<p class="nota">Un pago «pendiente» ya lo recibimos; se suma a tu cuenta cuando la mesa lo confirma contra el banco.</p></details>';
+    return h + '<p class="nota">¿Algo no cuadra? Escríbele a la mesa directiva con el mes y el dato. Para recibir cada mes el reporte, <a href="correo.html">registra tu correo</a>.</p>';
+  }
+  const q = +new URLSearchParams(location.search).get("depto");
+  if (q >= 1 && q <= 16) elegir(q); else if (depto) elegir(depto);
+})();
+</script>
+
+<footer class="site-footer"><div class="inner">Las Misiones Residencial · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a></div></footer>
+</body>
+</html>

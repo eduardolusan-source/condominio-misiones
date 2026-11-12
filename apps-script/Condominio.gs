@@ -279,3 +279,58 @@ function deptosConCorreo_() {
   const faltan = []; for (let i = 1; i <= UNIDADES; i++) if (!con[i]) faltan.push(i);
   return { con: UNIDADES - faltan.length, faltan: faltan };
 }
+
+/* ---------- Mi depto: adeudo desglosado de un departamento (abierto, decisión de la mesa) ---------- */
+
+/* Desde finanzas_desde (la mesa directiva), mes por mes: cuota vs. lo pagado de mantenimiento y
+   el cargo de agua con su estatus. Antes de esa fecha: el adeudo al corte de la hoja maestra.
+   Sin nombres ni correos. Los meses futuros cuentan como pagos adelantados. */
+function miDepto_(depto) {
+  if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
+  const ss = SpreadsheetApp.getActive(), cfg = config_(), zona = "America/Mexico_City";
+  const cuota = Number(cfg.cuota_mantenimiento) || 1500, desde = mesTexto_(cfg.finanzas_desde).trim();
+  const hoyId = Utilities.formatDate(new Date(), zona, "yyyy-MM");
+  const meses = [], vistos = {};
+  ss.getSheets().forEach(h => {
+    if (!esHojaMes_(h) || h.getName() === PLANTILLA) return;
+    const id = idDeHojaMes_(h);
+    if (!id || (desde && id < desde) || vistos[id]) return;
+    vistos[id] = true;
+    const vals = h.getRange(1, 2, 120, 4).getValues(), et = vals.map(f => normEt_(f[0]));
+    const fC = et.indexOf("cobrospordepartamento");
+    let manto = 0, agua = 0, extra = 0;
+    if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) {
+      if (et[i] === "depto" + depto) { manto = Number(vals[i][1]) || 0; agua = Number(vals[i][2]) || 0; extra = Number(vals[i][3]) || 0; break; }
+    }
+    meses.push({ id: id, nombre: capitalizar_(MESES[parseInt(id.slice(5), 10) - 1]) + " " + id.slice(0, 4), futuro: id > hoyId, enCurso: id === hoyId, cuota: id > hoyId ? 0 : cuota, manto: manto, aguaPagada: agua, extra: extra });
+  });
+  meses.sort((a, b) => a.id < b.id ? -1 : 1);
+  /* Agua: el cargo de cada recibo (la lectura del mes M es el agua de M−1) y si ya se pagó. */
+  const agua = [];
+  const hA = ss.getSheetByName(HOJA_AGUA);
+  if (hA && hA.getLastRow() > 1) hA.getRange(2, 1, hA.getLastRow() - 1, ENC_AGUA.length).getValues().forEach(f => {
+    const mes = mesTexto_(f[0]), cargo = Number(f[8]) || 0;
+    if (claveDepto_(f[1]) !== depto || !/^\d{4}-\d{2}$/.test(mes) || cargo <= 0.5) return;
+    const mesAgua = mesSiguiente_(mes, -1);
+    agua.push({ mes: mesAgua, nombre: capitalizar_(MESES[parseInt(mesAgua.slice(5), 10) - 1]) + " " + mesAgua.slice(0, 4), consumo: Number(f[4]) || 0, cargo: Math.round(cargo * 100) / 100, pagado: f[9] !== "" && f[9] != null });
+  });
+  agua.sort((a, b) => a.mes < b.mes ? -1 : 1);
+  let saldoManto = 0, adelantado = 0;
+  meses.forEach(m => { m.diferencia = Math.round((m.manto - m.cuota) * 100) / 100; if (m.futuro) adelantado += m.manto; else saldoManto += m.manto - m.cuota; });
+  const aguaPendiente = agua.filter(a => !a.pagado).reduce((s, a) => s + a.cargo, 0);
+  const debeManto = Math.max(0, -saldoManto), aFavor = Math.max(0, saldoManto);
+  /* Antes de la mesa: adeudo al corte (si Config → adeudos = mostrar). */
+  let previo = null;
+  const ad = ss.getSheetByName(HOJA_ADEUDOS);
+  if (ad && String(cfg.adeudos || "").trim().toLowerCase() === "mostrar") {
+    const fc = ad.createTextFinder("Fecha de corte").matchCase(false).findNext();
+    const celda = ad.createTextFinder("^Depto " + depto + "$").useRegularExpression(true).matchEntireCell(true).findNext();
+    if (celda) { const v = ad.getRange(celda.getRow(), celda.getColumn() + 2, 1, 4).getValues()[0].map(x => Number(x) || 0); previo = { corte: fc ? ad.getRange(fc.getRow(), fc.getColumn() + 1).getDisplayValue() : "", mantenimiento: v[0], agua: v[1], extraordinario: v[2], total: v[3] }; }
+  }
+  const est = estadoDepto_(depto);
+  return {
+    ok: true, depto: depto, cuota: cuota, desde: desde, hoy: hoyId,
+    total: Math.round((debeManto + aguaPendiente) * 100) / 100, debeManto: Math.round(debeManto * 100) / 100, aFavor: Math.round(aFavor * 100) / 100, adelantado: Math.round(adelantado * 100) / 100, aguaPendiente: Math.round(aguaPendiente * 100) / 100,
+    meses: meses, agua: agua, previo: previo, previoEnRevision: !previo, pagos: est.pagos || [], cuenta: est.cuenta || ""
+  };
+}
