@@ -24,7 +24,7 @@
      sigue llegando a ti.
 
    Para instalar: Ejecutar → instalarReporte (una vez). Para probar sin
-   molestar a nadie: menú "Reporte a vecinos" → "Probar (solo a mí)". */
+   molestar a nadie: menú "Condominio" → "Probar el reporte (solo a mí)". */
 
 const REP_CORREOS = "Correos";
 const REP_BITACORA = "Reportes";
@@ -40,15 +40,7 @@ const REP_MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio
 
 /* ============================ MENÚ Y ARRANQUE ============================ */
 
-function onOpen() {
-  SpreadsheetApp.getUi().createMenu("Reporte a vecinos")
-    .addItem("Probar (solo a mí)", "reportePrueba")
-    .addItem("Enviar ahora el mes anterior a los vecinos", "reporteAhora")
-    .addSeparator()
-    .addItem("Preparar la pestaña del mes siguiente", "prepararMesSiguiente")
-    .addItem("Instalar o reparar la programación (día 10)", "instalarReporte")
-    .addToUi();
-}
+/* El menú vive en Condominio.gs (menú «Condominio»). */
 
 /* Una vez: pestañas Correos y Reportes, claves de Config y el disparador mensual. */
 function instalarReporte() {
@@ -116,7 +108,7 @@ function generarReporte_(opc) {
   if (!m) {
     MailApp.sendEmail(copia, "⚠ No se envió el reporte de " + nombreMes,
       "La pestaña de " + nombreMes + " no tiene cobros ni gastos capturados, así que no se envió nada a los vecinos.\n\n" +
-      "Cuando esté capturada, usa en la hoja el menú «Reporte a vecinos → Enviar ahora el mes anterior a los vecinos».", { name: REP_REMITENTE });
+      "Cuando esté capturada, usa en la hoja el menú «Condominio → Enviar ahora el reporte del mes anterior».", { name: REP_REMITENTE });
     bitacora_(objetivo, "No enviado: el mes no tiene datos", "", "", "");
     return;
   }
@@ -239,6 +231,7 @@ function kitHtml_(k, whatsapp, estado, urlPdf) {
   const wa = "https://wa.me/?text=" + encodeURIComponent(whatsapp);
   const boton = (url, t, color) => '<a href="' + url + '" style="display:inline-block;background:' + color + ';color:#fff;text-decoration:none;padding:11px 18px;border-radius:999px;font-weight:700;margin:4px 6px 4px 0">' + t + "</a>";
   return '<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px">' +
+    (typeof saludHtml_ === "function" ? saludHtml_() : "") +
     '<p style="font-size:15px"><b>' + esc_(estado) + "</b></p>" +
     '<p><a href="' + wa + '" style="display:inline-block;background:#25d366;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir WhatsApp con el mensaje escrito</a></p>' +
     '<p style="font-size:14px;color:#52514e">En el celular: toca el botón, elige el grupo y envía. Después abre una infografía y toca «Compartir a WhatsApp».</p>' +

@@ -242,7 +242,7 @@ funcionando: muestra la morosidad de la foto del 22 de junio de 2026.
    (tu correo), y el disparador del **día 10 a las 9** (hora de Querétaro).
 3. Publicar nueva versión de la implementación (paso 6) no hace falta para el reporte, pero sí para la
    morosidad en vivo.
-4. Al abrir la hoja aparece el menú **Reporte a vecinos**: «Probar (solo a mí)» manda el último mes
+4. Al abrir la hoja aparece el menú **Condominio**: «Probar el reporte (solo a mí)» manda el último mes
    capturado únicamente a `reporte_copia`. Úsalo antes del primer día 10.
 
 Qué pasa el día 10, con el mes anterior:
@@ -278,5 +278,28 @@ Pegar `Code.gs` (conservando `CLAVE_ADMIN`) y `Reporte.gs` nuevos y publicar nue
 - La morosidad en vivo cuenta desde `finanzas_desde` sin reiniciarse en enero.
 - Cuando el script crea la pestaña de un mes (al reportarse un pago, un egreso, o el día 10 con
   `prepararMesSiguiente`), su saldo inicial queda **encadenado** al saldo final del mes anterior, también de
-  diciembre a **Enero 2027**. Menú: «Reporte a vecinos → Preparar la pestaña del mes siguiente».
+  diciembre a **Enero 2027**. Menú: «Condominio → Preparar la pestaña del mes siguiente».
 - Pendiente para dentro de unos años: archivar años viejos (como en La Valetta) cuando la hoja crezca.
+
+## Menú «Condominio», semáforo y claves en Config (12 de noviembre de 2026)
+Tres archivos en el editor: `Code`, `Reporte` y **`Condominio`** (sustituye a `Revision`).
+
+1. **Antes de pegar nada:** abre `Code.gs` en el editor y copia la clave de la línea
+   `const CLAVE_ADMIN = "…"`. En la pestaña **Config** agrega un renglón: `clave_admin` · *tu clave*.
+   (Si se te olvida, no pasa nada grave: el script la pasa sola a Config la primera vez, siempre que tu
+   clave no sea la de ejemplo; y desde el menú puedes poner una nueva.)
+2. Pega `Code.gs` y `Reporte.gs` nuevos (reemplaza todo el contenido de cada uno).
+3. Si existe el archivo `Revision`: ⋮ → **Eliminar**. Luego **+ → Secuencia de comandos** → nombre
+   `Condominio` → pega `Condominio.gs`.
+4. Guarda y publica: **Implementar → Administrar implementaciones → lápiz → Nueva versión → Implementar.**
+5. Recarga la hoja: el menú ahora se llama **Condominio**. Prueba **Revisar que todo cuadre**.
+
+Qué cambia:
+- **Semáforo** (menú y kit del día 10): texto en celdas de monto, cobros de más de 3 cuotas, saldos que no
+  encadenan, pestañas duplicadas o copiadas, mes anterior sin capturar, gastos de ejemplo, lecturas de agua
+  faltantes o menores que la anterior, consumos de más del triple del promedio, recibo de la CEA sin capturar,
+  pagos con más de una semana en la bandeja, claves de ejemplo y pestaña Correos vacía. Es privado.
+- **Clave de la bandeja en Config** (`clave_admin`), igual que `clave_egresos` y `clave_lector`. Pegar
+  versiones nuevas ya no la borra. Cambiarla: menú Condominio → Cambiar la clave de la bandeja de pagos…
+- **Sitio:** páginas `ayuda.html`, `privacidad.html` (aviso de privacidad) y `guia-mesa.html` (rutina mensual
+  con pantallas dibujadas); «Ayuda» en el menú del sitio.

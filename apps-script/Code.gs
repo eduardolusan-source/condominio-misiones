@@ -29,7 +29,7 @@
 */
 
 const CLAVE        = "misiones";            // la misma que en pago.html; solo frena envíos ajenos
-const CLAVE_ADMIN  = "cambia-esta-clave";    // la de bandeja.html: con ella se confirman y rechazan pagos. CÁMBIALA.
+const CLAVE_ADMIN  = "cambia-esta-clave";    // SOLO de respaldo: la clave real de bandeja.html vive en Config → clave_admin (menú Condominio → Cambiar la clave…)
 const CARPETA      = "Misiones · Comprobantes";
 const HOJA_PAGOS   = "Pagos";
 const HOJA_CONFIG  = "Config";
@@ -804,7 +804,7 @@ function leeRecibo_(v) {
    la lectura anterior, lo ya capturado este mes y el promedio de los últimos tres meses. */
 function lecturasMes_(mes, clave) {
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(mes || ""))) throw new Error("mes");
-  if (String(clave || "") !== claveLector_() && String(clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (String(clave || "") !== claveLector_() && String(clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const h = hojaAgua_();
   const filas = h.getLastRow() > 1 ? h.getRange(2, 1, h.getLastRow() - 1, ENC_AGUA.length).getValues() : [];
   const r = { ok: true, version: Number(AGUA_VERSION), mes: mes, deptos: [], capturados: 0, general: null, recibo: null, reciboAnterior: null,
@@ -849,7 +849,7 @@ function lecturasMes_(mes, clave) {
 /* El recibo de la CEA del mes, capturado por la misma persona que lee los medidores:
    monto, m³ (impresos en el recibo), fecha límite y foto. */
 function guardarRecibo_(d) {
-  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const mes = String(d.mes || "");
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
   const monto = Math.round((parseFloat(d.monto) || 0) * 100) / 100;
@@ -879,7 +879,7 @@ function guardarRecibo_(d) {
 /* Guarda la lectura de un medidor (número y foto): depto 1–16 o 0 = medidor general.
    La fila del mes en Recibos agua se crea sola. */
 function guardarLectura_(d) {
-  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (String(d.clave || "") !== claveLector_() && String(d.clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const mes = String(d.mes || "");
   if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
   const depto = /^\s*gen/i.test(String(d.depto)) ? 0 : parseInt(d.depto, 10);
@@ -1113,7 +1113,7 @@ function filaPorFolio_(pagos, folio) {
 }
 
 function pendientes_(clave) {
-  if (clave !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (clave !== claveAdmin_()) return { ok: false, error: "clave" };
   const ss = SpreadsheetApp.getActive();
   const pagos = ss.getSheetByName(HOJA_PAGOS);
   const r = { ok: true, pendientes: [], hoja: ss.getUrl() + "#gid=" + pagos.getSheetId(), total: 0 };
@@ -1135,7 +1135,7 @@ function pendientes_(clave) {
 
 /* Devuelve la captura de un pago en base64 (los archivos de Drive son privados). */
 function imagen_(clave, folio) {
-  if (clave !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (clave !== claveAdmin_()) return { ok: false, error: "clave" };
   const pagos = SpreadsheetApp.getActive().getSheetByName(HOJA_PAGOS);
   const fila = filaPorFolio_(pagos, folio);
   if (!fila) return { ok: false, error: "folio" };
@@ -1147,7 +1147,7 @@ function imagen_(clave, folio) {
 }
 
 function resolverDesdeBandeja_(d) {
-  if (d.claveAdmin !== CLAVE_ADMIN) return { ok: false, error: "clave" };
+  if (d.claveAdmin !== claveAdmin_()) return { ok: false, error: "clave" };
   if (ESTATUS.indexOf(d.estatus) < 0) return { ok: false, error: "estatus" };
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
