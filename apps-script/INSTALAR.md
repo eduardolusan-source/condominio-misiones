@@ -221,6 +221,8 @@ correrlo a mano: `actualizarAgua()`.
 Pegar el `Code.gs` nuevo **conservando la línea `const CLAVE_ADMIN = …` que ya está en el editor** y
 publicar nueva versión (paso 6). No hace falta correr `instalar`. Mientras no se publique, la página sigue
 funcionando: muestra la morosidad de la foto del 22 de junio de 2026.
+- `accion=finanzas` trae también `aguaCobro`: por mes del agua, deptos con cargo, cuántos pagaron, cuántos faltan y
+  el monto por cobrar (sumas de la pestaña Agua).
 - `accion=finanzas` ahora trae, en cada mes en vivo, `mora`: **acumulada** (cuotas de mantenimiento sin
   pagar desde `finanzas_desde`, sumadas), **unidades** con saldo en contra, **adelantos** (pagos de meses
   futuros, sumados) y **unidadesAdelanto**. Se calcula depto por depto con la columna de mantenimiento de
@@ -249,9 +251,13 @@ Qué pasa el día 10, con el mes anterior:
 - Lo **envía** a los correos de la pestaña Correos en **copia oculta** (nadie ve el correo de los demás; se
   omiten los marcados «no», los repetidos y los mal escritos), con un resumen en el cuerpo y liga al sitio.
 - Te manda el **kit de WhatsApp**: el texto, un botón que abre WhatsApp con el mensaje escrito y dos botones a
-  las **infografías** del mes (`infografia.html?tipo=cuotas` y `?tipo=agua`), que se comparten como imagen con
-  un toque. El estilo cambia cada mes (edificio de noche, calle de casitas, alcancía; tinaco, gotas, vaso); en la
-  página se puede elegir otro. Las ventanas/casas/monedas se acomodan al azar cada mes: no son deptos reales.
+  las **infografías** (`infografia.html?tipo=cuotas`, `?tipo=agua` y `?tipo=aguadeuda`), que se comparten como
+  imagen con un toque. Cuotas: edificio de noche, calle de casitas, alcancía, buzones y balcón con macetas.
+  ¿Alcanzó para el agua?: tinaco, gotas y vaso. Agua por pagar (deptos con su recibo pendiente, según la columna
+  «Pagado el» de la pestaña Agua; solo el conteo y el monto total): garrafones y llaves. El estilo rota cada mes;
+  en la página se puede elegir otro. Ventanas, casas, buzones, macetas, monedas, garrafones y llaves se acomodan
+  al azar cada mes: no son deptos reales.
+- El correo a los vecinos es el formal (PDF y resumen en tabla); lo visual es para WhatsApp.
 - **Candados:** si el mes no tiene datos no se envía nada a los vecinos y te avisa; un mes se envía una sola vez;
   con `reporte_envio = pausa` solo te llega el kit. Todo queda en la pestaña Reportes.
 - WhatsApp no permite publicar en grupos automáticamente sin la API de pago de WhatsApp Business; por eso el

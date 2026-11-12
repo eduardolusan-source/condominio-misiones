@@ -182,7 +182,8 @@ function indicadores_(d, m) {
     cobertura: aguaPagada ? Math.round(m.ingresos.agua / aguaPagada * 100) : null,
     rubros: rubros, costoUnidad: rubros.reduce((a, r) => a + r[1], 0),
     resAnio: resAnio, mesesAnio: delAnio.length, desde: d.desde || "",
-    carpeta: m.carpeta || ""
+    carpeta: m.carpeta || "",
+    aguaPend: (d.aguaCobro || []).slice(-1)[0] || null      // último mes del agua con cargos: cuántos deptos deben su recibo (agregado)
   };
 }
 
@@ -200,6 +201,7 @@ function textoWhatsapp_(k) {
   l.push("👥 Pagaron su cuota: " + k.pagaron + " de " + k.unidades);
   if (k.mora) l.push(k.mora.acumulada > 0.5 ? "⏳ Cuotas atrasadas: " + $_(k.mora.acumulada) + " (" + k.mora.unidades + (k.mora.unidades === 1 ? " depto" : " deptos") + ")" : "⏳ Nadie debe cuotas desde " + (k.desde ? REP_MESES[parseInt(k.desde.slice(5), 10) - 1] : "que inició la mesa"));
   if (k.cobertura != null) l.push("💧 Agua: lo cobrado cubrió el " + k.cobertura + "% del recibo");
+  if (k.aguaPend && k.aguaPend.pendientes > 0) l.push("🚰 Agua de " + REP_MESES[parseInt(k.aguaPend.mesAgua.slice(5), 10) - 1] + ": " + k.aguaPend.pendientes + (k.aguaPend.pendientes === 1 ? " depto tiene" : " deptos tienen") + " su recibo pendiente. Tu ticket está en la página Agua del sitio.");
   l.push("", "Detalle completo y comprobantes 👇", REP_SITIO, "", "_Las cifras de morosidad son siempre agregadas, sin identificar a nadie._");
   return l.join("\n");
 }
@@ -233,7 +235,8 @@ function kitHtml_(k, whatsapp, estado, urlPdf) {
     '<p style="font-size:15px"><b>' + esc_(estado) + "</b></p>" +
     '<p><a href="' + wa + '" style="display:inline-block;background:#25d366;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-weight:700">Abrir WhatsApp con el mensaje escrito</a></p>' +
     '<p style="font-size:14px;color:#52514e">En el celular: toca el botón, elige el grupo y envía. Después abre una infografía y toca «Compartir a WhatsApp».</p>' +
-    "<p>" + boton(REP_INFOGRAFIA + "?tipo=cuotas&mes=" + k.id, "🏢 Infografía de cuotas", "#1d3f63") + boton(REP_INFOGRAFIA + "?tipo=agua&mes=" + k.id, "💧 Infografía del agua", "#2f7fb5") + "</p>" +
+    "<p>" + boton(REP_INFOGRAFIA + "?tipo=cuotas&mes=" + k.id, "🏢 Infografía de cuotas", "#1d3f63") + boton(REP_INFOGRAFIA + "?tipo=agua&mes=" + k.id, "💧 ¿Alcanzó para el agua?", "#2f7fb5") +
+    (k.aguaPend ? boton(REP_INFOGRAFIA + "?tipo=aguadeuda&mes=" + k.aguaPend.mesAgua, "🚰 Agua por pagar (" + k.aguaPend.pendientes + ")", "#b3261e") : "") + "</p>" +
     '<pre style="white-space:pre-wrap;background:#f4f4f1;border-radius:10px;padding:14px;font-size:14px;font-family:inherit">' + esc_(whatsapp) + "</pre>" +
     '<p style="font-size:13px;color:#898781">El reporte PDF va adjunto y queda en Drive: <a href="' + urlPdf + '">abrir</a>.</p></div>';
 }

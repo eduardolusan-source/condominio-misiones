@@ -1352,10 +1352,29 @@ function finanzas_(fresh) {
   });
   const totalPrevios = Math.round(previos.reduce((a, p) => a + p.monto, 0) * 100) / 100;
   const ultimo = meses.length ? meses[meses.length - 1] : null;
+  /* Agua por cobrar, por mes del agua (la lectura del 9 de noviembre es el agua de
+     octubre): cuántos deptos tienen cargo, cuántos ya pagaron y cuánto falta. Solo sumas. */
+  const aguaCobro = [];
+  const hAgua = ss.getSheetByName(HOJA_AGUA);
+  if (hAgua && hAgua.getLastRow() > 1) {
+    const porMes = {};
+    hAgua.getRange(2, 1, hAgua.getLastRow() - 1, ENC_AGUA.length).getValues().forEach(f => {
+      const k = claveDepto_(f[1]), mes = mesTexto_(f[0]), cargo = Number(f[8]) || 0;
+      if (!(k >= 1 && k <= UNIDADES) || !/^\d{4}-\d{2}$/.test(mes) || cargo <= 0.5) return;
+      const a = porMes[mes] = porMes[mes] || { mes: mes, mesAgua: mesSiguiente_(mes, -1), cargados: 0, pagados: 0, pendientes: 0, montoCargado: 0, montoPendiente: 0 };
+      a.cargados++; a.montoCargado += cargo;
+      if (f[9] !== "" && f[9] != null) a.pagados++; else { a.pendientes++; a.montoPendiente += cargo; }
+    });
+    Object.keys(porMes).sort().forEach(m => {
+      const a = porMes[m];
+      a.montoCargado = Math.round(a.montoCargado * 100) / 100; a.montoPendiente = Math.round(a.montoPendiente * 100) / 100;
+      aguaCobro.push(a);
+    });
+  }
   const out = {
     ok: true, servicio: "misiones-finanzas", generado: new Date().toISOString(),
     desde: desde, unidades: UNIDADES, cuota: Number(cfg.cuota_mantenimiento) || 1500,
-    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]),
+    meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]), aguaCobro: aguaCobro,
     caja: { saldo: ultimo ? ultimo.saldoFin : 0, ultimoMes: ultimo ? ultimo.id : "", saldoInicialVivo: meses.length ? meses[0].saldoIni : 0, previos: previos, totalPrevios: totalPrevios }
   };
   try { cache.put("finanzas", JSON.stringify(out), CACHE_FINANZAS); } catch (e) {}
