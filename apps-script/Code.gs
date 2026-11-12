@@ -387,6 +387,7 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     const d = JSON.parse(e.postData.contents || "{}");
+    if (typeof olvidarMiDepto_ === "function") olvidarMiDepto_();          // un pago, una confirmación o una lectura cambian «Mi depto»
     if (d.accion === "resolver") return json_(resolverDesdeBandeja_(d));
     if (typeof rutaMesaPost_ === "function" && /^(reunion|acuerdoEstado|casaResolver)/.test(String(d.accion))) { lock.waitLock(20000); const m = rutaMesaPost_(d); if (m) return json_(m); }
     if (d.accion === "lectura") { lock.waitLock(10000); asegurarAgua_(false); return json_(guardarLectura_(d)); }
@@ -1059,7 +1060,7 @@ function actualizarAgua_() {
     if (k === 0) h.getRange(fila, 9).clearContent();
     else if (k >= 1 && k <= UNIDADES) { h.getRange(fila, 9).setFormula(formulaCargo_(fila)).setNumberFormat("$#,##0.00"); n++; }
   });
-  if (n) avisos.push("Agua: cargo recalculado en " + n + " renglones");
+  if (n) { avisos.push("Agua: cargo recalculado en " + n + " renglones"); if (typeof olvidarMiDepto_ === "function") olvidarMiDepto_(); }
   PropertiesService.getScriptProperties().setProperty("agua_version", AGUA_VERSION);
   return avisos;
 }
@@ -1067,7 +1068,7 @@ function actualizarAgua_() {
 /* Al cambiar el estatus en la columna J de Pagos (Confirmado, Rechazado o Pendiente). */
 function onEdit(e) {
   /* Cualquier cambio en la hoja borra la copia guardada: el sitio ve el dato nuevo al recargar, sin esperar 5 minutos. */
-  try { CacheService.getScriptCache().remove("finanzas"); } catch (err) {}
+  try { CacheService.getScriptCache().remove("finanzas"); if (typeof olvidarMiDepto_ === "function") olvidarMiDepto_(); } catch (err) {}
   try {
     const rg = e.range, h = rg.getSheet();
     if (h.getName() !== HOJA_PAGOS || rg.getColumn() !== 10 || rg.getRow() < 2) return;

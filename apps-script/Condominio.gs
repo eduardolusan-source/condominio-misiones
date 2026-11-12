@@ -289,19 +289,43 @@ function deptosConCorreo_() {
 /* Desde finanzas_desde (la mesa directiva), mes por mes: cuota vs. lo pagado de mantenimiento y
    el cargo de agua con su estatus. Antes de esa fecha: el adeudo al corte de la hoja maestra.
    Sin nombres ni correos. Los meses futuros cuentan como pagos adelantados. */
+/* Mi depto con copia de 5 minutos por depto: abrirlo no relee las pestañas cada vez. La copia se borra sola
+   cuando alguien edita la hoja (onEdit), registra un pago o la mesa confirma en la bandeja (doPost) y cuando
+   se recalcula el agua. */
 function miDepto_(depto) {
+  const c = CacheService.getScriptCache(), k = "md_" + depto, g = c.get(k);
+  if (g) { try { return JSON.parse(g); } catch (e) {} }
+  const r = miDeptoCalc_(depto);
+  if (r && r.ok) { try { c.put(k, JSON.stringify(r), 300); } catch (e) {} }
+  return r;
+}
+function olvidarMiDepto_() { try { const ks = ["finanzas"]; for (let d = 1; d <= UNIDADES; d++) ks.push("md_" + d); CacheService.getScriptCache().removeAll(ks); } catch (e) {} }
+/* Pestañas de mes leídas UNA vez por ejecución (B:E, 120 renglones), sin buscar texto en las 18 pestañas. */
+const MEMO_MD_ = {};
+function mesesMD_(ss) {
+  if (MEMO_MD_.meses) return MEMO_MD_.meses;
+  const re = new RegExp("^(" + MESES.join("|") + ")(\\s+\\d{4})?$", "i"), out = [];
+  ss.getSheets().forEach(h => {
+    const nom = h.getName().trim();
+    if (nom === PLANTILLA || !re.test(nom)) return;
+    const vals = h.getRange(1, 2, 120, 4).getValues(), et = vals.map(f => normEt_(f[0]));
+    if (et.indexOf("cobrospordepartamento") < 0) return;
+    out.push({ h: h, vals: vals, et: et, id: idDeHojaMes_(h) });
+  });
+  return (MEMO_MD_.meses = out);
+}
+function miDeptoCalc_(depto) {
   if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
   const ss = SpreadsheetApp.getActive(), cfg = config_(), zona = "America/Mexico_City";
   const cuota = Number(cfg.cuota_mantenimiento) || 1500, desde = mesTexto_(cfg.finanzas_desde).trim();
   const hoyId = Utilities.formatDate(new Date(), zona, "yyyy-MM");
-  const meses = [], vistos = {}, pend = pendientesPorCelda_(ss);
+  const meses = [], vistos = {}, pend = MEMO_MD_.pend || (MEMO_MD_.pend = pendientesPorCelda_(ss));
   const neto = (h, fila, col, v) => Math.max(0, (Number(v) || 0) - (pend[h.getName() + "!" + "ABCDEFGH".charAt(col - 1) + fila] || 0));
-  ss.getSheets().forEach(h => {
-    if (!esHojaMes_(h) || h.getName() === PLANTILLA) return;
-    const id = idDeHojaMes_(h);
+  mesesMD_(ss).forEach(M => {
+    const h = M.h, id = M.id;
     if (!id || (desde && id < desde) || vistos[id]) return;
     vistos[id] = true;
-    const vals = h.getRange(1, 2, 120, 4).getValues(), et = vals.map(f => normEt_(f[0]));
+    const vals = M.vals, et = M.et;
     const fC = et.indexOf("cobrospordepartamento");
     let manto = 0, agua = 0, extra = 0;
     if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) {
@@ -330,9 +354,8 @@ function miDepto_(depto) {
   /* Cuota extraordinaria (Config): lo pagado en la columna Extraordinario de cualquier pestaña de mes. */
   const exMonto = Number(cfg.extraordinario_monto) || 0, exNombre = String(cfg.extraordinario_nombre || "Cuota extraordinaria").trim();
   let exPagado = 0;
-  ss.getSheets().forEach(h => {
-    if (!esHojaMes_(h) || h.getName() === PLANTILLA) return;
-    const vals = h.getRange(1, 2, 120, 4).getValues(), et = vals.map(f => normEt_(f[0])), fC = et.indexOf("cobrospordepartamento");
+  mesesMD_(ss).forEach(M => {
+    const h = M.h, vals = M.vals, et = M.et, fC = et.indexOf("cobrospordepartamento");
     if (fC >= 0) for (let i = fC + 1; i < et.length && et[i].indexOf("total") !== 0; i++) if (et[i] === "depto" + depto) { exPagado += neto(h, i + 1, 5, vals[i][3]); break; }
   });
   /* Varias cuotas extraordinarias: Config → extraordinarias = «Nombre=monto | Nombre=monto», de la más vieja a la

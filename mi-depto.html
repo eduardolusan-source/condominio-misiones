@@ -101,14 +101,22 @@
     history.replaceState(null, "", "?depto=" + n);
     cargar(n);
   }
+  /* Se pinta al instante la última consulta guardada en este teléfono y la hoja la actualiza detrás. */
   async function cargar(n) {
-    $("res").innerHTML = '<p class="nota" style="padding:1rem 0">Consultando la hoja de la mesa…</p>';
+    let previa = null; try { previa = JSON.parse(localStorage.getItem("misiones.md." + n) || "null"); } catch (e) {}
+    if (previa && previa.ok) { $("res").innerHTML = '<p class="nota act" id="act" style="margin:0 0 .4rem;text-align:center">Actualizando…</p>' + pintar(previa); }
+    else $("res").innerHTML = '<p class="nota" style="padding:1rem 0">Consultando la hoja de la mesa…</p>';
     try {
       const r = await fetch(SCRIPT_URL + "?accion=midepto&depto=" + n + "&t=" + Date.now(), { cache: "no-store" });
       const j = await r.json();
       if (!j.ok) throw new Error(j.error || "sin datos");
+      try { localStorage.setItem("misiones.md." + n, JSON.stringify(j)); } catch (e) {}
       if (n === depto) $("res").innerHTML = pintar(j);
-    } catch (e) { $("res").innerHTML = '<p class="nota">La hoja de la mesa no respondió en este momento. Intenta en unos minutos; si sigue igual, avísale a la mesa directiva.</p>'; console.warn("[Mi depto] " + e.message); }
+    } catch (e) {
+      if (previa && previa.ok && n === depto) { const a = $("act"); if (a) a.textContent = "Sin conexión con la hoja: es la última consulta guardada."; }
+      else $("res").innerHTML = '<p class="nota">La hoja de la mesa no respondió en este momento. Intenta en unos minutos; si sigue igual, avísale a la mesa directiva.</p>';
+      console.warn("[Mi depto] " + e.message);
+    }
   }
   let J = null;
   const MESN = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
