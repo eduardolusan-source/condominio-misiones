@@ -131,7 +131,7 @@
   function pintar(j) {
     J = normal(j);
     const rev = (j.pagos || []).filter(enRev).reduce((a, p) => a + (p.mantenimiento || 0) + (p.agua || 0) + (p.extraordinario || 0), 0);
-    const pas = j.meses.filter(m => !m.futuro), fut = j.meses.filter(m => m.futuro), ex = j.extraordinaria && j.extraordinaria.monto > 0 ? j.extraordinaria : null;
+    const pas = j.meses.filter(m => !m.futuro), fut = j.meses.filter(m => m.futuro && m.manto > 0.5), ex = j.extraordinaria && j.extraordinaria.monto > 0 ? j.extraordinaria : null;
     const debe = j.total > 0.5;
     const pieza = (ico, k, v, ok, info) => '<button class="pz ' + (ok ? "ok" : "") + '" data-info="' + info + '"><span>' + ico + "</span><b>" + (ok ? "✓" : $0(v)) + "</b><small>" + k + "</small></button>";
     let h = '<section class="total"><div class="k">Depto ' + j.depto + " · debes hoy</div>" +
