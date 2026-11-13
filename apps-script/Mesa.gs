@@ -20,6 +20,7 @@ function rutaMesaGet_(p) {
   if (p.accion === "reunion") return reunionPublica_();
   if (p.accion === "mesa") return panelMesa_(p.clave);
   if (p.accion === "edificio") return edificio_(p.clave, !!p.fresh);
+  if (p.accion === "edificioPublico") return edificioPublico_();
   return null;
 }
 function rutaMesaPost_(d) {
@@ -107,6 +108,14 @@ function edificio_(clave, fresco) {
   const out = edificioCalc_();
   try { c.put("edificio", JSON.stringify(out), 300); } catch (e) {}
   return out;
+}
+/* Versión para Finanzas (pública): el mismo edificio por número de depto, SIN nombres ni teléfonos. */
+function edificioPublico_() {
+  const c = CacheService.getScriptCache();
+  let e = null; const g = c.get("edificio");
+  if (g) { try { e = JSON.parse(g); } catch (x) {} }
+  if (!e) { e = edificioCalc_(); try { c.put("edificio", JSON.stringify(e), 300); } catch (x) {} }
+  return Object.assign({}, e, { publico: true, deptos: e.deptos.map(d => { const o = Object.assign({}, d); delete o.nombre; delete o.tel; return o; }) });
 }
 /* Arma el edificio (sin clave: lo usan edificio_ y el calentador). */
 function edificioCalc_() {

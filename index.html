@@ -136,6 +136,8 @@
   }
   try { const g = JSON.parse(localStorage.getItem("misiones.finanzas.vivo") || "null"); if (g && g.ok) pintar(g); } catch (e) {}
   fetch(URL_ + "?accion=finanzas&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => { if (j && j.ok) { pintar(j); try { localStorage.setItem("misiones.finanzas.vivo", JSON.stringify(j)); } catch (e) {} } }).catch(() => {});
+  /* Precarga el edificio de Finanzas: al abrir Finanzas aparece al instante. */
+  setTimeout(() => fetch(URL_ + "?accion=edificioPublico&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => { if (j && j.ok) try { localStorage.setItem("misiones.edificio.pub", JSON.stringify(j)); } catch (e) {} }).catch(() => {}), 1500);
 })();
 </script>
 <script src="js/reunion.js"></script>

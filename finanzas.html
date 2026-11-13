@@ -8,6 +8,7 @@
 <title>Finanzas · Las Misiones Residencial</title>
 <link rel="stylesheet" href="css/styles.css?v=20261011">
 <link rel="stylesheet" href="css/tablero.css?v=20261112">
+<link rel="stylesheet" href="css/edificio.css?v=20261113">
 <link rel="icon" href="assets/mark.svg">
 </head>
 <body>
@@ -31,21 +32,42 @@
   </div>
 </header>
 
-<!-- Acceso abierto: aquí solo hay agregados. Lo dibuja js/tablero.js -->
+<!-- Acceso abierto. El tablero (js/tablero.js) solo tiene agregados; el edificio (js/edificio.js) muestra
+     por número de depto si está al corriente, sin nombres. -->
 <main id="content">
+  <section class="ed" id="edificio" aria-label="El edificio: quién está al corriente" style="margin-top:1.2rem"></section>
   <div id="tablero"></div>
   <p style="max-width:1040px;margin:0 auto 2rem;padding:0 1.25rem"><a class="btn ghost" href="correo.html">📩 Recibe estas cuentas en tu correo cada día 10</a></p>
 </main>
 
 <footer class="site-footer">
   <div class="inner">
-    Las Misiones Residencial · Rendición de cuentas · Sección de acceso abierto, con información exclusivamente agregada. Fuentes: tablas contables de Admin-Solutions (2025 a junio de 2026) y, desde octubre de 2026, la hoja de captura de la mesa directiva.
+    Las Misiones Residencial · Rendición de cuentas · Sección de acceso abierto. El edificio muestra por número de departamento si está al corriente, sin nombres; lo demás es información agregada. Fuentes: tablas contables de Admin-Solutions (2025 a junio de 2026) y, desde octubre de 2026, la hoja de captura de la mesa directiva.
   </div>
 </footer>
 
 <script src="js/data.js?v=20261112"></script>
 <script src="js/tablero.js?v=20261113"></script>
 <script src="js/finanzas.js?v=20261113b"></script>
+<script src="js/ventana.js"></script>
+<script src="js/edificio.js?v=20261113"></script>
+<script>
+/* El edificio: solo en la portada de Finanzas. Se pinta al instante con lo último visto y luego se actualiza. */
+(function () {
+  const URL_ = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec", LLAVE = "misiones.edificio.pub";
+  const caja = document.getElementById("edificio");
+  const ed = Edificio.montar(caja, { onDepto: (d, e, mes, J) => window.ventana("Depto " + d.d, Edificio.detalleHTML(d, e, mes, J)) });
+  const portada = () => { const h = location.hash.replace(/^#/, ""); caja.hidden = !(h === "" || h === "inicio"); };
+  portada(); window.addEventListener("hashchange", portada);
+  const hora = j => "Actualizado a las " + new Date(j.generado).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  let visto = false;
+  try { const g = JSON.parse(localStorage.getItem(LLAVE) || "null"); if (g && g.ok) { ed.actualizar(g, "Actualizando…"); visto = true; } } catch (e) {}
+  fetch(URL_ + "?accion=edificioPublico&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => {
+    if (!j || !j.ok || !j.deptos) throw new Error("sin datos");
+    ed.actualizar(j, hora(j)); try { localStorage.setItem(LLAVE, JSON.stringify(j)); } catch (e) {}
+  }).catch(() => { if (visto) ed.estado("Sin conexión: se muestran los últimos datos."); else caja.hidden = true; });
+})();
+</script>
 <script src="js/letra.js"></script>
 </body>
 </html>

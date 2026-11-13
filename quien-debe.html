@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Quién debe · Mesa directiva · Las Misiones</title>
 <link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="stylesheet" href="css/edificio.css?v=20261113">
 <link rel="icon" href="assets/mark.svg">
 <style>
   :root { --ok-bg: #d8efdc; --ok: #1d6b2c; --par-bg: #ffe9a8; --par: #7a5300; --no-bg: #f8d3d0; --no: #a3221b; --nd-bg: #ecebe6; --nd: #77756f;
@@ -83,17 +84,13 @@
   </div>
 
   <div id="app" class="hidden">
-    <div class="meses" id="meses"></div>
-    <div class="seg" id="modo"><button type="button" data-m="todo" class="sel">Todo</button><button type="button" data-m="manto">🧾 Mantto.</button><button type="button" data-m="agua">💧 Agua</button></div>
-    <div class="res" id="res"></div>
-    <div class="edif" id="edif"></div>
-    <div class="estado" id="estado"></div>
+    <section class="ed" id="edif" style="padding:0"></section>
     <h2 class="t" id="tLista">Deben hoy</h2>
     <div class="lista" id="lista"></div>
-    <p class="nota">Mantenimiento: los pagos cubren primero el mes más viejo, igual que en «Mi depto». Agua: en cada mes se cobra el recibo del mes anterior. Toca un depto para ver el detalle.</p>
   </div>
 </main>
 <script src="js/ventana.js"></script>
+<script src="js/edificio.js?v=20261113"></script>
 <script>
 (function () {
   "use strict";
@@ -101,127 +98,49 @@
   const $ = id => document.getElementById(id), LLAVE = "misiones.edificio";
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const $m = n => "$" + Math.round(n).toLocaleString("es-MX");
-  const MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-  const nomMes = id => MES[parseInt(id.slice(5), 10) - 1];
-  const antes = id => { let y = +id.slice(0, 4), m = +id.slice(5) - 1; if (m < 1) { m = 12; y--; } return y + "-" + String(m).padStart(2, "0"); };
-  let clave = "", J = null, mes = "", modo = "todo";
+  let clave = "", J = null;
   try { clave = localStorage.getItem("misiones_admin") || ""; } catch (e) {}
 
-  function pedir() { $("login").classList.remove("hidden"); $("app").classList.add("hidden"); setTimeout(() => $("clave").focus(), 50); }
-  $("entrar").onclick = () => { clave = $("clave").value.trim(); if (clave) cargar(true); };
-  $("clave").addEventListener("keydown", e => { if (e.key === "Enter") $("entrar").click(); });
-
-  /* Estado de un depto en el mes elegido. */
-  function estado(d) {
-    const m = d.meses[mes] || null, r = d.recibos[antes(mes)] || null;
-    const manto = m ? (m.m === "si" ? "ok" : m.m === "parcial" ? "par" : "no") : "nd";
-    const agua = r ? (r.pagado ? "ok" : "no") : "nd";
-    return { manto: manto, agua: agua, m: m, r: r };
+  function detalle(d, e, mes) {
+    const h = '<p style="margin:0 0 .5rem;color:var(--muted)">' + esc(d.nombre || "Sin nombre en «Vecinos (privado)»") + "</p>" + Edificio.detalleHTML(d, e, mes, J) +
+      (d.enRevision ? '<p style="font-size:.88rem;margin:.4rem 0 0"><a href="bandeja.html">Ir a la bandeja ›</a></p>' : "") +
+      (d.tel && d.total > 0.5 ? '<a class="go wa" href="https://wa.me/' + esc(d.tel) + "?text=" + encodeURIComponent("Hola, te escribo de la mesa directiva de Las Misiones. Aquí puedes ver el estado de cuenta del depto " + d.d + ": https://condominio-misiones.eduardo-lusan.workers.dev/mi-depto.html") + '" target="_blank" rel="noopener">💬 Escribirle por WhatsApp</a>' : "") +
+      '<a class="go" style="background:var(--page);color:var(--ink);border:1px solid var(--border)" href="mi-depto.html?depto=' + d.d + '">Ver su «Mi depto»</a>';
+    window.ventana("Depto " + d.d, h);
   }
-  function color(e) {
-    if (modo === "manto") return e.manto;
-    if (modo === "agua") return e.agua;
-    const xs = [e.manto, e.agua].filter(x => x !== "nd");
-    if (!xs.length) return "nd";
-    if (xs.every(x => x === "ok")) return "ok";
-    if (xs.every(x => x === "no")) return "no";
-    return "par";
-  }
-  const ICO = { ok: "✓", par: "½", no: "✕", nd: "–" };
+  const ed = Edificio.montar($("edif"), { kicker: "Mesa directiva · privado", titulo: "Quién debe", sub: "Cada ventana es un departamento. Toca una para ver el detalle y escribirle.", onDepto: (d, e, mes) => detalle(d, e, mes) });
 
-  function pintar() {
-    if (!J) return;
-    const ds = J.deptos, porD = {}; ds.forEach(d => porD[d.d] = d);
-    $("meses").innerHTML = J.meses.map(x => '<button type="button" data-mes="' + x.id + '" class="' + (x.id === mes ? "sel" : "") + '">' + esc(x.nombre.replace(/ \d{4}$/, "")) + "</button>").join("");
-    const sel = $("meses").querySelector(".sel"); if (sel) sel.scrollIntoView({ inline: "center", block: "nearest" });
-    document.querySelectorAll("#modo button").forEach(b => b.classList.toggle("sel", b.dataset.m === modo));
-
-    /* Resumen del mes */
-    const es = ds.map(d => estado(d));
-    const mOk = es.filter(e => e.manto === "ok").length, mPar = es.filter(e => e.manto === "par").length, mTot = es.filter(e => e.manto !== "nd").length;
-    const aOk = es.filter(e => e.agua === "ok").length, aTot = es.filter(e => e.agua !== "nd").length;
-    const deben = ds.filter(d => d.total > 0.5), suma = deben.reduce((a, d) => a + d.total, 0);
-    const pct = (n, t) => t ? (n / t * 100).toFixed(1) + "%" : "0%";
-    $("res").innerHTML =
-      '<div class="rc"><small>🧾 Mantenimiento</small><b>' + mOk + "<em> de " + mTot + "</em></b><i><u style=\"width:" + pct(mOk, mTot) + '"></u><s style="width:' + pct(mPar, mTot) + '"></s></i><p>' + (mTot - mOk - mPar) + " sin pagar" + (mPar ? " · " + mPar + " a medias" : "") + "</p></div>" +
-      '<div class="rc"><small>💧 Agua de ' + nomMes(antes(mes)) + "</small>" + (aTot ? "<b>" + aOk + "<em> de " + aTot + "</em></b><i><u style=\"width:" + pct(aOk, aTot) + '"></u></i><p>' + (aTot - aOk) + " sin pagar</p>" : '<b><em>sin recibo</em></b><p>Aún no se cargan las lecturas.</p>') + "</div>" +
-      '<div class="rc total' + (suma < 0.5 ? " cero" : "") + '"><div><small>Deben hoy (todo junto)</small>' + (deben.length ? deben.length + (deben.length === 1 ? " depto" : " deptos") : "Nadie debe") + "</div><b>" + $m(suma) + "</b></div>";
-
-    /* Edificio: piso 4 arriba (13–16) … piso 1 abajo (1–4) */
-    let h = '<div class="techo">LAS MISIONES</div><div class="muro">';
-    for (let p = 4; p >= 1; p--) {
-      h += '<div class="piso"><span>PISO ' + p + "</span>";
-      for (let k = 1; k <= 4; k++) {
-        const n = (p - 1) * 4 + k, d = porD[n];
-        if (!d) { h += '<div class="v nd"><b>' + n + "</b></div>"; continue; }
-        const e = estado(d), c = color(e);
-        h += '<button type="button" class="v ' + c + '" data-d="' + n + '" aria-label="Depto ' + n + '"><b>' + n + '</b><span class="ic">' +
-          (modo !== "agua" ? '<span title="Mantenimiento">🧾' + ICO[e.manto] + "</span>" : "") + (modo !== "manto" ? '<span title="Agua">💧' + ICO[e.agua] + "</span>" : "") + "</span>" +
-          (d.enRevision ? '<span class="rev" title="Tiene un pago por confirmar">⏳</span>' : "") + "</button>";
-      }
-      h += "</div>";
-    }
-    h += '</div><div class="suelo"></div><div class="ley"><span style="--c:var(--ok)">pagado</span><span style="--c:var(--par)">' + (modo === "todo" ? "debe una cosa" : "a medias") + '</span><span style="--c:var(--no)">' + (modo === "todo" ? "debe las dos" : "sin pagar") + '</span><span style="--c:var(--nd)">sin cobro</span><span>⏳ pago por confirmar</span></div>';
-    $("edif").innerHTML = h;
-
-    /* Lista: quién debe hoy, de mayor a menor */
-    $("lista").innerHTML = deben.length ? deben.slice().sort((a, b) => b.total - a.total).map(d => {
+  function lista() {
+    const deben = J.deptos.filter(d => d.total > 0.5).sort((a, b) => b.total - a.total);
+    $("lista").innerHTML = deben.length ? deben.map(d => {
       const ch = [];
       if (d.manto > 0.5) ch.push("🧾 " + $m(d.manto));
       if (d.agua > 0.5) ch.push("💧 " + $m(d.agua));
       if (d.extra > 0.5) ch.push("⭐ " + $m(d.extra));
-      return '<button type="button" class="fila" data-d="' + d.d + '"><span class="n">' + d.d + "</span><span><b>" + esc(d.nombre || "Depto " + d.d) + '</b><span class="chips">' + ch.map(x => "<em>" + x + "</em>").join("") + "</span></span><span class=\"m\">" + $m(d.total) + "</span></button>";
+      return '<button type="button" class="fila" data-fila="' + d.d + '"><span class="n">' + d.d + "</span><span><b>" + esc(d.nombre || "Depto " + d.d) + (d.enRevision ? " ⏳" : "") + '</b><span class="chips">' + ch.map(x => "<em>" + x + "</em>").join("") + '</span></span><span class="m">' + $m(d.total) + "</span></button>";
     }).join("") : '<div class="vacio">🎉 Nadie debe nada hoy.</div>';
   }
-
-  function detalle(n) {
-    const d = J.deptos.find(x => x.d === n); if (!d) return;
-    const e = estado(d), m = e.m, r = e.r;
-    const tm = { ok: "✓ cubierto", par: "a medias", no: "✕ sin pagar", nd: "—" };
-    let h = '<p style="margin:0 0 .4rem;color:var(--muted)">' + esc(d.nombre || "Sin nombre en «Vecinos (privado)»") + "</p>" +
-      '<div class="det"><div><span>🧾 Mantenimiento de ' + nomMes(mes) + "</span><b>" + tm[e.manto] + (m && e.manto === "par" ? " (" + $m(m.cubre) + " de " + $m(J.cuota) + ")" : "") + "</b></div>" +
-      "<div><span>💧 Agua de " + nomMes(antes(mes)) + "</span><b>" + (r ? (r.pagado ? "✓ pagada" : "✕ " + $m(r.cargo)) : "sin recibo") + "</b></div>" +
-      (m && m.pago > 0.5 ? "<div><span>Pagó en " + nomMes(mes) + "</span><b>" + $m(m.pago) + "</b></div>" : "") + "</div>" +
-      '<p style="margin:1rem 0 .3rem;font-weight:800">Hoy, en total</p><div class="det">' +
-      (d.manto > 0.5 ? "<div><span>Mantenimiento</span><b>" + $m(d.manto) + "</b></div>" : "") +
-      (d.agua > 0.5 ? "<div><span>Agua</span><b>" + $m(d.agua) + "</b></div>" : "") +
-      (d.extra > 0.5 ? "<div><span>" + esc(d.extraNombre || "Extraordinaria") + "</span><b>" + $m(d.extra) + "</b></div>" : "") +
-      '<div class="tot"><span>' + (d.total > 0.5 ? "Debe" : "Al corriente") + "</span><span>" + (d.total > 0.5 ? $m(d.total) : (d.aFavor > 0.5 ? "+" + $m(d.aFavor) + " a favor" : "✓")) + "</span></div></div>" +
-      (d.enRevision ? '<p class="nota">⏳ Tiene un pago reportado por confirmar en la <a href="bandeja.html">bandeja</a>.</p>' : "") +
-      (d.tel && d.total > 0.5 ? '<a class="go wa" href="https://wa.me/' + esc(d.tel) + "?text=" + encodeURIComponent("Hola, te escribo de la mesa directiva de Las Misiones. Te comparto el estado de cuenta del depto " + n + ": https://condominio-misiones.eduardo-lusan.workers.dev/mi-depto.html") + '" target="_blank" rel="noopener">💬 Escribirle por WhatsApp</a>' : "") +
-      '<a class="go" style="background:var(--page);color:var(--ink);border:1px solid var(--border)" href="mi-depto.html?depto=' + n + '">Ver su «Mi depto»</a>';
-    window.ventana("Depto " + n, h);
-  }
-
-  document.addEventListener("click", ev => {
-    const b = ev.target.closest("[data-mes],[data-m],[data-d]"); if (!b || !J) return;
-    if (b.dataset.mes) { mes = b.dataset.mes; pintar(); }
-    else if (b.dataset.m) { modo = b.dataset.m; pintar(); }
-    else if (b.dataset.d) detalle(+b.dataset.d);
+  $("lista").addEventListener("click", ev => {
+    const b = ev.target.closest("[data-fila]"); if (!b || !J) return;
+    const d = J.deptos.find(x => x.d === +b.dataset.fila), mes = J.meses.some(x => x.id === J.hoy) ? J.hoy : J.meses[J.meses.length - 1].id;
+    detalle(d, { m: d.meses[mes], r: d.recibos[Edificio.antes(mes)], manto: d.meses[mes] ? ({ si: "ok", parcial: "par", no: "no" })[d.meses[mes].m] : "nd", agua: d.recibos[Edificio.antes(mes)] ? (d.recibos[Edificio.antes(mes)].pagado ? "ok" : "no") : "nd" }, mes);
   });
 
-  function usar(j) {
-    J = j;
-    if (!mes || !j.meses.some(x => x.id === mes)) mes = j.meses.some(x => x.id === j.hoy) ? j.hoy : (j.meses.length ? j.meses[j.meses.length - 1].id : "");
-    $("login").classList.add("hidden"); $("app").classList.remove("hidden");
-    pintar();
-  }
+  function pedir() { $("login").classList.remove("hidden"); $("app").classList.add("hidden"); setTimeout(() => $("clave").focus(), 50); }
+  $("entrar").onclick = () => { clave = $("clave").value.trim(); if (clave) cargar(true); };
+  $("clave").addEventListener("keydown", e => { if (e.key === "Enter") $("entrar").click(); });
+  function usar(j, estado) { J = j; $("login").classList.add("hidden"); $("app").classList.remove("hidden"); ed.actualizar(j, estado); lista(); }
   function cargar(desdeLogin) {
-    $("estado").textContent = J ? "Actualizando…" : "Cargando…";
+    if (J) ed.estado("Actualizando…");
     return fetch(URL_ + "?accion=edificio&clave=" + encodeURIComponent(clave) + "&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => {
       if (!j.ok) { if (j.error === "clave") { try { localStorage.removeItem(LLAVE); } catch (e) {} J = null; pedir(); if (desdeLogin) $("mal").classList.remove("hidden"); return; } throw new Error(j.error); }
       try { localStorage.setItem("misiones_admin", clave); localStorage.setItem(LLAVE, JSON.stringify(j)); } catch (e) {}
       $("mal").classList.add("hidden");
-      usar(j);
-      const t = new Date(j.generado); $("estado").textContent = "Datos de las " + t.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
-    }).catch(e => { $("estado").textContent = J ? "Sin conexión: se muestran los últimos datos." : ""; if (!J) { pedir(); $("mal").textContent = "No se pudo leer la hoja (" + (e.message || e) + ")."; $("mal").classList.remove("hidden"); } });
+      usar(j, "Datos de las " + new Date(j.generado).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }));
+    }).catch(e => { if (J) ed.estado("Sin conexión: se muestran los últimos datos."); else { pedir(); $("mal").textContent = "No se pudo leer la hoja (" + (e.message || e) + ")."; $("mal").classList.remove("hidden"); } });
   }
-
   if (!clave) pedir();
-  else {
-    try { const g = JSON.parse(localStorage.getItem(LLAVE) || "null"); if (g && g.ok) usar(g); } catch (e) {}
-    cargar(false);
-  }
+  else { try { const g = JSON.parse(localStorage.getItem(LLAVE) || "null"); if (g && g.ok) usar(g, "Actualizando…"); } catch (e) {} cargar(false); }
 })();
 </script>
 </body>
