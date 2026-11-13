@@ -1393,6 +1393,7 @@ function finanzas_(fresh) {
     ok: true, servicio: "misiones-finanzas", generado: new Date().toISOString(),
     desde: desde, unidades: UNIDADES, cuota: Number(cfg.cuota_mantenimiento) || 1500,
     meses: meses, proyectos: Object.keys(proyectos).map(k => proyectos[k]), aguaCobro: aguaCobro, hoy: hoyId,
+    fijos: gastosFijos_(cfg),
     pagosFuturos: futuros.map(f => ({ id: f.id, nombre: f.nombre, manto: f.ingresos.manto, pagaron: f.cobranza.pagaron })),
     caja: { saldo: ultimo ? ultimo.saldoFin : 0, ultimoMes: ultimo ? ultimo.id : "", saldoInicialVivo: meses.length ? meses[0].saldoIni : 0, previos: previos, totalPrevios: totalPrevios }
   };
@@ -1768,6 +1769,23 @@ function siguienteFolio_() {
   }
   props.setProperty("folio", String(n + 1));
   return n;
+}
+/* Gastos fijos para «¿En qué se van tus $1,500?» de Finanzas. Se editan en Config → gastos_fijos, sin tocar código:
+   «Limpieza y conserjería = 1800 por semana | Alberca = 500 por quincena». Periodos: semana, quincena, mes. */
+const FIJOS_DEFAULT = "Limpieza y conserjería = 1800 por semana | Alberca = 500 por quincena";
+function gastosFijos_(cfg) {
+  let txt = cfg.gastos_fijos;
+  if (txt === undefined) {
+    txt = FIJOS_DEFAULT;
+    try { if (typeof ponerConfig_ === "function") ponerConfig_("gastos_fijos", txt, "Gastos fijos que Finanzas cuenta por su costo al mes (no por lo anotado). Formato: Concepto = monto por semana|quincena|mes, separados con |. Vacío = ninguno."); } catch (e) {}
+  }
+  const POR = { semana: 52 / 12, semanal: 52 / 12, quincena: 2, quincenal: 2, mes: 1, mensual: 1 };
+  return String(txt || "").split("|").map(x => {
+    const m = x.match(/^\s*(.+?)\s*=\s*\$?\s*([\d.,]+)\s*(?:por|al|a la|cada)?\s*([a-záéíóú]*)/i);
+    if (!m) return null;
+    const monto = Number(m[2].replace(/,/g, "")) || 0, cada = (m[3] || "mes").toLowerCase(), f = POR[cada] || 1;
+    return monto > 0 ? { nombre: m[1].trim(), monto: monto, cada: POR[cada] ? cada.replace(/al$/, "") : "mes", mensual: Math.round(monto * f * 100) / 100 } : null;
+  }).filter(Boolean);
 }
 function config_() {
   const h = SpreadsheetApp.getActive().getSheetByName(HOJA_CONFIG);

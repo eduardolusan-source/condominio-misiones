@@ -76,6 +76,8 @@
     });
     return {
       unidades: D.unidades, cuota: n(j && j.cuota) || D.cuota, meses: meses, proyectos: proyectos,
+      /* Gastos fijos: vienen de la hoja (Config → gastos_fijos). Respaldo solo mientras el script no se actualice. */
+      fijos: j && Array.isArray(j.fijos) ? j.fijos : [{ nombre: "Limpieza y conserjería", monto: 1800, cada: "semana", mensual: 7800 }, { nombre: "Alberca", monto: 500, cada: "quincena", mensual: 1000 }],
       morosidadFoto: fotoMorosidad(), revision: D.revision,
       fuente: vivos.length ? { vivo: true, generado: j.generado } : { vivo: false, texto: "tablas contables al " + D.corte }
     };
@@ -103,11 +105,6 @@
     sexto: "agua",
     excluirDeCuota: /^agua/i,
     cuotaDesde: "2026-10",
-    /* Gastos fijos de la mesa directiva: cuentan por su costo mensual, no por lo anotado en el mes. */
-    fijos: [
-      { nombre: "Limpieza y conserjería", re: /limpieza|conserj/i, mensual: 7800, nota: "$1,800 por semana" },   // 1,800 × 52 semanas ÷ 12
-      { nombre: "Alberca", re: /alberca/i, mensual: 1000, nota: "$500 por quincena" }
-    ],      // «¿en qué se va tu cuota?» solo con los meses de la mesa directiva (sin la administración anterior)
     rubros: [
       { nombre: "Administración", re: /administraci/i },
       { nombre: "Limpieza y conserjería", re: /limpieza|conserj/i },
