@@ -92,7 +92,7 @@
     notaSaldo: "2025 cerró con la mitad del saldo con que empezó. Desde octubre de 2026 el saldo es el de la cuenta de la mesa directiva.",
     notaProyectos: "Obras financiadas con cuota extraordinaria, aprobadas conforme al artículo 14, inciso J. Su seguimiento está en Pendientes.",
     notaRevision: "Cotejo de las tablas contables de 2025 y 2026 con los estados de cuenta del " + D.fechaEstados + ". Se enviaron a la administración para su aclaración.",
-    privacidad: "Como esta sección es pública, la morosidad se informa siempre agregada: montos y número de unidades, sin identificar ningún departamento ni a ningún condómino.",
+    privacidad: "Las cifras de esta sección son agregadas. Por transparencia, el edificio de la portada muestra por número de departamento si está al corriente y cuánto se debe, sin nombres de condóminos.",
     notaMorosidad: "Los adeudos se gestionan de manera directa y confidencial entre la mesa directiva y cada unidad.",
     acerca: "<h3>De dónde salen los datos</h3>" +
       "<p><b>2025 y enero–junio de 2026:</b> tablas contables de ingresos y egresos y estados de cuenta entregados por Admin-Solutions. La cobranza es por mes facturado.</p>" +
