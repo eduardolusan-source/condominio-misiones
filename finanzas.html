@@ -36,7 +36,7 @@
      por número de depto si está al corriente, sin nombres. -->
 <main id="content">
   <div id="tablero"></div>
-  <section class="ed" id="edificio" aria-label="El edificio: quién está al corriente" style="margin-top:1.2rem"></section>
+  <section class="ed" id="edificio" hidden aria-label="El edificio: quién está al corriente" style="margin:1.2rem 0 0;padding:0"></section>
   <p style="max-width:1040px;margin:0 auto 2rem;padding:0 1.25rem"><a class="btn ghost" href="correo.html">📩 Recibe estas cuentas en tu correo cada día 10</a></p>
 </main>
 
@@ -57,15 +57,16 @@
   const URL_ = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec", LLAVE = "misiones.edificio.pub";
   const caja = document.getElementById("edificio");
   const ed = Edificio.montar(caja, { onDepto: (d, e, mes, J) => window.ventana("Depto " + d.d, Edificio.detalleHTML(d, e, mes, J)) });
-  const portada = () => { const h = location.hash.replace(/^#/, ""); caja.hidden = !(h === "" || h === "inicio"); };
-  portada(); window.addEventListener("hashchange", portada);
+  /* Va dentro de la portada del tablero, justo antes de «Consulta a detalle». */
+  const acomodar = () => { const h = document.querySelector('#tablero [data-hueco="antes-detalle"]'); if (h) { h.appendChild(caja); caja.hidden = false; } else caja.hidden = true; };
+  document.getElementById("tablero").addEventListener("tablero:pintado", acomodar); acomodar();
   const hora = j => "Actualizado a las " + new Date(j.generado).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
   let visto = false;
   try { const g = JSON.parse(localStorage.getItem(LLAVE) || "null"); if (g && g.ok) { ed.actualizar(g, "Actualizando…"); visto = true; } } catch (e) {}
   fetch(URL_ + "?accion=edificioPublico&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => {
     if (!j || !j.ok || !j.deptos) throw new Error("sin datos");
     ed.actualizar(j, hora(j)); try { localStorage.setItem(LLAVE, JSON.stringify(j)); } catch (e) {}
-  }).catch(() => { if (visto) ed.estado("Sin conexión: se muestran los últimos datos."); else caja.hidden = true; });
+  }).catch(() => { if (visto) ed.estado("Sin conexión: se muestran los últimos datos."); else caja.remove(); });
 })();
 </script>
 <script src="js/letra.js"></script>
