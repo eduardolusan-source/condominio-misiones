@@ -304,7 +304,7 @@
        Lo variable (luz, insumos…) se promedia solo con los meses ya cerrados. */
     function desgloseCuota(M) {
       M = mesesCuota(M);
-      const fijos = O.fijos || [];
+      const fijos = fijosDe();
       const cerrados = M.filter(m => !m.enCurso);
       if (fijos.length && cerrados.length) M = cerrados;
       const acc = O.rubros.map(() => 0);
@@ -334,8 +334,18 @@
       lista.mesesVariables = M;
       return lista;
     }
+    /* Los fijos llegan de la hoja (Config → gastos_fijos) en modelo.fijos; O.fijos es el respaldo. */
+    function fijosDe() {
+      const L = (modelo && modelo.fijos) || O.fijos || [];
+      return L.map(f => {
+        if (f.re) return f;
+        const r = rubroDe(f.nombre), pal = String(f.nombre).split(/\s+/)[0].replace(/[.*+?^${}()|[\]\\]/g, "");
+        const $ = n => "$" + Math.round(n).toLocaleString("es-MX");
+        return { nombre: f.nombre, mensual: f.mensual, re: r >= 0 ? O.rubros[r].re : new RegExp(pal, "i"), nota: f.nota || ($(f.monto) + " por " + (f.cada || "mes")) };
+      });
+    }
     function notaFijos(des) {
-      const f = O.fijos || [];
+      const f = fijosDe();
       if (!f.length) return "";
       return "Fijos: " + f.map(x => x.nombre.toLowerCase() + " " + x.nota).join(" y ") + ". Lo variable (luz, insumos…) es el promedio de " + rango(des.mesesVariables || []);
     }
@@ -420,7 +430,7 @@
         '<div class="tb-veredicto ' + (diferencia >= 0 ? "bien" : "mal") + '">' + (diferencia >= 0
           ? "✓ Operar cuesta " + $0(costo) + " por unidad: sobran <b>" + $0(diferencia) + "</b>"
           : "✕ Operar cuesta " + $0(costo) + " por unidad: faltan <b>" + $0(-diferencia) + "</b>") + "</div>" +
-        '<div class="tb-d">' + (O.fijos && O.fijos.length ? esc(notaFijos(des)) : "Promedio mensual de " + esc(rango(mesesCuota(M)))) + (T.notaCuota ? " · " + T.notaCuota : "") + ".</div>" +
+        '<div class="tb-d">' + (fijosDe().length ? esc(notaFijos(des)) : "Promedio mensual de " + esc(rango(mesesCuota(M)))) + (T.notaCuota ? " · " + T.notaCuota : "") + ".</div>" +
         '<span class="tb-mas">Ver en qué se gasta ›</span></a>';
 
       /* 6 · Agua o reserva */
@@ -589,7 +599,7 @@
       const totalG = sum(Object.keys(grupos).map(k => grupos[k]));
       return cabecera("En qué se gasta", esc(rango(M)) + ".") + chipsAnio("gastos") +
         '<section class="tb-panel"><h3>Tu cuota de ' + $0(modelo.cuota) + ", por rubro</h3>" +
-        '<p class="tb-nota">' + (O.fijos && O.fijos.length ? "Lo que cuesta operar el condominio al mes. " + esc(notaFijos(des)) + ". Todo" : "Promedio mensual de lo que cuesta operar el condominio (" + esc(rango(mesesCuota(M))) + ")") + ", dividido entre las " + modelo.unidades + " unidades" + (T.notaCuota ? " (" + T.notaCuota + ")" : "") + ". Total: <b>" + $0(costo) + "</b> por unidad al mes.</p>" +
+        '<p class="tb-nota">' + (fijosDe().length ? "Lo que cuesta operar el condominio al mes. " + esc(notaFijos(des)) + ". Todo" : "Promedio mensual de lo que cuesta operar el condominio (" + esc(rango(mesesCuota(M))) + ")") + ", dividido entre las " + modelo.unidades + " unidades" + (T.notaCuota ? " (" + T.notaCuota + ")" : "") + ". Total: <b>" + $0(costo) + "</b> por unidad al mes.</p>" +
         '<div class="tb-grafica" data-g="cuota"></div></section>' +
         '<section class="tb-panel"><h3>Por tipo de gasto en ' + anio + "</h3>" +
         '<div class="tb-tipos">' + Object.keys(grupos).filter(k => grupos[k] > 0.5).map(k => '<div class="tb-tipo"><span>' + esc(k) + "</span><b>" + $0(grupos[k]) + "</b><small>" + pct(grupos[k], totalG) + "% del total</small></div>").join("") + "</div></section>" +
