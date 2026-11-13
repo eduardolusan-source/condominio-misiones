@@ -117,7 +117,9 @@
 
     return {
       actualizar(j, estado) {
-        J = j; if (estado != null) opc.estado = estado;
+        /* Solo el mes actual y el anterior. */
+        const visibles = j.meses.filter(x => !j.hoy || x.id <= j.hoy).slice(-2);
+        J = Object.assign({}, j, { meses: visibles }); j = J; if (estado != null) opc.estado = estado;
         if (!mes || !j.meses.some(x => x.id === mes)) mes = j.meses.some(x => x.id === j.hoy) ? j.hoy : (j.meses.length ? j.meses[j.meses.length - 1].id : "");
         pintar();
       },
