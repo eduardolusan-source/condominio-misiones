@@ -299,7 +299,7 @@ function miDepto_(depto) {
   if (r && r.ok) { try { c.put(k, JSON.stringify(r), 300); } catch (e) {} }
   return r;
 }
-function olvidarMiDepto_() { try { const ks = ["finanzas"]; for (let d = 1; d <= UNIDADES; d++) ks.push("md_" + d); CacheService.getScriptCache().removeAll(ks); } catch (e) {} }
+function olvidarMiDepto_() { try { const ks = ["finanzas", "edificio"]; for (let d = 1; d <= UNIDADES; d++) ks.push("md_" + d); CacheService.getScriptCache().removeAll(ks); } catch (e) {} }
 /* Pestañas de mes leídas UNA vez por ejecución (B:E, 120 renglones), sin buscar texto en las 18 pestañas. */
 const MEMO_MD_ = {};
 function mesesMD_(ss) {

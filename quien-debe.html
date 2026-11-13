@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Quién debe · Mesa directiva · Las Misiones</title>
+<link rel="stylesheet" href="css/styles.css?v=20261011">
+<link rel="icon" href="assets/mark.svg">
+<style>
+  :root { --ok-bg: #d8efdc; --ok: #1d6b2c; --par-bg: #ffe9a8; --par: #7a5300; --no-bg: #f8d3d0; --no: #a3221b; --nd-bg: #ecebe6; --nd: #77756f;
+    --muro: #f4efe6; --muro-l: #d9cfbf; --techo: #1d3f63; }
+  @media (prefers-color-scheme: dark) { :root { --ok-bg: #173d22; --ok: #9be3ab; --par-bg: #4d3a07; --par: #ffd978; --no-bg: #4a1714; --no: #ffaaa3; --nd-bg: #2a2a28; --nd: #a9a7a0;
+    --muro: #23221f; --muro-l: #3a3833; --techo: #9dc0e0; } }
+  body { font-size: 1.02rem; }
+  .pg { max-width: 640px; margin: 0 auto; padding: 1rem 1rem 5rem; }
+  .top { display: flex; justify-content: space-between; align-items: center; gap: .6rem; margin: .2rem 0 .8rem; }
+  .top h1 { font-size: 1.55rem; margin: 0; } .top a { color: var(--muted); font-size: .92rem; }
+  .meses { display: flex; gap: .4rem; overflow-x: auto; padding: .1rem 0 .5rem; scrollbar-width: none; } .meses::-webkit-scrollbar { display: none; }
+  .meses button { flex: 0 0 auto; font: inherit; font-weight: 800; font-size: .92rem; padding: .5rem .95rem; border-radius: 999px; border: 2px solid var(--baseline); background: var(--surface); color: var(--ink); cursor: pointer; }
+  .meses button.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 2px solid var(--baseline); border-radius: 14px; overflow: hidden; margin: .3rem 0 .9rem; }
+  .seg button { white-space: nowrap; font: inherit; font-weight: 800; font-size: .9rem; padding: .6rem .3rem; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .seg button + button { border-left: 2px solid var(--baseline); } .seg button.sel { background: var(--accent); color: #fff; }
+  .res { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; margin-bottom: 1rem; }
+  .rc { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: .8rem .9rem; box-shadow: var(--shadow); }
+  .rc small { display: block; color: var(--muted); font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; }
+  .rc b { display: block; font-size: 1.7rem; line-height: 1.15; margin: .15rem 0 .35rem; } .rc b em { font-style: normal; font-size: 1rem; color: var(--muted); font-weight: 700; }
+  .rc i { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--no-bg); } .rc i u { background: var(--ok); } .rc i s { background: var(--par); }
+  .rc p { margin: .35rem 0 0; font-size: .8rem; color: var(--muted); }
+  .rc.total { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+  .rc.total b { font-size: 1.45rem; margin: 0; color: var(--no); } .rc.total.cero b { color: var(--ok); }
+  /* ---------- el edificio ---------- */
+  .edif { margin: .4rem auto 1rem; max-width: 460px; }
+  .techo { height: 46px; background: var(--techo); clip-path: polygon(6% 100%, 50% 0, 94% 100%); display: grid; place-items: end center; padding-bottom: 7px; color: #fff; font-weight: 900; letter-spacing: .22em; font-size: .7rem; }
+  @media (prefers-color-scheme: dark) { .techo { color: #0d0d0d; } }
+  .muro { background: var(--muro); border: 3px solid var(--muro-l); border-top: 0; border-radius: 0 0 10px 10px; padding: .55rem .55rem .2rem; }
+  .piso { display: grid; grid-template-columns: 1.4rem repeat(4, 1fr); gap: .45rem; align-items: stretch; margin-bottom: .45rem; }
+  .piso > span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: .62rem; font-weight: 800; color: var(--muted); text-align: center; letter-spacing: .06em; }
+  .v { position: relative; font: inherit; min-height: 74px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem;
+    background: var(--nd-bg); color: var(--nd); transition: transform .12s; padding: .3rem .1rem; }
+  .v:active { transform: scale(.96); }
+  .v b { font-size: 1.45rem; line-height: 1; }
+  .v .ic { display: flex; gap: .25rem; font-size: .7rem; font-weight: 800; }
+  .v .ic span { min-width: 1.45rem; padding: .08rem .25rem; border-radius: 6px; background: rgba(255,255,255,.55); } @media (prefers-color-scheme: dark) { .v .ic span { background: rgba(0,0,0,.3); } }
+  .v.ok { background: var(--ok-bg); color: var(--ok); } .v.par { background: var(--par-bg); color: var(--par); } .v.no { background: var(--no-bg); color: var(--no); border-color: var(--no); }
+  .v .rev { position: absolute; top: 3px; right: 4px; font-size: .7rem; }
+  .suelo { height: 10px; margin: 0 -3%; background: var(--muro-l); border-radius: 0 0 8px 8px; }
+  .ley { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem .9rem; margin: .7rem 0 0; font-size: .8rem; color: var(--ink-2); }
+  .ley span::before { content: ""; display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .3rem; vertical-align: -1px; background: var(--c); }
+  /* ---------- lista ---------- */
+  h2.t { font-size: 1.15rem; margin: 1.3rem 0 .5rem; }
+  .lista { display: grid; gap: .45rem; }
+  .fila { display: grid; grid-template-columns: 2.6rem 1fr auto; gap: .65rem; align-items: center; font: inherit; text-align: left; width: 100%; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 14px; padding: .6rem .75rem; cursor: pointer; }
+  .fila .n { width: 2.6rem; height: 2.6rem; border-radius: 10px; display: grid; place-items: center; font-weight: 900; font-size: 1.1rem; background: var(--no-bg); color: var(--no); }
+  .fila small { display: block; color: var(--muted); font-size: .8rem; } .fila .m { font-weight: 900; color: var(--no); }
+  .chips { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .2rem; } .chips em { font-style: normal; font-size: .72rem; font-weight: 800; padding: .1rem .45rem; border-radius: 999px; background: var(--page); border: 1px solid var(--border); color: var(--ink-2); }
+  .vacio { text-align: center; padding: 1.2rem; color: var(--ok); font-weight: 800; background: var(--ok-bg); border-radius: 14px; }
+  .nota { font-size: .82rem; color: var(--muted); margin: .8rem 0 0; }
+  .estado { font-size: .8rem; color: var(--muted); text-align: right; min-height: 1.1rem; }
+  .login { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 1.1rem; box-shadow: var(--shadow); margin-top: 1rem; }
+  .in { width: 100%; box-sizing: border-box; font: inherit; font-size: 1.1rem; padding: .7rem .85rem; border: 2px solid var(--baseline); border-radius: 12px; background: var(--page); color: var(--ink); margin-top: .7rem; }
+  .go { display: block; width: 100%; font: inherit; font-weight: 800; font-size: 1.05rem; min-height: 52px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; cursor: pointer; margin-top: .8rem; text-align: center; text-decoration: none; line-height: 52px; }
+  .go.wa { background: #25d366; color: #fff; }
+  @media (prefers-color-scheme: dark) { .meses button.sel, .seg button.sel, .go:not(.wa) { color: #0d0d0d; } }
+  .det { display: grid; gap: .35rem; margin: .3rem 0 0; } .det div { display: flex; justify-content: space-between; gap: .6rem; padding: .45rem 0; border-top: 1px solid var(--grid); } .det div:first-child { border-top: 0; }
+  .det .tot { font-weight: 900; font-size: 1.05rem; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header class="site-header"><div class="inner">
+  <a class="brand" href="index.html"><picture><source srcset="assets/logo-dark.svg" media="(prefers-color-scheme: dark)"><img class="wordmark" src="assets/logo.svg" alt="Las Misiones Residencial"></picture></a>
+</div></header>
+<main class="pg">
+  <div class="top"><h1>🏢 Quién debe</h1><a href="mesa.html">‹ Mesa</a></div>
+
+  <div id="login" class="login hidden">
+    <b>Solo para la mesa directiva</b>
+    <input id="clave" class="in" type="password" autocomplete="current-password" placeholder="clave de la mesa">
+    <button class="go" id="entrar" type="button">Entrar</button>
+    <p id="mal" class="nota hidden" style="color:var(--bad-text);font-weight:700">Clave incorrecta.</p>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="meses" id="meses"></div>
+    <div class="seg" id="modo"><button type="button" data-m="todo" class="sel">Todo</button><button type="button" data-m="manto">🧾 Mantto.</button><button type="button" data-m="agua">💧 Agua</button></div>
+    <div class="res" id="res"></div>
+    <div class="edif" id="edif"></div>
+    <div class="estado" id="estado"></div>
+    <h2 class="t" id="tLista">Deben hoy</h2>
+    <div class="lista" id="lista"></div>
+    <p class="nota">Mantenimiento: los pagos cubren primero el mes más viejo, igual que en «Mi depto». Agua: en cada mes se cobra el recibo del mes anterior. Toca un depto para ver el detalle.</p>
+  </div>
+</main>
+<script src="js/ventana.js"></script>
+<script>
+(function () {
+  "use strict";
+  const URL_ = "https://script.google.com/macros/s/AKfycbx0qO7rHUmBqUJOuwjBkYIu4O8_FrWlC8f_DyLj3DrhN1h5ApHpdfKVmUgx_aVH3aJ-/exec";
+  const $ = id => document.getElementById(id), LLAVE = "misiones.edificio";
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const $m = n => "$" + Math.round(n).toLocaleString("es-MX");
+  const MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+  const nomMes = id => MES[parseInt(id.slice(5), 10) - 1];
+  const antes = id => { let y = +id.slice(0, 4), m = +id.slice(5) - 1; if (m < 1) { m = 12; y--; } return y + "-" + String(m).padStart(2, "0"); };
+  let clave = "", J = null, mes = "", modo = "todo";
+  try { clave = localStorage.getItem("misiones_admin") || ""; } catch (e) {}
+
+  function pedir() { $("login").classList.remove("hidden"); $("app").classList.add("hidden"); setTimeout(() => $("clave").focus(), 50); }
+  $("entrar").onclick = () => { clave = $("clave").value.trim(); if (clave) cargar(true); };
+  $("clave").addEventListener("keydown", e => { if (e.key === "Enter") $("entrar").click(); });
+
+  /* Estado de un depto en el mes elegido. */
+  function estado(d) {
+    const m = d.meses[mes] || null, r = d.recibos[antes(mes)] || null;
+    const manto = m ? (m.m === "si" ? "ok" : m.m === "parcial" ? "par" : "no") : "nd";
+    const agua = r ? (r.pagado ? "ok" : "no") : "nd";
+    return { manto: manto, agua: agua, m: m, r: r };
+  }
+  function color(e) {
+    if (modo === "manto") return e.manto;
+    if (modo === "agua") return e.agua;
+    const xs = [e.manto, e.agua].filter(x => x !== "nd");
+    if (!xs.length) return "nd";
+    if (xs.every(x => x === "ok")) return "ok";
+    if (xs.every(x => x === "no")) return "no";
+    return "par";
+  }
+  const ICO = { ok: "✓", par: "½", no: "✕", nd: "–" };
+
+  function pintar() {
+    if (!J) return;
+    const ds = J.deptos, porD = {}; ds.forEach(d => porD[d.d] = d);
+    $("meses").innerHTML = J.meses.map(x => '<button type="button" data-mes="' + x.id + '" class="' + (x.id === mes ? "sel" : "") + '">' + esc(x.nombre.replace(/ \d{4}$/, "")) + "</button>").join("");
+    const sel = $("meses").querySelector(".sel"); if (sel) sel.scrollIntoView({ inline: "center", block: "nearest" });
+    document.querySelectorAll("#modo button").forEach(b => b.classList.toggle("sel", b.dataset.m === modo));
+
+    /* Resumen del mes */
+    const es = ds.map(d => estado(d));
+    const mOk = es.filter(e => e.manto === "ok").length, mPar = es.filter(e => e.manto === "par").length, mTot = es.filter(e => e.manto !== "nd").length;
+    const aOk = es.filter(e => e.agua === "ok").length, aTot = es.filter(e => e.agua !== "nd").length;
+    const deben = ds.filter(d => d.total > 0.5), suma = deben.reduce((a, d) => a + d.total, 0);
+    const pct = (n, t) => t ? (n / t * 100).toFixed(1) + "%" : "0%";
+    $("res").innerHTML =
+      '<div class="rc"><small>🧾 Mantenimiento</small><b>' + mOk + "<em> de " + mTot + "</em></b><i><u style=\"width:" + pct(mOk, mTot) + '"></u><s style="width:' + pct(mPar, mTot) + '"></s></i><p>' + (mTot - mOk - mPar) + " sin pagar" + (mPar ? " · " + mPar + " a medias" : "") + "</p></div>" +
+      '<div class="rc"><small>💧 Agua de ' + nomMes(antes(mes)) + "</small>" + (aTot ? "<b>" + aOk + "<em> de " + aTot + "</em></b><i><u style=\"width:" + pct(aOk, aTot) + '"></u></i><p>' + (aTot - aOk) + " sin pagar</p>" : '<b><em>sin recibo</em></b><p>Aún no se cargan las lecturas.</p>') + "</div>" +
+      '<div class="rc total' + (suma < 0.5 ? " cero" : "") + '"><div><small>Deben hoy (todo junto)</small>' + (deben.length ? deben.length + (deben.length === 1 ? " depto" : " deptos") : "Nadie debe") + "</div><b>" + $m(suma) + "</b></div>";
+
+    /* Edificio: piso 4 arriba (13–16) … piso 1 abajo (1–4) */
+    let h = '<div class="techo">LAS MISIONES</div><div class="muro">';
+    for (let p = 4; p >= 1; p--) {
+      h += '<div class="piso"><span>PISO ' + p + "</span>";
+      for (let k = 1; k <= 4; k++) {
+        const n = (p - 1) * 4 + k, d = porD[n];
+        if (!d) { h += '<div class="v nd"><b>' + n + "</b></div>"; continue; }
+        const e = estado(d), c = color(e);
+        h += '<button type="button" class="v ' + c + '" data-d="' + n + '" aria-label="Depto ' + n + '"><b>' + n + '</b><span class="ic">' +
+          (modo !== "agua" ? '<span title="Mantenimiento">🧾' + ICO[e.manto] + "</span>" : "") + (modo !== "manto" ? '<span title="Agua">💧' + ICO[e.agua] + "</span>" : "") + "</span>" +
+          (d.enRevision ? '<span class="rev" title="Tiene un pago por confirmar">⏳</span>' : "") + "</button>";
+      }
+      h += "</div>";
+    }
+    h += '</div><div class="suelo"></div><div class="ley"><span style="--c:var(--ok)">pagado</span><span style="--c:var(--par)">' + (modo === "todo" ? "debe una cosa" : "a medias") + '</span><span style="--c:var(--no)">' + (modo === "todo" ? "debe las dos" : "sin pagar") + '</span><span style="--c:var(--nd)">sin cobro</span><span>⏳ pago por confirmar</span></div>';
+    $("edif").innerHTML = h;
+
+    /* Lista: quién debe hoy, de mayor a menor */
+    $("lista").innerHTML = deben.length ? deben.slice().sort((a, b) => b.total - a.total).map(d => {
+      const ch = [];
+      if (d.manto > 0.5) ch.push("🧾 " + $m(d.manto));
+      if (d.agua > 0.5) ch.push("💧 " + $m(d.agua));
+      if (d.extra > 0.5) ch.push("⭐ " + $m(d.extra));
+      return '<button type="button" class="fila" data-d="' + d.d + '"><span class="n">' + d.d + "</span><span><b>" + esc(d.nombre || "Depto " + d.d) + '</b><span class="chips">' + ch.map(x => "<em>" + x + "</em>").join("") + "</span></span><span class=\"m\">" + $m(d.total) + "</span></button>";
+    }).join("") : '<div class="vacio">🎉 Nadie debe nada hoy.</div>';
+  }
+
+  function detalle(n) {
+    const d = J.deptos.find(x => x.d === n); if (!d) return;
+    const e = estado(d), m = e.m, r = e.r;
+    const tm = { ok: "✓ cubierto", par: "a medias", no: "✕ sin pagar", nd: "—" };
+    let h = '<p style="margin:0 0 .4rem;color:var(--muted)">' + esc(d.nombre || "Sin nombre en «Vecinos (privado)»") + "</p>" +
+      '<div class="det"><div><span>🧾 Mantenimiento de ' + nomMes(mes) + "</span><b>" + tm[e.manto] + (m && e.manto === "par" ? " (" + $m(m.cubre) + " de " + $m(J.cuota) + ")" : "") + "</b></div>" +
+      "<div><span>💧 Agua de " + nomMes(antes(mes)) + "</span><b>" + (r ? (r.pagado ? "✓ pagada" : "✕ " + $m(r.cargo)) : "sin recibo") + "</b></div>" +
+      (m && m.pago > 0.5 ? "<div><span>Pagó en " + nomMes(mes) + "</span><b>" + $m(m.pago) + "</b></div>" : "") + "</div>" +
+      '<p style="margin:1rem 0 .3rem;font-weight:800">Hoy, en total</p><div class="det">' +
+      (d.manto > 0.5 ? "<div><span>Mantenimiento</span><b>" + $m(d.manto) + "</b></div>" : "") +
+      (d.agua > 0.5 ? "<div><span>Agua</span><b>" + $m(d.agua) + "</b></div>" : "") +
+      (d.extra > 0.5 ? "<div><span>" + esc(d.extraNombre || "Extraordinaria") + "</span><b>" + $m(d.extra) + "</b></div>" : "") +
+      '<div class="tot"><span>' + (d.total > 0.5 ? "Debe" : "Al corriente") + "</span><span>" + (d.total > 0.5 ? $m(d.total) : (d.aFavor > 0.5 ? "+" + $m(d.aFavor) + " a favor" : "✓")) + "</span></div></div>" +
+      (d.enRevision ? '<p class="nota">⏳ Tiene un pago reportado por confirmar en la <a href="bandeja.html">bandeja</a>.</p>' : "") +
+      (d.tel && d.total > 0.5 ? '<a class="go wa" href="https://wa.me/' + esc(d.tel) + "?text=" + encodeURIComponent("Hola, te escribo de la mesa directiva de Las Misiones. Te comparto el estado de cuenta del depto " + n + ": https://condominio-misiones.eduardo-lusan.workers.dev/mi-depto.html") + '" target="_blank" rel="noopener">💬 Escribirle por WhatsApp</a>' : "") +
+      '<a class="go" style="background:var(--page);color:var(--ink);border:1px solid var(--border)" href="mi-depto.html?depto=' + n + '">Ver su «Mi depto»</a>';
+    window.ventana("Depto " + n, h);
+  }
+
+  document.addEventListener("click", ev => {
+    const b = ev.target.closest("[data-mes],[data-m],[data-d]"); if (!b || !J) return;
+    if (b.dataset.mes) { mes = b.dataset.mes; pintar(); }
+    else if (b.dataset.m) { modo = b.dataset.m; pintar(); }
+    else if (b.dataset.d) detalle(+b.dataset.d);
+  });
+
+  function usar(j) {
+    J = j;
+    if (!mes || !j.meses.some(x => x.id === mes)) mes = j.meses.some(x => x.id === j.hoy) ? j.hoy : (j.meses.length ? j.meses[j.meses.length - 1].id : "");
+    $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+    pintar();
+  }
+  function cargar(desdeLogin) {
+    $("estado").textContent = J ? "Actualizando…" : "Cargando…";
+    return fetch(URL_ + "?accion=edificio&clave=" + encodeURIComponent(clave) + "&t=" + Date.now(), { cache: "no-store" }).then(r => r.json()).then(j => {
+      if (!j.ok) { if (j.error === "clave") { try { localStorage.removeItem(LLAVE); } catch (e) {} J = null; pedir(); if (desdeLogin) $("mal").classList.remove("hidden"); return; } throw new Error(j.error); }
+      try { localStorage.setItem("misiones_admin", clave); localStorage.setItem(LLAVE, JSON.stringify(j)); } catch (e) {}
+      $("mal").classList.add("hidden");
+      usar(j);
+      const t = new Date(j.generado); $("estado").textContent = "Datos de las " + t.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+    }).catch(e => { $("estado").textContent = J ? "Sin conexión: se muestran los últimos datos." : ""; if (!J) { pedir(); $("mal").textContent = "No se pudo leer la hoja (" + (e.message || e) + ")."; $("mal").classList.remove("hidden"); } });
+  }
+
+  if (!clave) pedir();
+  else {
+    try { const g = JSON.parse(localStorage.getItem(LLAVE) || "null"); if (g && g.ok) usar(g); } catch (e) {}
+    cargar(false);
+  }
+})();
+</script>
+</body>
+</html>
