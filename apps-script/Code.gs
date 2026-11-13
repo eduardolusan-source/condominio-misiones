@@ -466,8 +466,8 @@ function doPost(e) {
 /* Qué tiene por pagar un departamento y qué ha reportado. */
 function estadoDepto_(depto) {
   if (!(depto >= 1 && depto <= UNIDADES)) throw new Error("departamento");
-  const ss = SpreadsheetApp.getActive();
-  const cfg = config_();
+  const ss = SpreadsheetApp.getActive(), memo = typeof MEMO_MD_ !== "undefined" && MEMO_MD_.lote ? MEMO_MD_ : {};   // en lote (varios deptos seguidos): una sola lectura
+  const cfg = memo.cfg || (memo.cfg = config_());
   const r = {
     ok: true, depto: depto,
     cuota: Number(cfg.cuota_mantenimiento) || 0,
@@ -492,9 +492,9 @@ function estadoDepto_(depto) {
     }
   }
   // Últimos pagos reportados por ese depto
-  const pagos = ss.getSheetByName(HOJA_PAGOS);
-  if (pagos && pagos.getLastRow() > 1) {
-    const vals = pagos.getRange(2, 1, pagos.getLastRow() - 1, ENC_PAGOS.length).getValues();
+  if (!memo.pagosVals) { const pagos = ss.getSheetByName(HOJA_PAGOS); memo.pagosVals = pagos && pagos.getLastRow() > 1 ? pagos.getRange(2, 1, pagos.getLastRow() - 1, ENC_PAGOS.length).getValues() : []; }
+  if (memo.pagosVals.length) {
+    const vals = memo.pagosVals;
     vals.forEach(f => {
       if (Number(f[1]) !== depto) return;
       r.pagos.push({
@@ -1073,9 +1073,11 @@ function calentarFinanzas() {
   const c = CacheService.getScriptCache(), p = PropertiesService.getScriptProperties(), ss = SpreadsheetApp.getActive();
   let ver = ""; try { ver = String(DriveApp.getFileById(ss.getId()).getLastUpdated().getTime()); } catch (e) {}
   const g = c.get("finanzas");
-  if (g && ver && p.getProperty("calentador_ver") === ver) { c.put("finanzas", g, 1500); return; }
+  const ge = c.get("edificio");
+  if (g && ge && ver && p.getProperty("calentador_ver") === ver) { c.put("finanzas", g, 1500); c.put("edificio", ge, 1500); return; }
   const out = finanzas_(true);
   try { c.put("finanzas", JSON.stringify(out), 1500); } catch (e) {}
+  try { if (typeof edificioCalc_ === "function") c.put("edificio", JSON.stringify(edificioCalc_()), 1500); } catch (e) { Logger.log("calentador edificio: " + e); }
   if (ver) p.setProperty("calentador_ver", ver);
 }
 function instalarCalentador() {

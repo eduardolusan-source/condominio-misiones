@@ -316,7 +316,9 @@ function mesesMD_(ss) {
 }
 function miDeptoCalc_(depto) {
   if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
-  const ss = SpreadsheetApp.getActive(), cfg = config_(), zona = "America/Mexico_City";
+  /* Con MEMO_MD_.lote (16 deptos seguidos: «Quién debe», cobranza) lo que no depende del depto se lee
+     UNA vez: 4 lecturas en lugar de ~80. Fuera de lote se lee fresco. */
+  const ss = SpreadsheetApp.getActive(), cfg = MEMO_MD_.lote ? (MEMO_MD_.cfg || (MEMO_MD_.cfg = config_())) : config_(), zona = "America/Mexico_City";
   const cuota = Number(cfg.cuota_mantenimiento) || 1500, desde = mesTexto_(cfg.finanzas_desde).trim();
   const hoyId = Utilities.formatDate(new Date(), zona, "yyyy-MM");
   const meses = [], vistos = {}, pend = MEMO_MD_.pend || (MEMO_MD_.pend = pendientesPorCelda_(ss));
@@ -336,8 +338,8 @@ function miDeptoCalc_(depto) {
   meses.sort((a, b) => a.id < b.id ? -1 : 1);
   /* Agua: el cargo de cada recibo (la lectura del mes M es el agua de M−1) y si ya se pagó. */
   const agua = [];
-  const hA = ss.getSheetByName(HOJA_AGUA);
-  if (hA && hA.getLastRow() > 1) hA.getRange(2, 1, hA.getLastRow() - 1, ENC_AGUA.length).getValues().forEach(f => {
+  if (!MEMO_MD_.agua || !MEMO_MD_.lote) { const hA = ss.getSheetByName(HOJA_AGUA); MEMO_MD_.agua = hA && hA.getLastRow() > 1 ? hA.getRange(2, 1, hA.getLastRow() - 1, ENC_AGUA.length).getValues() : []; }
+  MEMO_MD_.agua.forEach(f => {
     const mes = mesTexto_(f[0]), cargo = Number(f[8]) || 0;
     if (claveDepto_(f[1]) !== depto || !/^\d{4}-\d{2}$/.test(mes) || cargo <= 0.5) return;
     const mesAgua = mesSiguiente_(mes, -1);
@@ -366,7 +368,7 @@ function miDeptoCalc_(depto) {
        solo a esos deptos MÁS los que respondieron «debo» a esa cuota en «Validar mis cuentas» (pestaña Validaciones).
      - Sin esa celda: la de la CEA ($1,905) a todos y la de Config extraordinario_nombre/monto solo al depto 15 (que
        la reconoció) y a quien responda «debo» en Validaciones. A los demás ni se les muestra. */
-  const reconoce = reconocenExtra_(ss);
+  const reconoce = MEMO_MD_.lote ? (MEMO_MD_.reconoce || (MEMO_MD_.reconoce = reconocenExtra_(ss))) : reconocenExtra_(ss);
   let texto = String(cfg.extraordinarias || "").trim();
   if (!texto) texto = "Deuda con la CEA (cuota única)=1905" + (exMonto > 0 ? " | " + exNombre + "=" + exMonto + " [15]" : "");
   const lista = texto.split("|").map(x => x.trim()).filter(Boolean).map(x => {
