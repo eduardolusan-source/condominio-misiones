@@ -299,8 +299,14 @@
       const F = M.filter(m => m.id >= O.cuotaDesde);
       return F.length ? F : M;
     }
+    /* Gastos fijos (opción fijos: [{ nombre, re, mensual, nota }]): se cuentan por lo que cuestan al mes
+       (p. ej. limpieza $1,800 por semana) y no por lo anotado, que en un mes a medias o de transición confunde.
+       Lo variable (luz, insumos…) se promedia solo con los meses ya cerrados. */
     function desgloseCuota(M) {
       M = mesesCuota(M);
+      const fijos = O.fijos || [];
+      const cerrados = M.filter(m => !m.enCurso);
+      if (fijos.length && cerrados.length) M = cerrados;
       const acc = O.rubros.map(() => 0);
       let otros = 0;
       M.forEach(m => m.grupos.filter(g => g.cuota !== false).forEach(g => {
@@ -310,6 +316,7 @@
           const texto = (it.concepto || "") + " " + (it.detalle || "");
           suma += it.monto;
           if (O.excluirDeCuota && O.excluirDeCuota.test(texto)) return;
+          if (fijos.some(f => f.re.test(texto))) return;          // el fijo se suma aparte, por su costo mensual
           const r = rubroDe(texto);
           if (r < 0) otros += it.monto; else acc[r] += it.monto;
         });
@@ -317,9 +324,20 @@
       }));
       const n = Math.max(1, M.length), u = modelo.unidades || 1;
       const lista = O.rubros.map((r, i) => ({ nombre: r.nombre, valor: acc[i] / n / u, mensual: acc[i] / n, color: CAT[i % CAT.length] })).filter(x => x.valor > 0.5);
+      fijos.forEach((f, k) => {
+        const r = rubroDe(f.nombre), x = lista.find(y => y.nombre === (r >= 0 ? O.rubros[r].nombre : f.nombre));
+        if (x) { x.valor += f.mensual / u; x.mensual += f.mensual; x.fijo = true; x.sub = f.nota; }
+        else lista.push({ nombre: f.nombre, valor: f.mensual / u, mensual: f.mensual, color: r >= 0 ? CAT[r % CAT.length] : CAT[(O.rubros.length + k) % CAT.length], fijo: true, sub: f.nota });
+      });
       lista.sort((a, b) => b.valor - a.valor);
       if (otros / n / u > 0.5) lista.push({ nombre: "Otros gastos", valor: otros / n / u, mensual: otros / n, color: OTROS });
+      lista.mesesVariables = M;
       return lista;
+    }
+    function notaFijos(des) {
+      const f = O.fijos || [];
+      if (!f.length) return "";
+      return "Fijos: " + f.map(x => x.nombre.toLowerCase() + " " + x.nota).join(" y ") + ". Lo variable (luz, insumos…) es el promedio de " + rango(des.mesesVariables || []);
     }
     function aguaDel(M) {
       const meses = M.filter(m => m.agua);
@@ -397,12 +415,12 @@
       const c5 = '<a class="tb-card tb-c-cuota" href="#gastos">' +
         '<div class="tb-k">¿En qué se van tus ' + $0(cuota) + " al mes?</div>" +
         '<div class="tb-cuota-barra">' + segs + marcaCuota + "</div>" +
-        '<ul class="tb-leyenda">' + des.slice(0, 6).map(d => '<li><span class="tb-sw" style="background:' + d.color + '"></span><span class="tb-ley-n">' + esc(d.nombre) + "</span><b>" + $0(d.valor) + "</b></li>").join("") +
+        '<ul class="tb-leyenda">' + des.slice(0, 6).map(d => '<li><span class="tb-sw" style="background:' + d.color + '"></span><span class="tb-ley-n">' + esc(d.nombre) + (d.fijo ? ' <small class="tb-fijo">fijo</small>' : "") + "</span><b>" + $0(d.valor) + "</b></li>").join("") +
         (des.length > 6 ? '<li><span class="tb-sw" style="background:' + OTROS + '"></span><span class="tb-ley-n">Lo demás</span><b>' + $0(sum(des.slice(6).map(d => d.valor))) + "</b></li>" : "") + "</ul>" +
         '<div class="tb-veredicto ' + (diferencia >= 0 ? "bien" : "mal") + '">' + (diferencia >= 0
           ? "✓ Operar cuesta " + $0(costo) + " por unidad: sobran <b>" + $0(diferencia) + "</b>"
           : "✕ Operar cuesta " + $0(costo) + " por unidad: faltan <b>" + $0(-diferencia) + "</b>") + "</div>" +
-        '<div class="tb-d">Promedio mensual de ' + esc(rango(mesesCuota(M))) + (T.notaCuota ? " · " + T.notaCuota : "") + ".</div>" +
+        '<div class="tb-d">' + (O.fijos && O.fijos.length ? esc(notaFijos(des)) : "Promedio mensual de " + esc(rango(mesesCuota(M)))) + (T.notaCuota ? " · " + T.notaCuota : "") + ".</div>" +
         '<span class="tb-mas">Ver en qué se gasta ›</span></a>';
 
       /* 6 · Agua o reserva */
@@ -571,7 +589,7 @@
       const totalG = sum(Object.keys(grupos).map(k => grupos[k]));
       return cabecera("En qué se gasta", esc(rango(M)) + ".") + chipsAnio("gastos") +
         '<section class="tb-panel"><h3>Tu cuota de ' + $0(modelo.cuota) + ", por rubro</h3>" +
-        '<p class="tb-nota">Promedio mensual de lo que cuesta operar el condominio (' + esc(rango(mesesCuota(M))) + "), dividido entre las " + modelo.unidades + " unidades" + (T.notaCuota ? " (" + T.notaCuota + ")" : "") + ". Total: <b>" + $0(costo) + "</b> por unidad al mes.</p>" +
+        '<p class="tb-nota">' + (O.fijos && O.fijos.length ? "Lo que cuesta operar el condominio al mes. " + esc(notaFijos(des)) + ". Todo" : "Promedio mensual de lo que cuesta operar el condominio (" + esc(rango(mesesCuota(M))) + ")") + ", dividido entre las " + modelo.unidades + " unidades" + (T.notaCuota ? " (" + T.notaCuota + ")" : "") + ". Total: <b>" + $0(costo) + "</b> por unidad al mes.</p>" +
         '<div class="tb-grafica" data-g="cuota"></div></section>' +
         '<section class="tb-panel"><h3>Por tipo de gasto en ' + anio + "</h3>" +
         '<div class="tb-tipos">' + Object.keys(grupos).filter(k => grupos[k] > 0.5).map(k => '<div class="tb-tipo"><span>' + esc(k) + "</span><b>" + $0(grupos[k]) + "</b><small>" + pct(grupos[k], totalG) + "% del total</small></div>").join("") + "</div></section>" +

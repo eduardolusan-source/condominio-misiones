@@ -309,3 +309,4 @@ a.tb-card:active { transform: scale(0.99); }
   .tb-card, .tb-panel { box-shadow: none; break-inside: avoid; }
 }
 .tb-encurso { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); padding: 0.1rem 0.45rem; border-radius: 999px; vertical-align: middle; }
+.tb-fijo { font-size: .72em; color: var(--muted, #898781); font-weight: 600; margin-left: .25em; }
