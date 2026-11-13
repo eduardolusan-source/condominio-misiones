@@ -104,6 +104,13 @@ function edificio_(clave, fresco) {
   if (String(clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
   const c = CacheService.getScriptCache();
   if (!fresco) { const g = c.get("edificio"); if (g) { try { return JSON.parse(g); } catch (e) {} } }
+  const out = edificioCalc_();
+  try { c.put("edificio", JSON.stringify(out), 300); } catch (e) {}
+  return out;
+}
+/* Arma el edificio (sin clave: lo usan edificio_ y el calentador). */
+function edificioCalc_() {
+  if (typeof MEMO_MD_ !== "undefined") MEMO_MD_.lote = true;
   const cs = typeof contactos_ === "function" ? (function () { try { return contactos_(); } catch (e) { return {}; } })() : {};
   const meses = {}, deptos = [];
   let cuota = 1500, hoy = "";
@@ -128,9 +135,7 @@ function edificio_(clave, fresco) {
       extra: Math.round(extra), extraNombre: m.extraordinaria && extra > 0.5 ? m.extraordinaria.nombre : "", aFavor: Math.round(m.aFavor || 0), meses: est, recibos: agua,
       enRevision: (m.pagos || []).some(p => /pendiente/i.test(String(p.estatus || ""))) });
   }
-  const out = { ok: true, hoy: hoy, cuota: cuota, meses: Object.keys(meses).sort().map(id => ({ id: id, nombre: meses[id] })), deptos: deptos, generado: new Date().toISOString() };
-  try { c.put("edificio", JSON.stringify(out), 300); } catch (e) {}
-  return out;
+  return { ok: true, hoy: hoy, cuota: cuota, meses: Object.keys(meses).sort().map(id => ({ id: id, nombre: meses[id] })), deptos: deptos, generado: new Date().toISOString() };
 }
 
 /* ------------------------------------- escritura ------------------------------------- */

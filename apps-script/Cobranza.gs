@@ -63,6 +63,7 @@ function contactos_() {
 
 /* ------------------------------- cálculo ------------------------------- */
 function adeudos_() {
+  if (typeof MEMO_MD_ !== "undefined") MEMO_MD_.lote = true;
   const cs = contactos_(), lista = [];
   for (let d = 1; d <= UNIDADES; d++) {
     const m = miDepto_(d); if (!m.ok) continue;
