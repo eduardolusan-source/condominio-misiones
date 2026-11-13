@@ -257,7 +257,8 @@ Qué pasa el día 10, con el mes anterior:
   «Pagado el» de la pestaña Agua; solo el conteo y el monto total): garrafones y llaves. El estilo rota cada mes;
   en la página se puede elegir otro. Ventanas, casas, buzones, macetas, monedas, garrafones y llaves se acomodan
   al azar cada mes: no son deptos reales.
-- El correo a los vecinos es el formal (PDF y resumen en tabla); lo visual es para WhatsApp.
+- El correo a los vecinos es una carta corta y visual (ver «Reporte del día 10 rediseñado», al final); las infografías
+  siguen siendo para WhatsApp.
 - **Candados:** si el mes no tiene datos no se envía nada a los vecinos y te avisa; un mes se envía una sola vez;
   con `reporte_envio = pausa` solo te llega el kit. Todo queda en la pestaña Reportes.
 - WhatsApp no permite publicar en grupos automáticamente sin la API de pago de WhatsApp Business; por eso el
@@ -372,3 +373,38 @@ Quinto archivo: **+ → Secuencia de comandos → `Cobranza`** → pega `Cobranz
 3. Probar sin esperar: Ejecutar → **cobranzaPrueba** (llega solo a ti, con reporte y mensajes).
 Los adeudos son los de mi-depto.html (desde finanzas_desde; lo de la administración anterior no se cobra) y los pagos
 reportados sin confirmar aparecen como «en revisión». Opcional: Config → `sitio_url` para las ligas de los mensajes.
+
+## Agenda de cobranza para Ceci y reporte del día 10 rediseñado (13 de noviembre de 2026)
+Pegar `Cobranza.gs` y `Reporte.gs` nuevos (Extensiones → Apps Script → cada archivo: borrar todo, pegar, guardar).
+No hace falta correr `instalar` ni publicar nueva versión: los disparadores usan el código guardado.
+Probar: Ejecutar → **cobranzaPrueba** (te llegan la agenda y el reporte de adeudos) y menú Condominio →
+**Probar el reporte (solo a mí)** (te llegan el correo de los vecinos, tal cual, y el kit). Para que a Ceci le llegue
+la agenda sin esperar al 15: Ejecutar → **cobranzaAhora** (también manda el reporte a la mesa).
+
+**Cobranza**
+- Config → `cobranza_textos` ya tiene el correo de Ceci: el 15 y fin de mes le llega la **agenda de cobranza**, una
+  tarjeta por vecino (del que más debe al que menos, agrupadas en plan de pagos · pedir apoyo · recordatorio) con su
+  teléfono en grande, **📞 Llamar** y **💬 WhatsApp** con el mensaje ya escrito. Los teléfonos salen de «Vecinos
+  (privado)», columna C (10 dígitos), y se muestran como 442 123 4567 (o 55 1234 5678 en CDMX).
+- Un mismo teléfono con varios deptos (una dueña con tres) es una sola tarjeta y un solo mensaje con todos.
+- Quien está en `cobranza_correos` y en `cobranza_textos` recibe solo la agenda (antes le llegaban dos correos).
+  El reporte de la mesa ahora trae el teléfono de cada depto.
+- Los nombres capturados en minúsculas salen con mayúscula; el saludo usa el nombre de pila («Ma. de los Remedios»
+  → «Remedios», antes decía «Los»).
+- El código ya no trae correos escritos: si `cobranza_correos` está vacía, `instalarCobranza` pone el tuyo.
+
+**Reporte del día 10**
+- El correo a los vecinos es una carta que se lee en un minuto: el edificio de noche con una ventana encendida por
+  cada depto que pagó su cuota (se barajan con el mes: no son deptos reales), la frase del mes («¡Mes verde!», «La
+  caja creció…», «La caja bajó…» y el sello «Se pagó…» cuando hubo un gasto extraordinario grande), cómo se movió la
+  caja en barras, en qué se fue la cuota de $1,500 (barra por rubro y lo que quedó para la caja), el agua del último
+  recibo, un dato del mes y los botones a Mi depto, Finanzas y Registrar pago. Solo tablas y colores: se ve igual en
+  Gmail, Outlook y el celular.
+- Asunto con gancho: «Las cuentas de octubre · ¡mes verde! · Las Misiones».
+- **El PDF salía deslavado:** Google lo imprime con Chromium sin «gráficos de fondo», así que el encabezado azul y las
+  barras desaparecían. Ahora lleva `print-color-adjust: exact` y el mismo diseño, en una hoja.
+- Dato del mes: mientras menos de la mitad de los deptos reciba el correo, invita a registrarse en `correo.html`;
+  después rota (la caja desde que la tomó la mesa, el rubro más caro por depto y por día, la cuota al día, el año).
+- La prueba («Probar el reporte (solo a mí)») ahora te manda también el correo de los vecinos tal cual.
+- Las ligas usan `condominio-misiones.eduardo-lusan.workers.dev` (por si alguna red celular bloquea github.io);
+  Config → `sitio_url` la cambia.
