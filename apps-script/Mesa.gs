@@ -19,6 +19,7 @@ const QUORUM = Math.floor(UNIDADES / 2) + 1;   // mitad más uno de los deptos
 function rutaMesaGet_(p) {
   if (p.accion === "reunion") return reunionPublica_();
   if (p.accion === "mesa") return panelMesa_(p.clave);
+  if (p.accion === "edificio") return edificio_(p.clave, !!p.fresh);
   return null;
 }
 function rutaMesaPost_(d) {
@@ -93,6 +94,43 @@ function panelMesa_(clave) {
     .map(f => ({ folio: String(f[0]), dia: diaIso_(f[2]), horario: String(f[3]), depto: Number(f[4]) }));
   const pend = pendientes_(clave);
   return Object.assign(reunionPublica_(), { pagos: pend.ok ? pend.total : 0, casa: casa });
+}
+
+/* ---------------------------- edificio (quién debe, de un vistazo) ----------------------------
+   Para mesa → «Quién debe». Por depto y por mes: si la cuota de mantenimiento quedó cubierta (los pagos
+   cubren primero el mes más viejo, como en Mi depto) y si pagó el agua que se cobra ese mes (la del mes
+   anterior). Más el adeudo total de hoy. Solo con la clave de la mesa. Se guarda 5 min. */
+function edificio_(clave, fresco) {
+  if (String(clave || "") !== claveAdmin_()) return { ok: false, error: "clave" };
+  const c = CacheService.getScriptCache();
+  if (!fresco) { const g = c.get("edificio"); if (g) { try { return JSON.parse(g); } catch (e) {} } }
+  const cs = typeof contactos_ === "function" ? (function () { try { return contactos_(); } catch (e) { return {}; } })() : {};
+  const meses = {}, deptos = [];
+  let cuota = 1500, hoy = "";
+  for (let d = 1; d <= UNIDADES; d++) {
+    const m = miDepto_(d); if (!m.ok) continue;
+    cuota = m.cuota || cuota; hoy = m.hoy || hoy;
+    const est = {};
+    let pagado = 0, debido = 0;
+    (m.meses || []).forEach(x => { pagado += Number(x.manto) || 0; });
+    (m.meses || []).forEach(x => {
+      if (x.futuro) return;
+      meses[x.id] = x.nombre;
+      const cubre = Math.max(0, Math.min(x.cuota, pagado - debido));
+      debido += x.cuota;
+      est[x.id] = { m: cubre >= x.cuota - 0.5 ? "si" : cubre > 0.5 ? "parcial" : "no", cubre: Math.round(cubre), pago: Math.round(Number(x.manto) || 0) };
+    });
+    const agua = {};
+    (m.agua || []).forEach(a => { agua[a.mes] = { cargo: Math.round(a.cargo), pagado: !!a.pagado }; });
+    const extra = m.extraordinaria ? m.extraordinaria.pendiente : 0;
+    const k = cs[d] || {};
+    deptos.push({ d: d, nombre: k.paga || k.nombre || "", tel: k.tel || "", total: Math.round(m.total), manto: Math.round(m.debeManto), agua: Math.round(m.aguaPendiente),
+      extra: Math.round(extra), extraNombre: m.extraordinaria && extra > 0.5 ? m.extraordinaria.nombre : "", aFavor: Math.round(m.aFavor || 0), meses: est, recibos: agua,
+      enRevision: (m.pagos || []).some(p => /pendiente/i.test(String(p.estatus || ""))) });
+  }
+  const out = { ok: true, hoy: hoy, cuota: cuota, meses: Object.keys(meses).sort().map(id => ({ id: id, nombre: meses[id] })), deptos: deptos, generado: new Date().toISOString() };
+  try { c.put("edificio", JSON.stringify(out), 300); } catch (e) {}
+  return out;
 }
 
 /* ------------------------------------- escritura ------------------------------------- */
