@@ -1066,6 +1066,26 @@ function actualizarAgua_() {
 }
 
 /* Al cambiar el estatus en la columna J de Pagos (Confirmado, Rechazado o Pendiente). */
+/* Calentador: cada 10 minutos deja Finanzas lista en el caché para que nadie espere ~13 s.
+   Para no gastar la cuota diaria de Google, solo rehace las cuentas si la hoja cambió (o si alguien
+   borró la copia al editar); si no, alarga la copia guardada. Se instala una vez con instalarCalentador(). */
+function calentarFinanzas() {
+  const c = CacheService.getScriptCache(), p = PropertiesService.getScriptProperties(), ss = SpreadsheetApp.getActive();
+  let ver = ""; try { ver = String(DriveApp.getFileById(ss.getId()).getLastUpdated().getTime()); } catch (e) {}
+  const g = c.get("finanzas");
+  if (g && ver && p.getProperty("calentador_ver") === ver) { c.put("finanzas", g, 1500); return; }
+  const out = finanzas_(true);
+  try { c.put("finanzas", JSON.stringify(out), 1500); } catch (e) {}
+  if (ver) p.setProperty("calentador_ver", ver);
+}
+function instalarCalentador() {
+  ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === "calentarFinanzas").forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger("calentarFinanzas").timeBased().everyMinutes(10).create();
+  calentarFinanzas();
+  try { ss_toast_("Calentador listo: Finanzas abre al instante."); } catch (e) {}
+}
+function ss_toast_(t) { SpreadsheetApp.getActive().toast(t, "Finanzas", 8); }
+
 function onEdit(e) {
   /* Cualquier cambio en la hoja borra la copia guardada: el sitio ve el dato nuevo al recargar, sin esperar 5 minutos. */
   try { CacheService.getScriptCache().remove("finanzas"); if (typeof olvidarMiDepto_ === "function") olvidarMiDepto_(); } catch (err) {}
