@@ -47,7 +47,7 @@ const REP_RUBROS = [
   ["Luz de áreas comunes", /\bluz\b|cfe/i, "#e0a400", "💡", "La luz de las áreas comunes"],
   ["Jardinería", /jard/i, "#5c9e5a", "🌿", "La jardinería"],
   ["Alberca", /alberca/i, "#2f9fd0", "🏊", "La alberca"],
-  ["Elevador", /elevador/i, "#8a6bbf", "🛗", "El elevador"],
+  ["Elevador", /elevador/i, "#8a6bbf", "↕️", "El elevador"],
   ["Vigilancia", /vigilan|seguridad/i, "#6b7280", "🛡️", "La vigilancia"]
 ];
 const REP_OTROS = ["Otros gastos", null, "#a9a397", "🧾", "Los otros gastos"];
@@ -229,7 +229,7 @@ function historia_(k) {
   return {
     titulo: titulo, sello: sello,
     bajada: (verde ? "Y la caja cerró " : "Cerró ") + k.mes + " con " + fin + (verde ? "." : " en la caja."),
-    bajadaHtml: (verde ? "Y la caja cerró " : "Cerró ") + esc_(k.mes) + ' con <b style="color:' + RC.luz + '">' + fin + "</b>" + (verde ? "." : " en la caja."),
+    bajadaHtml: (verde ? "Y la caja cerró " : "Cerró ") + esc_(k.mes) + ' con <b style="white-space:nowrap;color:' + RC.luz + '">' + fin + "</b>" + (verde ? "." : " en la caja."),
     corto: verde ? "¡mes verde!" : sello ? "se pagó " + sello.concepto : k.res >= 0 ? "la caja creció " + $_(k.res) : "la caja bajó " + $_(-k.res),
     ventanas: verde ? "Las " + U + " ventanas encendidas: todos pagaron su cuota de " + k.mes + "."
       : k.pagaron + " de " + U + " ventanas encendidas: cada luz es un depto que ya pagó su cuota de " + k.mes + "."
@@ -368,7 +368,7 @@ function cajaCorreo_(k) {
   const res = k.res >= 0
     ? '<span style="display:inline-block;background:' + RC.verdeClaro + ';color:#1d5a2a;border-radius:999px;padding:7px 14px;font-size:15px;font-weight:800">✅ Sobraron ' + $_(k.res) + "</span>"
     : '<span style="display:inline-block;background:' + RC.rojoClaro + ';color:#8c1d18;border-radius:999px;padding:7px 14px;font-size:15px;font-weight:800">Faltaron ' + $_(-k.res) + ": los puso la caja</span>";
-  return seccion_(titulo_("Cómo se movió la caja", "Empezó " + esc_(k.mes) + " con " + $_(k.saldoIni) + ' y cerró con <b style="color:' + RC.marino + '">' + $_(k.saldoFin) + "</b>.") +
+  return seccion_(titulo_("Cómo se movió la caja", "Empezó " + esc_(k.mes) + " con " + $_(k.saldoIni) + ' y cerró con <b style="white-space:nowrap;color:' + RC.marino + '">' + $_(k.saldoFin) + "</b>.") +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' +
       fila("Entró", k.ing, RC.verde, partes([["cuotas", k.manto], ["agua", k.aguaCobrada], ["extraordinarias", k.extraIng], ["casa club", k.casaClub]])) +
       fila("Salió", k.egr, RC.coral, partes([["gastos del mes", k.ordinarios], ["extraordinarios", k.extraordinarios]])) + "</table>" +
