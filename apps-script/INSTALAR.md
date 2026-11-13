@@ -290,7 +290,8 @@ Tres archivos en el editor: `Code`, `Reporte` y **`Condominio`** (sustituye a `R
    (Si se te olvida, no pasa nada grave: el script la pasa sola a Config la primera vez, siempre que tu
    clave no sea la de ejemplo; y desde el menú puedes poner una nueva.)
 2. Pega `Code.gs` y `Reporte.gs` nuevos (reemplaza todo el contenido de cada uno).
-3. Si existe el archivo `Revision`: ⋮ → **Eliminar**. Luego **+ → Secuencia de comandos** → nombre
+3. Si existe el archivo `Revision` de antes de esta fecha: ⋮ → **Eliminar**. (El `Revision` que se agregó el 13 de
+   noviembre, el de la revisión del día 5, es otro: ese se queda.) Luego **+ → Secuencia de comandos** → nombre
    `Condominio` → pega `Condominio.gs`.
 4. Guarda y publica: **Implementar → Administrar implementaciones → lápiz → Nueva versión → Implementar.**
 5. Recarga la hoja: el menú ahora se llama **Condominio**. Prueba **Revisar que todo cuadre**.
@@ -408,3 +409,25 @@ la agenda sin esperar al 15: Ejecutar → **cobranzaAhora** (también manda el r
 - La prueba («Probar el reporte (solo a mí)») ahora te manda también el correo de los vecinos tal cual.
 - Las ligas usan `condominio-misiones.eduardo-lusan.workers.dev` (por si alguna red celular bloquea github.io);
   Config → `sitio_url` la cambia.
+
+## Revisión de la hoja, el día 5 (13 de noviembre de 2026)
+Sexto archivo, **`Revision`**: ya pegado, instalado (`instalarRevision`) y probado (`revisarHoja`). Ojo: no es el
+`Revision` viejo que el 12 de noviembre se cambió por `Condominio`; este es nuevo y se queda. Solo lee la hoja: no
+cambia nada.
+- El día 5 de cada mes, a las 8 h, te llega **solo a ti** un correo «🔎 Revisión de la hoja · Las Misiones · …» con
+  lo que conviene arreglar antes del reporte del día 10. Una tarjeta por hallazgo: qué pasa, en qué pestaña y celda,
+  cómo corregirlo y un botón que abre la hoja justo en esa celda. **Por corregir** es lo que cambia lo que ven los
+  vecinos; **Por revisar** puede estar bien, pero vale la pena verlo.
+- Revisa las pestañas de mes desde Config → `finanzas_desde`, en egresos ordinarios y extraordinarios: conceptos que
+  quedaron como fecha o número, montos escritos como texto (el TOTAL no los suma), montos sin concepto, montos
+  negativos, gastos repetidos y gastos de los últimos tres meses sin liga al comprobante (todos juntos en una sola
+  tarjeta).
+- Además: pagos reportados dos veces en **Pagos** (mismo depto y mismo monto, con menos de 30 minutos de diferencia y
+  alguno sin resolver: si confirmas los dos, se le cuenta doble), la clave de la bandeja (`clave_admin`, si es muy
+  corta), si la hoja se puede editar con el enlace y todo lo que ya marca el semáforo.
+- Al final trae una o dos mejoras al diseño de la hoja que salen de lo que pasó ese mes, y la lista de lo que ya cuadra.
+- Para verla sin esperar al día 5: Ejecutar → **revisarHoja**.
+
+**Hoja restringida.** Desde el 13 de noviembre la hoja de captura, su carpeta «Condominio Misiones — Mesa Directiva»
+y la copia .xlsx vieja están en «Restringido»: solo tú las abres. Los vecinos usan el sitio, que lee la hoja por el
+servicio (/exec) y no depende del enlace. Si algún día vuelve a quedar abierta con el enlace, la revisión lo marca.
