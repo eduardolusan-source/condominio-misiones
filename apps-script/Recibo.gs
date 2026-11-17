@@ -6,6 +6,10 @@
    3. Le llega por correo, con el PDF adjunto, a los correos de su depto en la pestaña «Correos»
       y al que haya escrito al registrar el pago (columna O de Pagos).
 
+   Lo que está pagado pero no pasó por la bandeja (la mesa lo anotó a mano en la pestaña del mes) también
+   tiene recibo: una constancia por concepto y mes (?accion=reciboPago&depto=N&tipo=agua|manto&mes=AAAA-MM),
+   con número A-AAAAMM-NN o M-AAAAMM-NN. Si ese concepto sí tiene un pago confirmado con folio, sale ese.
+
    Un recibo = una transferencia. Si alguien pagó tres meses de un jalón, la hoja guarda tres
    renglones con la misma fecha y hora: salen juntos en un solo recibo, y el correo se manda
    cuando el último de los tres queda resuelto.
@@ -64,6 +68,7 @@ function reciboPrueba() {
   if (!f) return avisoUi_("Recibo de prueba", "Todavía no hay ningún pago confirmado con folio en la pestaña Pagos.");
   const r = reciboDatos_(vals, Number(f[1]), String(f[13]));
   if (!r.ok) return avisoUi_("Recibo de prueba", "No se pudo armar el recibo: " + r.error);
+  reciboAfinarAgua_(r);
   const yo = Session.getEffectiveUser().getEmail();
   enviarRecibo_(r, [yo], "[Prueba] ");
   avisoUi_("Recibo de prueba", "Te llegó a " + yo + " el recibo " + r.numero + " (depto " + r.depto + ", " + pesosC_(r.total) + "), tal como lo vería el vecino.");
@@ -112,9 +117,11 @@ function reciboPago_(p) {
   const depto = parseInt(p.depto, 10);
   if (!(depto >= 1 && depto <= UNIDADES)) return { ok: false, error: "departamento" };
   const pagos = SpreadsheetApp.getActive().getSheetByName(HOJA_PAGOS);
-  if (!pagos || pagos.getLastRow() < 2) return { ok: false, error: "folio" };
-  const r = reciboDatos_(pagos.getRange(2, 1, pagos.getLastRow() - 1, ENC_PAGOS.length).getValues(), depto, p.folio);
+  if (!pagos) return { ok: false, error: "folio" };
+  const vals = pagos.getLastRow() < 2 ? [] : pagos.getRange(2, 1, pagos.getLastRow() - 1, ENC_PAGOS.length).getValues();
+  const r = String(p.folio || "").trim() ? reciboDatos_(vals, depto, p.folio) : reciboConcepto_(vals, depto, String(p.tipo || ""), String(p.mes || ""));
   if (!r.ok) return r;
+  reciboAfinarAgua_(r);
   delete r._filas;
   const out = { ok: true, recibo: r };
   if (p.pdf) {
@@ -123,6 +130,47 @@ function reciboPago_(p) {
     out.pdf = Utilities.base64Encode(pdf.getBytes());
   }
   return out;
+}
+
+/* Recibo de un concepto que Mi depto da por pagado: el agua de un mes (mes = el del consumo) o la cuota de un mes.
+   Si hay un pago confirmado con folio que lo cubre, devuelve ese recibo; si no (lo anotó la mesa a mano en la
+   pestaña del mes), una constancia sin folio. Nunca da recibo de algo que Mi depto no marca como pagado. */
+function reciboConcepto_(vals, depto, tipo, mes) {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
+  const md = miDepto_(depto);
+  if (!md || !md.ok) return { ok: false, error: "departamento" };
+  const conFolio = cond => { const f = vals.filter(x => Number(x[1]) === depto && String(x[9]) === "Confirmado" && String(x[13] || "") && cond(x))[0]; return f ? reciboDatos_(vals, depto, String(f[13])) : null; };
+  if (tipo === "agua") {
+    const a = (md.agua || []).filter(x => x.mes === mes)[0];
+    if (!a || !a.pagado) return { ok: false, error: "sin pagar" };
+    return conFolio(x => Math.abs((Number(x[3]) || 0) - a.cargo) < 0.5) ||
+      reciboConstancia_(depto, "A", mes, [{ concepto: "Agua", periodo: "Consumo de " + a.nombre.toLowerCase(), monto: a.cargo }]);
+  }
+  if (tipo === "manto") {
+    const m = (md.meses || []).filter(x => x.id === mes)[0];
+    if (!m || !(m.manto > 0.5) || (!m.futuro && m.diferencia < -0.5)) return { ok: false, error: "sin pagar" };
+    return conFolio(x => mesTexto_(x[10]) === mes && Number(x[2]) > 0) ||
+      reciboConstancia_(depto, "M", mes, [{ concepto: "Cuota de mantenimiento", periodo: m.nombre, monto: Math.round(m.manto * 100) / 100 }]);
+  }
+  return { ok: false, error: "tipo" };
+}
+function reciboConstancia_(depto, letra, mes, lineas) {
+  const total = Math.round(lineas.reduce((a, l) => a + l.monto, 0) * 100) / 100;
+  return { ok: true, constancia: true, numero: letra + "-" + mes.replace("-", "") + "-" + (depto < 10 ? "0" : "") + depto, folios: [], depto: depto, lineas: lineas, total: total,
+    letra: importeConLetra_(total), reportado: "", confirmado: reciboFecha_(new Date()), enRevision: 0, _filas: [] };
+}
+/* En Pagos el agua se guarda con el mes de la LECTURA; el vecino la conoce por el mes del CONSUMO (el anterior).
+   Se busca el recibo de agua de ese depto con el mismo monto; si no aparece, el renglón queda sin periodo. */
+function reciboAfinarAgua_(r) {
+  if (r.constancia || !r.lineas.some(l => l.concepto === "Agua")) return r;
+  let agua = [];
+  try { const md = miDepto_(r.depto); agua = (md && md.agua) || []; } catch (e) {}
+  r.lineas.forEach(l => {
+    if (l.concepto !== "Agua") return;
+    const a = agua.filter(x => Math.abs(x.cargo - l.monto) < 0.5)[0];
+    l.periodo = a ? "Consumo de " + a.nombre.toLowerCase() : "";
+  });
+  return r;
 }
 
 /* ------------------------------- envío ------------------------------- */
@@ -137,6 +185,7 @@ function reciboAlConfirmar_(pagos, fila) {
   const r = reciboDatos_(vals, Number(f[1]), String(f[13] || ""));
   if (!r.ok) return { enviado: 0, motivo: r.error };
   if (r.enRevision > 0) return { enviado: 0, motivo: "faltan renglones de la misma transferencia" };
+  reciboAfinarAgua_(r);
   const filas = r._filas;
   if (filas.some(x => String(vals[x - 2][REC_COL_ENVIO - 1] || "").trim())) return { enviado: 0, motivo: "ya se había mandado" };
   const anotar = t => filas.forEach(x => pagos.getRange(x, REC_COL_ENVIO).setValue(t));
@@ -244,6 +293,9 @@ function reciboHtmlPdf_(r) {
     ".sello{border:3px solid " + REC_VERDE + ";color:" + REC_VERDE + ";border-radius:12px;padding:8px 18px 7px;text-align:center;transform:rotate(-7deg);margin:0 18px 10px 0}" +
     ".sello b{display:block;font-size:24px;letter-spacing:5px;line-height:1.1}.sello span{display:block;font-size:10px;letter-spacing:1px;margin-top:2px}" +
     ".pie{margin-top:26px;border-top:1px solid #dfe1e5;padding-top:12px;font-size:10px;color:#6a6d73;line-height:1.55}";
+  const datos = r.constancia
+    ? [["Estado", "Pagado"], ["Registro", "Control de pagos de la mesa directiva"], ["Constancia emitida el", r.confirmado]]
+    : [["Forma de pago", "Transferencia bancaria"], ["Reportado el", r.reportado], ["Confirmado en el banco el", r.confirmado], [(r.folios.length > 1 ? "Folios" : "Folio") + " de registro", r.folios.join(", ")]];
   const filas = r.lineas.map(l => "<tr><td>" + esc_(l.concepto) + "</td><td>" + esc_(l.periodo) + '</td><td class="m">' + pesosC_(l.monto) + "</td></tr>").join("");
   return '<html><head><meta charset="utf-8"><style>' + css + '</style></head><body><div class="hoja">' +
     '<div class="cab"><div class="org">' + reciboEmblema_(58) + "<div><b>LAS MISIONES</b><span>Residencial · Mesa directiva</span></div></div>" +
@@ -254,15 +306,11 @@ function reciboHtmlPdf_(r) {
     (r.letra ? '<p class="letra">(' + esc_(r.letra) + ")</p>" : "") +
     '<table><tr><th>Concepto</th><th>Periodo</th><th class="m">Importe</th></tr>' + filas +
       '<tr class="tot"><td colspan="2">Total recibido</td><td class="m">' + pesosC_(r.total) + "</td></tr></table>" +
-    '<div class="datos">' +
-      '<div class="dato"><span class="et">Forma de pago</span><b>Transferencia bancaria</b></div>' +
-      '<div class="dato"><span class="et">Reportado el</span><b>' + esc_(r.reportado) + "</b></div>" +
-      '<div class="dato"><span class="et">Confirmado en el banco el</span><b>' + esc_(r.confirmado) + "</b></div>" +
-      '<div class="dato"><span class="et">' + (r.folios.length > 1 ? "Folios" : "Folio") + " de registro</span><b>" + esc_(r.folios.join(", ")) + "</b></div>" +
-    "</div>" +
+    '<div class="datos">' + datos.map(d => '<div class="dato"><span class="et">' + d[0] + "</span><b>" + esc_(d[1]) + "</b></div>").join("") + "</div>" +
     '<div class="cierre"><div class="firma"><i></i><b>Mesa directiva</b>Las Misiones Residencial</div>' +
-      '<div class="sello"><b>PAGADO</b><span>' + esc_(r.confirmado) + "</span></div></div>" +
-    '<div class="pie">La mesa directiva de Las Misiones Residencial emite este recibo como constancia de que el pago se localizó en la cuenta bancaria del condominio y quedó aplicado al departamento. ' +
+      '<div class="sello"><b>PAGADO</b><span>' + (r.constancia ? "según el control de la mesa" : esc_(r.confirmado)) + "</span></div></div>" +
+    '<div class="pie">' + (r.constancia ? "La mesa directiva de Las Misiones Residencial emite este recibo como constancia de que este concepto aparece pagado en su control de pagos y está aplicado al departamento. "
+      : "La mesa directiva de Las Misiones Residencial emite este recibo como constancia de que el pago se localizó en la cuenta bancaria del condominio y quedó aplicado al departamento. ") +
       "<b>No es un comprobante fiscal (CFDI).</b><br>El estado de cuenta del departamento se consulta en " + esc_(reciboBase_()) + "/mi-depto.html?depto=" + r.depto + "</div>" +
     "</div></body></html>";
 }

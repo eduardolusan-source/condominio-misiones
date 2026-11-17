@@ -85,6 +85,8 @@
   .tk-codigo { height: 40px; width: 76%; margin: 1.2rem auto 0.4rem; opacity: 0.85;
     background: repeating-linear-gradient(90deg, var(--tk-tinta) 0 2px, transparent 2px 4px, var(--tk-tinta) 4px 5px, transparent 5px 8px, var(--tk-tinta) 8px 11px, transparent 11px 12px, var(--tk-tinta) 12px 13px, transparent 13px 17px, var(--tk-tinta) 17px 19px, transparent 19px 20px); }
   .tk-pie { text-align: center; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; color: var(--tk-tenue); line-height: 1.5; }
+  .recibo-btn { display: block; max-width: 440px; margin: 1rem auto 0; text-align: center; font-size: 1.05rem; font-weight: 800; padding: 0.85rem 1rem; border-radius: 14px; border: 2px solid var(--accent); color: var(--accent); background: var(--surface); text-decoration: none; }
+  .hist details .recibo-btn { margin: 0.9rem 0.7rem 0; }
   .pagar { display: block; max-width: 440px; margin: 1rem auto 0; text-align: center; font-size: 1.1rem; padding: 0.9rem 1rem; border-radius: 14px; }
 
   /* ---------- El tinaco del edificio ---------- */
@@ -208,6 +210,7 @@ function ticket(m, prev) {
   const base = /l[ií]nea de base/i.test(m.nota) && !(m.consumo > 0);
   const folio = (String(m.nota).match(/Pago (P-\d+)/) || [])[1] || "";
   const sello = m.pagado ? '<div class="tk-sello pagado mono">PAGADO<small>' + fechaCorta(m.pagado) + (folio ? " · " + folio : "") + '</small></div>'
+    : m.pagadoHoja ? '<div class="tk-sello pagado mono">PAGADO</div>'
     : hay ? '<div class="tk-sello porpagar mono">POR PAGAR</div>'
     : '<div class="tk-sello espera mono">EN ESPERA<small>del recibo CEA</small></div>';
   const mesAgua = mesDelAgua(m.mes);
@@ -231,7 +234,7 @@ function ticket(m, prev) {
   }
 
   if (!hay) {
-    h += '<div class="tk-corte"></div><div class="tk-espera">' + (m.pagado ? "Este mes ya está pagado." : "Tu lectura ya está registrada. El monto aparece en cuanto llegue el recibo de la CEA y la mesa lo capture.") + '</div>';
+    h += '<div class="tk-corte"></div><div class="tk-espera">' + (m.pagado || m.pagadoHoja ? "Este mes ya está pagado." : "Tu lectura ya está registrada. El monto aparece en cuanto llegue el recibo de la CEA y la mesa lo capture.") + '</div>';
   } else {
     const precio = r2(rec.precioMedido);
     const com = rec.viejo ? r2(rec.comunesDepto) : r2(m.cargo - r2(m.consumo * precio));   // así los renglones suman el total exacto de la hoja
@@ -247,7 +250,7 @@ function ticket(m, prev) {
         '<div class="tk-barra-txt"><span>agua ' + Math.round(pa * 100) + ' %</span><span>áreas comunes ' + (100 - Math.round(pa * 100)) + ' %</span></div>';
     }
     h += '<div class="tk-corte doble"></div><div class="tk-total"><span class="mono">Total</span><strong>' + fmt(m.cargo) + '</strong></div>';
-    h += '<div class="tk-limite">' + (m.pagado ? "Pagado el <b>" + esc(m.pagado) + "</b>. ¡Gracias!" : (rec.limite ? "Paga antes del <b>" + fechaLarga(rec.limite) + "</b>" : "")) + '</div>';
+    h += '<div class="tk-limite">' + (m.pagado ? "Pagado el <b>" + esc(m.pagado) + "</b>. ¡Gracias!" : m.pagadoHoja ? "Pagado. ¡Gracias!" : (rec.limite ? "Paga antes del <b>" + fechaLarga(rec.limite) + "</b>" : "")) + '</div>';
   }
   h += '<div class="tk-codigo" aria-hidden="true"></div><div class="tk-pie mono">AGUA·' + mesAgua + '·D' + String(depto).padStart(2, "0") +
     (rec && rec.monto ? '<br>Recibo CEA ' + fmt0(rec.monto) + ' · ' + m3(rec.m3) + ' · repartido entre 16' : '') + '</div>';
@@ -288,29 +291,42 @@ function edificio(m) {
 /* ---------- Recibos anteriores: renglón con sello; al tocarlo se abre su ticket ---------- */
 function anterior(m, prev) {
   const rec = normaliza(m.recibo), hay = m.cargo !== null && rec && rec.monto > 0;
-  const sello = m.pagado ? '<span class="mini-sello pagado mono">PAGADO</span>' : hay ? '<span class="mini-sello porpagar mono">POR PAGAR</span>' : '<span class="mini-sello espera mono">EN ESPERA</span>';
+  const sello = m.pagado || m.pagadoHoja ? '<span class="mini-sello pagado mono">PAGADO</span>' : hay ? '<span class="mini-sello porpagar mono">POR PAGAR</span>' : '<span class="mini-sello espera mono">EN ESPERA</span>';
   return '<details><summary><span class="hm">Agua de ' + nombreMes(mesDelAgua(m.mes)).toLowerCase() + '<small>' + m3(m.consumo) + '</small></span>' +
-    '<span class="hmonto">' + (hay ? fmt(m.cargo) : "—") + '</span>' + sello + '</summary><div class="tk-envoltura">' + ticket(m, prev) + '</div></details>';
+    '<span class="hmonto">' + (hay ? fmt(m.cargo) : "—") + '</span>' + sello + '</summary><div class="tk-envoltura">' + ticket(m, prev) + '</div>' + botonRecibo(m) + '</details>';
 }
+
+/* Botón bajo un ticket ya pagado: abre el recibo de pago (js/recibo.js), con su PDF para descargar. */
+function botonRecibo(m) {
+  return m.pagado || m.pagadoHoja ? '<a class="btn recibo-btn" href="#" data-rc="' + mesDelAgua(m.mes) + '">🧾 Ver mi recibo de pago</a>' : "";
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-rc]"); if (!b || !depto || !window.Recibo) return;
+  e.preventDefault(); Recibo.abrir(SCRIPT_URL, { depto: depto, tipo: "agua", mes: b.dataset.rc });
+});
 
 async function cargar(n) {
   const c = $("contenido");
   c.innerHTML = '<p class="pista">Buscando tu recibo…</p>';
   try {
-    const r = await fetch(SCRIPT_URL + "?accion=agua&depto=" + n + "&t=" + Date.now());
+    /* Mi depto sabe además qué agua quedó pagada porque la mesa la anotó directo en la hoja (sin fecha de pago aquí). */
+    const [r, md] = await Promise.all([fetch(SCRIPT_URL + "?accion=agua&depto=" + n + "&t=" + Date.now()),
+      fetch(SCRIPT_URL + "?accion=midepto&depto=" + n + "&t=" + Date.now()).then(x => x.json()).catch(() => null)]);
     const j = await r.json();
     if (!j.ok) throw new Error(j.error);
     if (!j.meses) throw new Error("servicio");
     if (n !== depto) return;                             // tocaron otro depto mientras cargaba
     /* Solo los meses con lecturas: el primero de cada medidor es su punto de partida y no se cobra. */
     const conDatos = x => x.recibo ? Number(x.recibo.suma) > 0 : !(/l[ií]nea de base/i.test(x.nota) && !(x.consumo > 0));
+    const pagadas = {}; ((md && md.agua) || []).forEach(a => { if (a.pagado) pagadas[a.mes] = true; });
+    j.meses.forEach(x => { x.pagadoHoja = !x.pagado && !!pagadas[mesDelAgua(x.mes)]; });
     const meses = j.meses.filter(conDatos);
     const previo = x => j.meses[j.meses.indexOf(x) + 1];
     if (!meses.length) { c.innerHTML = '<p class="pista">Todavía no hay recibos de agua para el depto ' + n + '.</p>'; return; }
     const m = meses[0];
     const rec = normaliza(m.recibo);
-    let h = '<div class="tk-envoltura">' + ticket(m, previo(m)) + '</div>';
-    if (m.cargo !== null && rec && rec.monto > 0 && !m.pagado) h += '<a class="btn primary pagar" href="pago.html?agua=' + r2(m.cargo) + '&mes=' + m.mes + '">Registrar mi pago de ' + fmt(m.cargo) + '</a>';
+    let h = '<div class="tk-envoltura">' + ticket(m, previo(m)) + '</div>' + botonRecibo(m);
+    if (m.cargo !== null && rec && rec.monto > 0 && !m.pagado && !m.pagadoHoja) h += '<a class="btn primary pagar" href="pago.html?agua=' + r2(m.cargo) + '&mes=' + m.mes + '">Registrar mi pago de ' + fmt(m.cargo) + '</a>';
     h += edificio(m);
     if (meses.length > 1) h += '<h2 class="hist-tit">Tus recibos anteriores</h2><div class="hist">' + meses.slice(1).map(x => anterior(x, previo(x))).join("") + '</div>';
     c.innerHTML = h;
@@ -325,5 +341,7 @@ async function cargar(n) {
 })();
 </script>
 <script src="js/letra.js"></script>
+<script src="js/ventana.js"></script>
+<script src="js/recibo.js?v=20261117b"></script>
 </body>
 </html>

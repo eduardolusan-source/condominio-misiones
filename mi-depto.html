@@ -57,37 +57,13 @@
   .wa { display: block; text-align: center; text-decoration: none; font-weight: 800; padding: .85rem; border-radius: 14px; background: #25d366; color: #fff; margin: 1.2rem 0 .5rem; }
   .desac .wa { display: block; text-align: center; text-decoration: none; font-weight: 800; padding: .85rem; border-radius: 14px; background: #25d366; color: #fff; }
   @media (prefers-color-scheme: dark) { .deptos button.sel, .acciones a.prim { color: #0d0d0d; } .est.ok { background: #1d4a2a; color: #b8f0c6; } .est.no { background: #5a1d22; color: #ffb3b9; } .est.ade { background: #1d3354; color: #bcd6f5; } .est.pen { background: #5a4300; color: #ffe08a; } }
-  /* ---------- Recibo de pago (mismo ticket que el recibo de agua) ---------- */
-  .tk-envoltura { max-width: 440px; margin: .2rem auto 0; filter: drop-shadow(0 8px 14px rgba(20, 30, 40, .14)) drop-shadow(0 2px 3px rgba(20, 30, 40, .08)); }
-  .tk { --tk-papel: #fffdf7; --tk-tinta: #26241f; --tk-tenue: #6d685d; --tk-linea: #d9d2c0; --tk-z: 14px; position: relative; background: var(--tk-papel); color: var(--tk-tinta); padding: 1.6rem 1.2rem 1.5rem;
-    -webkit-mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tk-z) 51% repeat-x, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tk-z) 51% repeat-x;
-            mask: conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / var(--tk-z) 51% repeat-x, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / var(--tk-z) 51% repeat-x; }
-  .mono { font-family: ui-monospace, "SF Mono", "Roboto Mono", "Cascadia Mono", Menlo, Consolas, monospace; }
-  .tk-cab { display: grid; grid-template-columns: auto 1fr auto; gap: .7rem; align-items: center; }
-  .tk-logo { width: 42px; height: 42px; }
-  .tk-org { font-size: .78rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; line-height: 1.3; }
-  .tk-org span { display: block; font-weight: 500; color: var(--tk-tenue); letter-spacing: .05em; }
-  .tk-depto { text-align: center; border: 2px solid var(--tk-tinta); border-radius: 10px; padding: .2rem .6rem .3rem; line-height: 1; }
-  .tk-depto small { display: block; font-size: .6rem; font-weight: 800; letter-spacing: .14em; color: var(--tk-tenue); margin-bottom: .15rem; }
-  .tk-depto b { font-size: 1.65rem; font-weight: 900; }
-  .tk-mes { font-family: Georgia, "Times New Roman", serif; font-size: 1.55rem; line-height: 1.1; margin: 1rem 0 .15rem; padding-right: 7.4rem; }
-  .tk-periodo { color: var(--tk-tenue); font-size: .86rem; padding-right: 7.4rem; }
-  .tk-sello { position: absolute; top: 5.3rem; right: .8rem; transform: rotate(-9deg); border: 3px solid currentColor; border-radius: 10px; padding: .35rem .55rem .3rem; font-size: .84rem; font-weight: 900; letter-spacing: .13em; line-height: 1.05; text-align: center; opacity: .9; color: #1e7b34; box-shadow: inset 0 0 0 2px var(--tk-papel), inset 0 0 0 3px currentColor; }
-  .tk-sello small { display: block; font-size: .62rem; letter-spacing: .06em; font-weight: 700; margin-top: .15rem; }
-  .tk-corte { border-top: 2px dashed var(--tk-linea); margin: 1.1rem -.3rem .5rem; }
-  .tk-corte.doble { border-top: 3px double var(--tk-linea); margin-top: .7rem; }
-  .tk-linea { display: grid; grid-template-columns: 1fr auto; gap: .7rem; align-items: start; padding: .45rem 0; }
-  .tk-txt b { display: block; font-size: 1.02rem; } .tk-txt small { display: block; color: var(--tk-tenue); font-size: .86rem; }
-  .tk-monto { font-weight: 800; font-size: 1.08rem; font-variant-numeric: tabular-nums; }
-  .tk-total { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
-  .tk-total span { font-size: .85rem; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
-  .tk-total strong { font-size: 2.2rem; font-weight: 900; letter-spacing: -.02em; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.05; }
-  .tk-letra { text-align: right; font-style: italic; font-size: .84rem; color: var(--tk-tenue); margin-top: .25rem; }
-  .tk-codigo { height: 34px; width: 76%; margin: 1.1rem auto .4rem; opacity: .85; background: repeating-linear-gradient(90deg, var(--tk-tinta) 0 2px, transparent 2px 4px, var(--tk-tinta) 4px 5px, transparent 5px 8px, var(--tk-tinta) 8px 11px, transparent 11px 12px, var(--tk-tinta) 12px 13px, transparent 13px 17px, var(--tk-tinta) 17px 19px, transparent 19px 20px); }
-  .tk-pie { text-align: center; font-size: .7rem; font-weight: 600; letter-spacing: .05em; color: var(--tk-tenue); line-height: 1.5; }
-  .rcb-nota { font-size: .85rem; color: var(--ink-2); text-align: center; margin: .6rem 0 0; }
-  @media (prefers-color-scheme: dark) { .tk { --tk-papel: #23221f; --tk-tinta: #f4f0e6; --tk-tenue: #b5ae9f; --tk-linea: #4b463c; } .tk-sello { color: #6ad38a; } .tk-envoltura { filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .5)); } }
-  @media (max-width: 380px) { .tk { padding-left: 1rem; padding-right: 1rem; } .tk-total strong { font-size: 1.9rem; } .tk-mes { font-size: 1.35rem; } }
+  /* Renglones que abren un recibo: pastilla «Recibo» en lugar de la flecha */
+  .fila-b i.rcb { font-size: .8rem; font-weight: 800; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 999px; padding: .2rem .6rem; white-space: nowrap; }
+  .fila-b b small { font-weight: 500; }
+  .est.gris { background: color-mix(in srgb, var(--muted) 16%, var(--surface)); color: var(--ink-2); }
+  .aviso-rc { display: flex; gap: .6rem; align-items: center; background: color-mix(in srgb, var(--good-text) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--good-text) 28%, var(--border)); border-radius: 14px; padding: .7rem .9rem; margin: 1rem 0 0; font-size: .92rem; color: var(--ink); }
+  .aviso-rc span { font-size: 1.4rem; } .aviso-rc em { font-style: normal; }
+  @media (max-width: 380px) { .fila-b { padding-left: .8rem; padding-right: .8rem; gap: .4rem; } }
 </style>
 </head>
 <body>
@@ -179,13 +155,18 @@
       (rev > 0.5 ? '<button class="rev" data-info="revision">⏳ En revisión ' + $0(rev) + (debe ? " · si se confirma: " + $0(Math.max(0, j.total - rev)) : "") + "</button>" : "") +
       (j.adelantado > 0.5 ? '<button class="rev ade" data-info="adelantado">⏩ Adelantado ' + $0(j.adelantado) + "</button>" : "") +
       '<div class="acciones"><a class="prim" href="pago.html?depto=' + j.depto + '">💳 Pagar</a><button id="btnComo">🧮 Ver la cuenta</button></div></section>';
-    h += '<h2 class="sec">🧾 Mantenimiento</h2><div class="lista">' +
-      fut.map(m => '<button class="fila-b" data-mes="' + m.id + '"><b>' + esc(m.nombre) + '</b><span class="est ade">adelantado</span><i>›</i></button>').join("") +
+    if (pas.concat(fut).some(m => m.manto > 0.5) || j.agua.some(a => a.pagado)) h += '<p class="aviso-rc"><span>🧾</span><em>Todo lo que ya pagaste tiene recibo: toca <b>Recibo</b> en el renglón para verlo y descargarlo.</em></p>';
+    h += '<h2 class="sec">🏢 Mantenimiento</h2><div class="lista">' +
+      fut.map(m => '<button class="fila-b" data-rc="manto|' + m.id + '"><b>' + esc(m.nombre) + '</b><span class="est ade">adelantado</span>' + RCB + "</button>").join("") +
       pas.slice().reverse().map(m => { const pr = pagosDe(m.id).some(enRev); const st = m.diferencia < -0.5 ? (pr ? ["pen", "⏳ en revisión"] : m.enCurso ? ["pen", "por pagar"] : ["no", "falta " + $0(-m.diferencia)]) : ["ok", "✓ pagado"];
-        return '<button class="fila-b" data-mes="' + m.id + '"><b>' + esc(m.nombre) + '</b><span class="est ' + st[0] + '">' + st[1] + "</span><i>›</i></button>"; }).join("") + "</div>";
-    if (j.agua.length) h += '<h2 class="sec">💧 Agua</h2><div class="lista">' + j.agua.slice().reverse().map((a, i) => '<button class="fila-b" data-agua="' + (j.agua.length - 1 - i) + '"><b>' + esc(a.nombre) + '</b><span class="est ' + (a.pagado ? "ok" : "no") + '">' + (a.pagado ? "✓ pagado" : $0(a.cargo)) + "</span><i>›</i></button>").join("") + "</div>";
+        const rc = st[0] === "ok" && m.manto > 0.5;
+        return '<button class="fila-b" data-' + (rc ? 'rc="manto|' : 'mes="') + m.id + '"><b>' + esc(m.nombre) + '</b><span class="est ' + st[0] + '">' + st[1] + "</span>" + (rc ? RCB : "<i>›</i>") + "</button>"; }).join("") + "</div>";
+    if (j.agua.length) h += '<h2 class="sec">💧 Agua</h2><div class="lista">' + j.agua.slice().reverse().map((a, i) => '<button class="fila-b" data-' + (a.pagado ? 'rc="agua|' + a.mes : 'agua="' + (j.agua.length - 1 - i)) + '"><b>' + esc(a.nombre) + '</b><span class="est ' + (a.pagado ? "ok" : "no") + '">' + (a.pagado ? "✓ pagado" : $0(a.cargo)) + "</span>" + (a.pagado ? RCB : "<i>›</i>") + "</button>").join("") + "</div>";
     if (ex) h += '<h2 class="sec">⭐ Extraordinaria</h2><div class="lista"><button class="fila-b" data-info="extra"><b>' + esc(ex.nombre) + '</b><span class="est ' + (ex.pendiente <= 0.5 ? "ok" : "no") + '">' + (ex.pendiente <= 0.5 ? "✓ pagada" : "falta " + $0(ex.pendiente)) + "</span><i>›</i></button></div>";
-    if (j.pagos.length) h += '<h2 class="sec">📨 Tus pagos reportados</h2><div class="lista">' + j.pagos.map((p, i) => '<button class="fila-b" data-pago="' + i + '"><b>' + (p.mes ? esc(mesDe(p.mes)) : esc(p.fecha)) + " · " + $0(p.total) + '</b><span class="est ' + estCls(p.estatus) + '">' + estTxt(p.estatus) + "</span><i>›</i></button>").join("") + "</div>";
+    if (j.pagos.length) h += '<h2 class="sec">📨 Tus avisos de pago<small>Lo que reportaste a la mesa y qué pasó con cada uno.</small></h2><div class="lista">' + j.pagos.map((p, i) => {
+      const c = conRecibo(p), cub = cubierto(p);
+      return '<button class="fila-b" data-pago="' + i + '"><b>' + (p.mes ? esc(mesDe(p.mes)) : esc(p.fecha)) + " · " + $0(p.total) + "<small>" + esc(queEs(p)) + " · avisaste el " + esc(p.fecha) + "</small></b>" +
+        (c ? '<span class="est ok">✓</span>' + RCB : '<span class="est ' + (cub ? "gris" : estCls(p.estatus)) + '">' + (cub ? "no se usó" : estTxt(p.estatus)) + "</span><i>›</i>") + "</button>"; }).join("") + "</div>";
     h += '<div class="lista" style="margin-top:1rem"><button class="fila-b" data-info="previo"><b>Antes de octubre 2026</b><span class="est ok">no se cobra</span><i>›</i></button></div>';
     h += '<a class="wa" href="' + wa("Hola, mesa directiva. Soy del depto " + j.depto + " y no me cuadra: ") + '" target="_blank" rel="noopener">🤔 ¿No te cuadra? Escribe a la mesa</a>';
     return h;
@@ -195,7 +176,6 @@
     const m = J.meses.find(x => x.id === id), ps = pagosDe(id), pend = ps.filter(enRev), rech = ps.filter(p => /rechaz/i.test(p.estatus));
     let h = m.futuro ? L("Pagaste por adelantado", $0(m.manto), "tot") : L("Cuota", $0(m.cuota)) + L("Registrado", $0(m.manto)) + L(m.diferencia < -0.5 ? "Falta" : "Diferencia", $0(Math.abs(m.diferencia)), "tot");
     h += ps.map(p => L("Reportaste el " + esc(p.fecha), $0(p.total) + ' <span class="est ' + estCls(p.estatus) + '">' + estTxt(p.estatus) + "</span>")).join("");
-    h += ligaRecibo(ps.filter(conRecibo)[0]);
     const listo = m.futuro || m.diferencia >= -0.5;
     if (!listo && !pend.length) h += '<div class="acc"><a class="p" href="pago.html?depto=' + J.depto + "&mes=" + id + '">' + (rech.length ? "Reportar de nuevo" : "Ya pagué: reportarlo") + '</a><a href="' + wa("Hola, mesa directiva. Depto " + J.depto + ": " + mesDe(id) + " aparece sin pagar, pero pagué el [fecha] por $[monto].") + '" target="_blank" rel="noopener">💬 Escribir a la mesa</a></div>';
     else if (pend.length) h += pasos(pend[0].estatus);
@@ -204,68 +184,33 @@
   function detalleAgua(i) {
     const a = J.agua[i];
     ventana((a.pagado ? "✓ " : "") + "Agua de " + a.nombre, L("Consumo", a.consumo + " m³") + L(a.pagado ? "Pagado" : "A pagar", $0(a.cargo), "tot") +
-      (a.pagado ? ligaRecibo((J.pagos || []).filter(p => conRecibo(p) && Math.abs((p.agua || 0) - a.cargo) < 0.5)[0]) : "") +
       '<div class="acc">' + (a.pagado ? "" : '<a class="p" href="pago.html?depto=' + J.depto + "&agua=" + a.cargo + "&mes=" + a.mes + '">💳 Pagar el agua</a>') + '<a href="agua.html">Ver mis lecturas</a></div>');
   }
-  /* ----- Recibo de un pago confirmado: el ticket en pantalla y el PDF con membrete para descargar ----- */
-  const $2 = v => "$" + (Number(v) || 0).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /* ----- Recibos (js/recibo.js): de un pago confirmado por folio, o de un concepto pagado por mes ----- */
   const conRecibo = p => /confirm/i.test(p.estatus) && p.folio;
   const ligaRecibo = p => p ? '<div class="acc"><a href="#" data-recibo="' + esc(p.folio) + '">🧾 Ver el recibo de este pago</a></div>' : "";
-  let RCB = null;                                   // el recibo abierto: { folio, depto, archivo, url }
-  function ticket(r) {
-    return '<div class="tk-envoltura"><article class="tk" aria-label="Recibo de pago ' + esc(r.numero) + ", depto " + r.depto + '">' +
-      '<header class="tk-cab"><img class="tk-logo" src="assets/mark.svg" alt=""><div class="tk-org mono">Las Misiones<span>Recibo de pago</span></div><div class="tk-depto mono"><small>DEPTO</small><b>' + r.depto + "</b></div></header>" +
-      '<div class="tk-mes">Pago confirmado</div><div class="tk-periodo mono">No. ' + esc(r.numero) + "</div>" +
-      '<div class="tk-sello mono">PAGADO<small>' + esc(r.confirmado.replace(/ de ([a-z]{3})[a-z]* de /, " $1 ")) + "</small></div>" +
-      '<div class="tk-corte"></div>' +
-      r.lineas.map(l => '<div class="tk-linea"><span class="tk-txt"><b>' + esc(l.concepto) + "</b><small>" + esc(l.periodo) + '</small></span><span class="tk-monto">' + $2(l.monto) + "</span></div>").join("") +
-      '<div class="tk-corte doble"></div><div class="tk-total"><span>Total</span><strong>' + $2(r.total) + "</strong></div>" +
-      (r.letra ? '<div class="tk-letra">(' + esc(r.letra) + ")</div>" : "") +
-      '<div class="tk-codigo"></div><div class="tk-pie mono">Reportado el ' + esc(r.reportado) + "<br>Confirmado en el banco el " + esc(r.confirmado) + "<br>Mesa directiva · no es comprobante fiscal</div>" +
-      "</article></div>" +
-      (r.enRevision ? '<p class="rcb-nota">⏳ De esta misma transferencia falta confirmar ' + (r.enRevision === 1 ? "una parte" : r.enRevision + " partes") + ": aparecerá aquí cuando la mesa la revise.</p>" : "") +
-      '<div class="acc"><a class="p" href="#" id="btnPdf">⬇ Descargar recibo (PDF)</a></div><p class="rcb-nota" id="pdfNota">El PDF trae el membrete de Las Misiones, listo para guardar o entregar.</p>';
+  const RCB = '<i class="rcb">🧾 Recibo</i>';
+  /* Un reporte rechazado cuyo concepto ya está pagado (se reportó dos veces, o la mesa lo anotó directo): no hay nada que arreglar. */
+  function cubierto(p) {
+    if (!/rechaz/i.test(p.estatus)) return false;
+    const m = J.meses.find(x => x.id === p.mes), ex = J.extraordinaria;
+    return !(p.mantenimiento > 0 && !(m && (m.futuro || m.diferencia >= -0.5))) && !(p.agua > 0 && J.aguaPendiente > 0.5) && !(p.extraordinario > 0 && ex && ex.pendiente > 0.5);
   }
-  /* Si el servicio todavía no sabe de recibos (o falla), se abre el detalle de siempre. */
-  async function verRecibo(folio, respaldo) {
-    const n = J.depto;
-    ventana("🧾 Recibo de pago", '<p class="exp" id="rcbCarga">Buscando tu recibo…</p>');
-    try {
-      const r = await fetch(SCRIPT_URL + "?accion=reciboPago&depto=" + n + "&folio=" + encodeURIComponent(folio) + "&t=" + Date.now(), { cache: "no-store" });
-      const j = await r.json();
-      if (!j.ok || !j.recibo) throw new Error(j.error || "sin recibo");
-      if (!document.getElementById("rcbCarga")) return;                 // cerró o abrió otra cosa mientras cargaba
-      if (RCB && RCB.url) URL.revokeObjectURL(RCB.url);
-      RCB = { folio: folio, depto: n, archivo: "", url: "" };
-      ventana("🧾 Recibo de pago", ticket(j.recibo), "Cerrar");
-    } catch (e) {
-      if (!document.getElementById("rcbCarga")) return;
-      if (respaldo) respaldo(); else ventana("🧾 Recibo de pago", '<p class="exp">No se pudo abrir el recibo en este momento. Intenta en unos minutos.</p>');
-    }
-  }
-  async function bajarPdf(b) {
-    if (!RCB || b.dataset.ocupado) return;
-    const nota = document.getElementById("pdfNota"), guardar = () => { const a = document.createElement("a"); a.href = RCB.url; a.download = RCB.archivo; document.body.appendChild(a); a.click(); a.remove(); };
-    if (RCB.url) return guardar();
-    b.dataset.ocupado = "1"; b.textContent = "Preparando tu recibo…";
-    try {
-      const r = await fetch(SCRIPT_URL + "?accion=reciboPago&pdf=1&depto=" + RCB.depto + "&folio=" + encodeURIComponent(RCB.folio) + "&t=" + Date.now(), { cache: "no-store" });
-      const j = await r.json();
-      if (!j.ok || !j.pdf) throw new Error(j.error || "sin pdf");
-      const bin = atob(j.pdf), bytes = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      RCB.url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })); RCB.archivo = j.archivo || "Recibo " + RCB.folio + ".pdf";
-      guardar(); b.textContent = "⬇ Descargar de nuevo"; if (nota) nota.textContent = "Listo: revisa tus descargas.";
-    } catch (e) { b.textContent = "⬇ Descargar recibo (PDF)"; if (nota) nota.textContent = "No se pudo preparar el PDF. Intenta de nuevo en un momento."; }
-    delete b.dataset.ocupado;
-  }
+  const queEs = p => [p.mantenimiento && "Mantenimiento", p.agua && "Agua", p.extraordinario && "Extraordinaria", p.casaclub && "Casa club"].filter(Boolean).join(" + ");
   function detallePago(i) {
     const p = J.pagos[i];
-    if (conRecibo(p)) return verRecibo(p.folio, () => detallePagoSimple(p));
+    if (conRecibo(p)) return Recibo.abrir(SCRIPT_URL, { depto: J.depto, folio: p.folio }, () => detallePagoSimple(p));
     detallePagoSimple(p);
   }
   function detallePagoSimple(p) {
-    const h = [["Mantenimiento", p.mantenimiento], ["Agua", p.agua], ["Extraordinaria", p.extraordinario], ["Casa club", p.casaclub]].filter(x => x[1]).map(x => L(x[0], $0(x[1]))).join("") + L("Total", $0(p.total), "tot") + pasos(p.estatus);
-    ventana((p.mes && J.desde && p.mes < J.desde ? "🙏 Aportación · " : "") + (p.mes ? mesDe(p.mes) : p.fecha), h + (/rechaz/i.test(p.estatus) ? '<div class="acc"><a href="' + wa("Hola, mesa directiva. Depto " + J.depto + ": mi pago del " + p.fecha + " por " + $0(p.total) + " aparece como no encontrado. Adjunto comprobante.") + '" target="_blank" rel="noopener">💬 Enviar mi comprobante a la mesa</a></div>' : ""));
+    const rech = /rechaz/i.test(p.estatus), cub = cubierto(p);
+    const lineas = [["Mantenimiento", p.mantenimiento], ["Agua", p.agua], ["Extraordinaria", p.extraordinario], ["Casa club", p.casaclub]].filter(x => x[1]).map(x => L(x[0], $0(x[1]))).join("") + L("Total", $0(p.total), "tot");
+    const titulo = (p.mes && J.desde && p.mes < J.desde ? "🙏 Aportación · " : "") + (p.mes ? mesDe(p.mes) : p.fecha);
+    if (cub) return ventana("Este aviso no se usó", '<p class="exp" style="margin-top:0"><b>No tienes que hacer nada.</b> Lo que cubría este aviso ya aparece pagado en tu cuenta: se reportó dos veces o la mesa lo registró directamente.</p>' + lineas +
+      '<p class="exp">El recibo está en el renglón pagado de arriba (botón <b>Recibo</b>).</p>');
+    if (rech) return ventana("✕ No encontrado · " + titulo, '<p class="exp" style="margin-top:0">La mesa buscó esta transferencia en el banco y <b>no la encontró</b>, así que no se sumó a tu cuenta. Si sí la hiciste, mándale tu comprobante.</p>' + lineas +
+      '<div class="acc"><a class="p" href="' + wa("Hola, mesa directiva. Depto " + J.depto + ": mi pago del " + p.fecha + " por " + $0(p.total) + " aparece como no encontrado. Adjunto comprobante.") + '" target="_blank" rel="noopener">💬 Enviar mi comprobante a la mesa</a></div>');
+    ventana(titulo, lineas + pasos(p.estatus));
   }
   const INFO = {
     manto: () => ["🧾 Mantenimiento", L("Pendiente", $0(J.debeManto), "tot") + '<p class="exp">Cuotas de ' + $0(J.cuota) + " desde octubre 2026, menos lo registrado.</p>"],
@@ -284,10 +229,10 @@
   }
   document.addEventListener("click", e => {
     if (!J) return;
-    const b = e.target.closest("[data-mes],[data-agua],[data-pago],[data-info],[data-recibo],#btnPdf,#btnComo");
+    const b = e.target.closest("[data-mes],[data-agua],[data-pago],[data-info],[data-recibo],[data-rc],#btnComo");
     if (!b) return;
-    if (b.id === "btnPdf") { e.preventDefault(); return bajarPdf(b); }
-    if (b.dataset.recibo) { e.preventDefault(); return verRecibo(b.dataset.recibo); }
+    if (b.dataset.recibo) { e.preventDefault(); return Recibo.abrir(SCRIPT_URL, { depto: J.depto, folio: b.dataset.recibo }); }
+    if (b.dataset.rc) { const [tipo, mes] = b.dataset.rc.split("|"); return Recibo.abrir(SCRIPT_URL, { depto: J.depto, tipo: tipo, mes: mes }, () => tipo === "agua" ? detalleAgua(J.agua.findIndex(a => a.mes === mes)) : detalleMes(mes)); }
     if (b.id === "btnComo") return como();
     if (b.dataset.mes) return detalleMes(b.dataset.mes);
     if (b.dataset.agua) return detalleAgua(+b.dataset.agua);
@@ -302,5 +247,6 @@
 <footer class="site-footer"><div class="inner">Las Misiones Residencial · <a href="ayuda.html">Ayuda</a> · <a href="privacidad.html">Aviso de privacidad</a></div></footer>
 <script src="js/letra.js"></script>
 <script src="js/ventana.js"></script>
+<script src="js/recibo.js?v=20261117b"></script>
 </body>
 </html>
