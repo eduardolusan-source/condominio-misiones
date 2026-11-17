@@ -101,7 +101,7 @@ function reciboDatos_(vals, depto, folio) {
   return {
     ok: true, numero: folios[0] || folio, folios: folios, depto: dep, lineas: lineas, total: total,
     letra: importeConLetra_(total),
-    reportado: fechaLarga_(reportado), confirmado: fechaLarga_(confirmado),
+    reportado: reciboFecha_(reportado), confirmado: reciboFecha_(confirmado),
     enRevision: grupo.filter(g => !/confirm|rechaz/i.test(String(g.f[9]))).length,   // renglones de la misma transferencia aún sin resolver
     _filas: grupo.map(g => g.fila)                                                   // interno: no sale del servidor
   };
@@ -175,7 +175,7 @@ function pesosC_(v) {
   const n = Math.round(Math.abs(Number(v) || 0) * 100), ent = Math.floor(n / 100), cen = String(n % 100);
   return (v < 0 ? "−$" : "$") + String(ent).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "." + (cen.length < 2 ? "0" : "") + cen;
 }
-function fechaLarga_(d) { return Utilities.formatDate(d, REC_Z, "d") + " de " + MESES[parseInt(Utilities.formatDate(d, REC_Z, "M"), 10) - 1] + " de " + Utilities.formatDate(d, REC_Z, "yyyy"); }
+function reciboFecha_(d) { return Utilities.formatDate(d, REC_Z, "d") + " de " + MESES[parseInt(Utilities.formatDate(d, REC_Z, "M"), 10) - 1] + " de " + Utilities.formatDate(d, REC_Z, "yyyy"); }
 
 /* 1694.5 → «mil seiscientos noventa y cuatro pesos 50/100 M.N.» (hasta 999,999). */
 function importeConLetra_(v) {
