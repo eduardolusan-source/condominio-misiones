@@ -145,8 +145,9 @@ async function resolver(p, estatus, t) {
     if (!j.ok && j.error === "resuelto") { alert("Este pago ya lo resolvió alguien más de la mesa: quedó como " + (j.estatus || "resuelto") + ". Se actualiza la lista."); cargar(); return; }
     if (!j.ok) throw new Error(j.error || "error");
     t.classList.add("hecho");
-    t.querySelector(".acciones").innerHTML = '<div style="grid-column:1/-1;text-align:center;font-weight:700;color:' + (estatus === "Confirmado" ? "var(--good-text)" : "var(--bad-text)") + '">' + (estatus === "Confirmado" ? "Confirmado ✓" : "Rechazado") + "</div>";
-    setTimeout(() => { t.remove(); const n = document.querySelectorAll(".tarjeta").length; $("cuenta").textContent = n === 0 ? "Nada por confirmar" : (n === 1 ? "1 pago por confirmar" : n + " pagos por confirmar"); if (!n) pintar([]); }, 900);
+    t.querySelector(".acciones").innerHTML = '<div style="grid-column:1/-1;text-align:center;font-weight:700;color:' + (estatus === "Confirmado" ? "var(--good-text)" : "var(--bad-text)") + '">' + (estatus === "Confirmado" ? "Confirmado ✓" : "Rechazado") +
+      (estatus === "Confirmado" && j.recibo ? '<small style="display:block;font-weight:500;color:var(--ink-2)">' + (j.recibo.enviado ? "📧 Recibo enviado por correo" : /sin correo/.test(j.recibo.motivo || "") ? "Sin correo registrado: verá su recibo en Mi depto" : /faltan/.test(j.recibo.motivo || "") ? "El recibo sale al resolver los otros meses de esta transferencia" : "El recibo queda en Mi depto") + "</small>" : "") + "</div>";
+    setTimeout(() => { t.remove(); const n = document.querySelectorAll(".tarjeta").length; $("cuenta").textContent = n === 0 ? "Nada por confirmar" : (n === 1 ? "1 pago por confirmar" : n + " pagos por confirmar"); if (!n) pintar([]); }, 2200);
   } catch (e) {
     alert("No se pudo guardar. Intenta de nuevo.");
     t.querySelectorAll("button").forEach(b => b.disabled = false);

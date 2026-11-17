@@ -5,6 +5,7 @@
    Menú «Condominio» (aparece al abrir la hoja):
    - Revisar que todo cuadre: semáforo de errores de captura (también va en el kit del día 10).
    - Probar el reporte (solo a mí) / Enviar ahora el reporte del mes anterior.
+   - Probar el recibo de pago (solo a mí): el del último pago confirmado (Recibo.gs).
    - Preparar la pestaña del mes siguiente.
    - Revisar gastos de ejemplo de la plantilla.
    - Cambiar la clave de la bandeja de pagos (se guarda en Config, ya no en el código).
@@ -18,6 +19,7 @@ function onOpen() {
     .addSeparator()
     .addItem("Probar el reporte (solo a mí)", "reportePrueba")
     .addItem("Enviar ahora el reporte del mes anterior", "reporteAhora")
+    .addItem("Probar el recibo de pago (solo a mí)", "reciboPrueba")
     .addSeparator()
     .addItem("Preparar la pestaña del mes siguiente", "prepararMesSiguienteMenu")
     .addItem("Revisar gastos de ejemplo de la plantilla", "revisarGastosDeEjemplo")

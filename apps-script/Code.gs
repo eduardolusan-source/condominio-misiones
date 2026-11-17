@@ -367,6 +367,7 @@ function doGet(e) {
     if (p.accion === "pendientes") return json_(pendientes_(p.clave));
     if (p.accion === "imagen") return json_(imagen_(p.clave, p.folio));
     if (p.accion === "cuentas") return json_(cuentasDepto_(parseInt(p.depto, 10)));
+    if (p.accion === "reciboPago" && typeof reciboPago_ === "function") return json_(reciboPago_(p));   // recibo de un pago confirmado (Recibo.gs)
     if (p.accion === "midepto") return json_(miDepto_(parseInt(p.depto, 10)));      // mi-depto.html (Condominio.gs)
     if (p.accion === "reservas") return json_(reservasCasa_(p.depto));               // casa-club.html (Condominio.gs)
     if (p.accion === "lecturas") { asegurarAgua_(true); return json_(lecturasMes_(p.mes, p.clave)); }
@@ -407,6 +408,9 @@ function doPost(e) {
     const monto = k => Math.max(0, Math.round((parseFloat(d[k]) || 0) * 100) / 100);
     const manto = monto("mantenimiento"), agua = monto("agua"), extra = monto("extraordinario"), casa = monto("casaclub");
     const nota = limpiar_(d.nota, 200);
+    /* Correo opcional para mandarle el recibo cuando la mesa confirme (columna O de Pagos; no sale a ninguna página). */
+    const correoRecibo = String(d.correo || "").trim().toLowerCase();
+    const conCorreo = typeof correoValido_ === "function" && correoValido_(correoRecibo);
     const ahora = new Date();
     // Meses: lista (varios meses de un jalón) o uno solo; el mantenimiento se repite por mes,
     // agua, extraordinario y casa club van al mes más reciente de los elegidos.
@@ -434,6 +438,7 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActive();
     const pagos = ss.getSheetByName(HOJA_PAGOS);
     if (!pagos) throw new Error("Falta la pestaña Pagos; corre instalar().");
+    if (conCorreo) columnasRecibo_(pagos);
     const folios = [];
     const notaMulti = meses.length > 1 ? (nota ? nota + " · " : "") + "Pago de " + meses.length + " meses en una transferencia" : nota;
     meses.forEach((m, i) => {
@@ -454,6 +459,7 @@ function doPost(e) {
       pagos.getRange(fila, 3, 1, 5).setNumberFormat("$#,##0.00");
       pagos.getRange(fila, 11).setNumberFormat("@").setValue(m);   // como texto, para que "2026-10" no se vuelva fecha
       pagos.getRange(fila, 10).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(ESTATUS, true).setAllowInvalid(false).build());
+      if (conCorreo) pagos.getRange(fila, REC_COL_CORREO).setValue(correoRecibo);
       folios.push(folio);
     });
     return json_({ ok: true, folio: folios.join(", "), folios: folios, total: total });
@@ -502,11 +508,12 @@ function estadoDepto_(depto) {
         t: new Date(f[0]).getTime(),
         fecha: Utilities.formatDate(new Date(f[0]), "America/Mexico_City", "d/MM/yyyy"),
         mantenimiento: Number(f[2]) || 0, agua: Number(f[3]) || 0, extraordinario: Number(f[4]) || 0, casaclub: Number(f[5]) || 0,
-        total: Number(f[6]) || 0, estatus: String(f[9] || "Pendiente"), mes: mesTexto_(f[10])
+        total: Number(f[6]) || 0, estatus: String(f[9] || "Pendiente"), mes: mesTexto_(f[10]),
+        folio: String(f[13] || "")                             // con él, Mi depto pide el recibo del pago confirmado
       });
     });
     r.pagos.sort((a, b) => b.t - a.t);
-    r.pagos = r.pagos.slice(0, 8).map(x => { delete x.t; return x; });
+    r.pagos = r.pagos.slice(0, 12).map(x => { delete x.t; return x; });
   }
   return r;
 }
@@ -1193,7 +1200,10 @@ function resolverDesdeBandeja_(d) {
     if (actual !== "Pendiente") return { ok: false, error: "resuelto", estatus: actual };          // otra persona de la mesa ya lo resolvió
     pagos.getRange(fila, 10).setValue(d.estatus);
     resolver_(pagos, fila, d.estatus);
-    return { ok: true, folio: d.folio, estatus: d.estatus };
+    /* Recibo por correo (Recibo.gs). Si falla, el pago queda confirmado igual: el recibo se ve en Mi depto. */
+    let recibo = null;
+    try { if (typeof reciboAlConfirmar_ === "function") { SpreadsheetApp.flush(); recibo = reciboAlConfirmar_(pagos, fila); } } catch (e) { recibo = { enviado: 0, motivo: String(e.message || e) }; }
+    return { ok: true, folio: d.folio, estatus: d.estatus, recibo: recibo };
   } finally {
     lock.releaseLock();
   }

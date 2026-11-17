@@ -431,3 +431,22 @@ cambia nada.
 **Hoja restringida.** Desde el 13 de noviembre la hoja de captura, su carpeta «Condominio Misiones — Mesa Directiva»
 y la copia .xlsx vieja están en «Restringido»: solo tú las abres. Los vecinos usan el sitio, que lee la hoja por el
 servicio (/exec) y no depende del enlace. Si algún día vuelve a quedar abierta con el enlace, la revisión lo marca.
+
+## Recibo de pago: en pantalla, en PDF y por correo (17 de noviembre de 2026)
+Séptimo archivo: **+ → Secuencia de comandos → `Recibo`** → pega `Recibo.gs` → guarda. Pegar también `Code.gs` y
+`Condominio.gs` nuevos y publicar **Nueva versión** de la aplicación web (el recibo se pide por el /exec).
+1. Ejecutar → **instalarRecibos** una vez. Pone en la pestaña Pagos las columnas **O «Correo para el recibo»** y
+   **P «Recibo»**, la clave `recibos_envio` en Config y el disparador que manda el recibo cuando el pago se confirma
+   a mano en la hoja (desde la bandeja sale sin disparador).
+2. Probar: menú **Condominio → Probar el recibo de pago (solo a mí)**: te llega el del último pago confirmado.
+
+Cómo funciona:
+- Al confirmar un pago, el vecino lo ve en **Mi depto** como recibo (ticket con sello PAGADO) y puede bajar el PDF con
+  membrete. El recibo dice «Departamento N», nunca un nombre: Mi depto se consulta sin clave.
+- El correo sale a los correos activos de ese depto en la pestaña **Correos** y al que la persona haya escrito al
+  registrar el pago (paso 4 de `pago.html`, opcional). Un correo por destinatario; la columna P anota qué pasó.
+- Una transferencia que pagó varios meses son varios renglones con la misma fecha y hora: salen en **un solo recibo**
+  y el correo se manda cuando el último renglón queda confirmado o rechazado.
+- Apagar los correos: Config → `recibos_envio` = `no` (el recibo se sigue viendo en Mi depto).
+- Los pagos anotados a mano en la pestaña del mes, sin pasar por Pagos, no tienen folio y por eso no tienen recibo.
+- `pago.html` y `bandeja.html` ya aceptan el comprobante en **PDF** además de foto.

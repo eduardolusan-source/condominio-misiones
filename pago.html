@@ -128,6 +128,12 @@
       <p class="pista" style="margin-top:0.4rem">Sirve la captura del celular o el PDF que te da el banco. Opcional, pero acelera la confirmación.</p>
     </section>
 
+    <section class="paso">
+      <h2><span>4</span>¿Te mandamos tu recibo?</h2>
+      <input id="correo" type="email" inputmode="email" autocomplete="email" maxlength="120" placeholder="tu@correo.com (opcional)" style="font-size:1.05rem">
+      <p class="pista" style="margin-top:0.4rem;text-align:left">Cuando la mesa confirme tu pago, te llega el recibo en PDF a ese correo. Solo se usa para eso y nadie más lo ve. Sin correo, el recibo igual aparece en <a href="mi-depto.html">Mi depto</a>.</p>
+    </section>
+
     <button class="enviar" id="btnEnviar" disabled>Enviar</button>
     <p class="pista" id="pista">Primero toca tu departamento.</p>
   </div>
@@ -136,7 +142,7 @@
     <h2>¡Recibido! ✓</h2>
     <p id="resumen"></p>
     <p>Folio <strong id="folio"></strong>. Guárdalo por si necesitas aclarar algo.</p>
-    <ol class="linea"><li class="hecho"><b>Reportado</b><span>hoy</span></li><li class="ahora"><b>En revisión</b><span>la mesa lo compara con el banco</span></li><li><b>Confirmado</b><span>se resta de lo que debes</span></li></ol>
+    <ol class="linea"><li class="hecho"><b>Reportado</b><span>hoy</span></li><li class="ahora"><b>En revisión</b><span>la mesa lo compara con el banco</span></li><li><b>Confirmado</b><span>se resta de lo que debes y aparece tu recibo</span></li></ol>
     <p style="font-size:.95rem"><a id="lnkDepto" href="mi-depto.html">Síguelo en Mi depto ›</a></p>
     <button id="btnOtro">Registrar otro pago</button>
   </div>
@@ -251,10 +257,15 @@ function validar() {
   const sub = $("s_mantenimiento");
   sub.innerHTML = n > 1 ? 'cuota del mes <span class="veces">× ' + n + ' meses = ' + fmt(d.mantenimiento * n) + '</span>' : "cuota del mes";
   $("total").textContent = fmt(d.total);
-  const ok = depto && n > 0 && d.total > 0;
+  const ok = depto && n > 0 && d.total > 0 && correoBien();
   $("btnEnviar").disabled = !ok;
-  $("pista").textContent = !depto ? "Primero toca tu departamento." : (!n ? "Toca al menos un mes." : (d.total > 0 ? "" : "Toca lo que pagaste."));
+  $("pista").textContent = !depto ? "Primero toca tu departamento." : (!n ? "Toca al menos un mes." : (d.total > 0 ? (correoBien() ? "" : "Revisa el correo: le falta algo. O bórralo, es opcional.") : "Toca lo que pagaste."));
 }
+/* Correo para el recibo: opcional; si se escribe, debe verse como correo. Se recuerda en este teléfono. */
+function correoDado() { return $("correo").value.trim().toLowerCase(); }
+function correoBien() { const c = correoDado(); return !c || (c.length <= 120 && /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/.test(c)); }
+$("correo").addEventListener("input", validar);
+try { $("correo").value = localStorage.getItem("misiones_correo") || ""; } catch (e) {}
 
 /* --- Lo que debe hoy (Mi depto) y botón para llenar el formulario con eso --- */
 let MD = null;
@@ -376,7 +387,8 @@ function textoResumen(d) {
 async function enviar() {
   const d = leer();
   $("btnEnviar").disabled = true; $("btnEnviar").textContent = "Enviando…";
-  const cuerpo = { clave: CLAVE, depto: depto, meses: mesesElegidos(), ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: imagen ? tipoArchivo : "image/jpeg" };
+  const cuerpo = { clave: CLAVE, depto: depto, meses: mesesElegidos(), ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: imagen ? tipoArchivo : "image/jpeg", correo: correoDado() };
+  try { localStorage.setItem("misiones_correo", correoDado()); } catch (e) {}
   try {
     if (!SCRIPT_URL) throw new Error("sin servicio");
     const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });
