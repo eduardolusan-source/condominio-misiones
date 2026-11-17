@@ -162,7 +162,8 @@
         const rc = st[0] === "ok" && m.manto > 0.5;
         return '<button class="fila-b" data-' + (rc ? 'rc="manto|' : 'mes="') + m.id + '"><b>' + esc(m.nombre) + '</b><span class="est ' + st[0] + '">' + st[1] + "</span>" + (rc ? RCB : "<i>›</i>") + "</button>"; }).join("") + "</div>";
     if (j.agua.length) h += '<h2 class="sec">💧 Agua</h2><div class="lista">' + j.agua.slice().reverse().map((a, i) => '<button class="fila-b" data-' + (a.pagado ? 'rc="agua|' + a.mes : 'agua="' + (j.agua.length - 1 - i)) + '"><b>' + esc(a.nombre) + '</b><span class="est ' + (a.pagado ? "ok" : "no") + '">' + (a.pagado ? "✓ pagado" : $0(a.cargo)) + "</span>" + (a.pagado ? RCB : "<i>›</i>") + "</button>").join("") + "</div>";
-    if (ex) h += '<h2 class="sec">⭐ Extraordinaria</h2><div class="lista"><button class="fila-b" data-info="extra"><b>' + esc(ex.nombre) + '</b><span class="est ' + (ex.pendiente <= 0.5 ? "ok" : "no") + '">' + (ex.pendiente <= 0.5 ? "✓ pagada" : "falta " + $0(ex.pendiente)) + "</span><i>›</i></button></div>";
+    if (ex) { const lista = ex.pendiente <= 0.5 && ex.pagado > 0.5;      // pagada completa: el renglón abre su recibo
+      h += '<h2 class="sec">⭐ Extraordinaria</h2><div class="lista"><button class="fila-b" data-' + (lista ? 'rc="extra|x"' : 'info="extra"') + "><b>" + esc(ex.nombre) + '</b><span class="est ' + (ex.pendiente <= 0.5 ? "ok" : "no") + '">' + (ex.pendiente <= 0.5 ? "✓ pagada" : "falta " + $0(ex.pendiente)) + "</span>" + (lista ? RCB : "<i>›</i>") + "</button></div>"; }
     if (j.pagos.length) h += '<h2 class="sec">📨 Tus avisos de pago<small>Lo que reportaste a la mesa y qué pasó con cada uno.</small></h2><div class="lista">' + j.pagos.map((p, i) => {
       const c = conRecibo(p), cub = cubierto(p);
       return '<button class="fila-b" data-pago="' + i + '"><b>' + (p.mes ? esc(mesDe(p.mes)) : esc(p.fecha)) + " · " + $0(p.total) + "<small>" + esc(queEs(p)) + " · avisaste el " + esc(p.fecha) + "</small></b>" +
@@ -215,7 +216,7 @@
   const INFO = {
     manto: () => ["🧾 Mantenimiento", L("Pendiente", $0(J.debeManto), "tot") + '<p class="exp">Cuotas de ' + $0(J.cuota) + " desde octubre 2026, menos lo registrado.</p>"],
     agua: () => ["💧 Agua", L("Pendiente", $0(J.aguaPendiente), "tot") + '<p class="exp">Recibos de agua sin pagar, desde octubre 2026.</p>'],
-    extra: () => { const ex = J.extraordinaria; return [(ex.detalle && ex.detalle.length > 1 ? "⭐ Cuotas extraordinarias" : "⭐ " + ex.nombre), (ex.detalle && ex.detalle.length > 1 ? ex.detalle.map(x => L((x.pendiente > 0.5 ? "" : "✓ ") + x.nombre + (x.pendiente > 0.5 && x.pagado > 0.5 ? " (abonado " + $0(x.pagado) + ")" : ""), x.pendiente > 0.5 ? $0(x.pendiente) : "pagada")).join("") : L("Cuota", $0(ex.monto)) + L("Pagado", $0(ex.pagado))) + L(ex.pendiente > 0.5 ? "Falta" : "✓ Pagada", $0(ex.pendiente), "tot") + (ex.pendiente > 0.5 ? '<div class="acc"><a class="p" href="pago.html?depto=' + J.depto + '&extra=' + ex.pendiente + '">💳 Pagar la extraordinaria</a></div>' : "")]; },
+    extra: () => { const ex = J.extraordinaria; return [(ex.detalle && ex.detalle.length > 1 ? "⭐ Cuotas extraordinarias" : "⭐ " + ex.nombre), (ex.detalle && ex.detalle.length > 1 ? ex.detalle.map(x => L((x.pendiente > 0.5 ? "" : "✓ ") + x.nombre + (x.pendiente > 0.5 && x.pagado > 0.5 ? " (abonado " + $0(x.pagado) + ")" : ""), x.pendiente > 0.5 ? $0(x.pendiente) : "pagada")).join("") : L("Cuota", $0(ex.monto)) + L("Pagado", $0(ex.pagado))) + L(ex.pendiente > 0.5 ? "Falta" : "✓ Pagada", $0(ex.pendiente), "tot") + (ex.pendiente > 0.5 ? '<div class="acc"><a class="p" href="pago.html?depto=' + J.depto + '&extra=' + ex.pendiente + '">💳 Pagar la extraordinaria</a>' + (ex.pagado > 0.5 ? '<a href="#" data-rc="extra|x">🧾 Recibo de lo que llevo pagado</a>' : "") + "</div>" : "")]; },
     revision: () => ["⏳ En revisión", '<p class="exp">Pagos que reportaste y la mesa está confirmando con el banco. Aún no se restan.</p>' + pasos("Pendiente")],
     adelantado: () => ["⏩ Adelantado", '<p class="exp">Meses que pagaste antes de tiempo. Se aplican cuando lleguen.</p>'],
     previo: () => ["Antes de octubre 2026", '<p class="exp"><b>No se cobra.</b> La mesa no asume adeudos de la administración anterior.</p><p class="exp">¿Quieres aportar algo de esos meses? Regístralo como pago. 🙏</p>']
@@ -232,7 +233,7 @@
     const b = e.target.closest("[data-mes],[data-agua],[data-pago],[data-info],[data-recibo],[data-rc],#btnComo");
     if (!b) return;
     if (b.dataset.recibo) { e.preventDefault(); return Recibo.abrir(SCRIPT_URL, { depto: J.depto, folio: b.dataset.recibo }); }
-    if (b.dataset.rc) { const [tipo, mes] = b.dataset.rc.split("|"); return Recibo.abrir(SCRIPT_URL, { depto: J.depto, tipo: tipo, mes: mes }, () => tipo === "agua" ? detalleAgua(J.agua.findIndex(a => a.mes === mes)) : detalleMes(mes)); }
+    if (b.dataset.rc) { e.preventDefault(); const [tipo, mes] = b.dataset.rc.split("|"); return Recibo.abrir(SCRIPT_URL, { depto: J.depto, tipo: tipo, mes: mes }, () => { if (tipo === "extra") { const x = INFO.extra(); return ventana(x[0], x[1]); } tipo === "agua" ? detalleAgua(J.agua.findIndex(a => a.mes === mes)) : detalleMes(mes); }); }
     if (b.id === "btnComo") return como();
     if (b.dataset.mes) return detalleMes(b.dataset.mes);
     if (b.dataset.agua) return detalleAgua(+b.dataset.agua);

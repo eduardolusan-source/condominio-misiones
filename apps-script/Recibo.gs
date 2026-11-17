@@ -8,7 +8,7 @@
 
    Lo que está pagado pero no pasó por la bandeja (la mesa lo anotó a mano en la pestaña del mes) también
    tiene recibo: una constancia por concepto y mes (?accion=reciboPago&depto=N&tipo=agua|manto&mes=AAAA-MM),
-   con número A-AAAAMM-NN o M-AAAAMM-NN. Si ese concepto sí tiene un pago confirmado con folio, sale ese.
+   con número A-AAAAMM-NN o M-AAAAMM-NN; las cuotas extraordinarias van juntas (tipo=extra, número E-AAAAMM-NN). Si ese concepto sí tiene un pago confirmado con folio, sale ese.
 
    Un recibo = una transferencia. Si alguien pagó tres meses de un jalón, la hoja guarda tres
    renglones con la misma fecha y hora: salen juntos en un solo recibo, y el correo se manda
@@ -136,9 +136,20 @@ function reciboPago_(p) {
    Si hay un pago confirmado con folio que lo cubre, devuelve ese recibo; si no (lo anotó la mesa a mano en la
    pestaña del mes), una constancia sin folio. Nunca da recibo de algo que Mi depto no marca como pagado. */
 function reciboConcepto_(vals, depto, tipo, mes) {
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
+  if (tipo !== "extra" && !/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return { ok: false, error: "mes" };
   const md = miDepto_(depto);
   if (!md || !md.ok) return { ok: false, error: "departamento" };
+  /* Cuotas extraordinarias: un solo recibo con lo que el depto lleva pagado de cada una (no van por mes).
+     Si todo eso es un único pago confirmado con folio, sale ese recibo. */
+  if (tipo === "extra") {
+    const det = ((md.extraordinaria && md.extraordinaria.detalle) || []).filter(x => x.pagado > 0.5);
+    if (!det.length) return { ok: false, error: "sin pagar" };
+    const total = Math.round(det.reduce((a, x) => a + x.pagado, 0) * 100) / 100;
+    const con = vals.filter(x => Number(x[1]) === depto && String(x[9]) === "Confirmado" && String(x[13] || "") && Number(x[4]) > 0);
+    if (con.length === 1 && Math.abs(Number(con[0][4]) - total) < 0.5) return reciboDatos_(vals, depto, String(con[0][13]));
+    return reciboConstancia_(depto, "E", Utilities.formatDate(new Date(), REC_Z, "yyyy-MM"),
+      det.map(x => ({ concepto: x.nombre, periodo: x.pendiente > 0.5 ? "Abono a la cuota extraordinaria · falta " + pesosC_(x.pendiente) : "Cuota extraordinaria · pagada completa", monto: Math.round(x.pagado * 100) / 100 })));
+  }
   const conFolio = cond => { const f = vals.filter(x => Number(x[1]) === depto && String(x[9]) === "Confirmado" && String(x[13] || "") && cond(x))[0]; return f ? reciboDatos_(vals, depto, String(f[13])) : null; };
   if (tipo === "agua") {
     const a = (md.agua || []).filter(x => x.mes === mes)[0];
