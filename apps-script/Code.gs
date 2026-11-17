@@ -422,9 +422,10 @@ function doPost(e) {
     let url = "";
     if (d.imagen && String(d.imagen).length > 100) {
       const conceptos = [manto && "mantenimiento", agua && "agua", extra && "extraordinario", casa && "casa club"].filter(Boolean).join("+");
+      const esPdf = /pdf/i.test(String(d.tipo || ""));       // el banco da PDF; el celular, foto (pago.html manda cualquiera de los dos)
       const nombre = Utilities.formatDate(ahora, "America/Mexico_City", "yyyy-MM-dd HHmm") +
-        " · Depto " + (depto < 10 ? "0" : "") + depto + " · $" + total + " · " + conceptos + ".jpg";
-      const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), d.tipo || "image/jpeg", nombre);
+        " · Depto " + (depto < 10 ? "0" : "") + depto + " · $" + total + " · " + conceptos + (esPdf ? ".pdf" : ".jpg");
+      const blob = Utilities.newBlob(Utilities.base64Decode(String(d.imagen).replace(/^data:[^,]+,/, "")), esPdf ? "application/pdf" : "image/jpeg", nombre);
       const sub = subcarpeta_(mes);
       url = sub.createFile(blob).getUrl();
     }

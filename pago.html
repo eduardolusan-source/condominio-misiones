@@ -122,9 +122,10 @@
 
     <section class="paso">
       <h2><span>3</span>Tu comprobante</h2>
-      <label class="captura" id="lblCaptura">📎 Agregar la captura del banco<input id="archivo" type="file" accept="image/*"></label>
-      <div class="vista" id="vista"><img id="miniatura" alt="Comprobante"><br><button type="button" id="btnQuitar">Quitar</button></div>
-      <p class="pista" style="margin-top:0.4rem">Opcional, pero acelera la confirmación.</p>
+      <label class="captura" id="lblCaptura">📎 Agregar el comprobante (foto o PDF)<input id="archivo" type="file" accept="image/*,application/pdf,.pdf"></label>
+      <div class="vista" id="vista"><img id="miniatura" alt="Comprobante"><strong id="pdfNombre" style="display:block;word-break:break-word"></strong><button type="button" id="btnQuitar">Quitar</button></div>
+      <p class="pista hidden" id="archivoMal" style="margin-top:0.4rem;color:var(--bad-text);font-weight:700"></p>
+      <p class="pista" style="margin-top:0.4rem">Sirve la captura del celular o el PDF que te da el banco. Opcional, pero acelera la confirmación.</p>
     </section>
 
     <button class="enviar" id="btnEnviar" disabled>Enviar</button>
@@ -330,22 +331,40 @@ function aplicarConfig(j) {
 }
 
 /* --- Paso 3: comprobante (se reduce en el celular antes de enviar) --- */
+/* El banco entrega el comprobante como PDF y el celular como foto: se aceptan los dos.
+   El PDF viaja tal cual (hasta 6 MB); la foto se reduce. Si el archivo no se puede leer, se dice. */
+let tipoArchivo = "image/jpeg";
+const ETQ_CAPTURA = "📎 Agregar el comprobante (foto o PDF)";
+function archivoMal(t) { imagen = null; $("archivo").value = ""; $("vista").style.display = "none"; $("lblCaptura").firstChild.textContent = ETQ_CAPTURA; $("archivoMal").textContent = t; $("archivoMal").classList.toggle("hidden", !t); }
+function archivoListo(nombrePdf) {
+  $("archivoMal").classList.add("hidden");
+  $("miniatura").style.display = nombrePdf ? "none" : ""; $("pdfNombre").textContent = nombrePdf ? "📄 " + nombrePdf : "";
+  $("vista").style.display = "block"; $("lblCaptura").firstChild.textContent = "📎 Cambiar el comprobante";
+}
 $("archivo").addEventListener("change", ev => {
   const f = ev.target.files[0]; if (!f) return;
+  if (/pdf/i.test(f.type) || /\.pdf$/i.test(f.name)) {
+    if (f.size > 6 * 1024 * 1024) return archivoMal("Ese PDF pesa más de 6 MB. Manda mejor una captura de pantalla del comprobante.");
+    const r = new FileReader();
+    r.onload = () => { imagen = String(r.result).replace(/^data:[^,]*,/, "data:application/pdf;base64,"); tipoArchivo = "application/pdf"; archivoListo(f.name); };
+    r.onerror = () => archivoMal("No se pudo leer ese PDF. Intenta de nuevo o manda una captura de pantalla.");
+    r.readAsDataURL(f);
+    return;
+  }
   const img = new Image(); const url = URL.createObjectURL(f);
   img.onload = () => {
     const max = 1400, esc = Math.min(1, max / Math.max(img.width, img.height));
     const cv = document.createElement("canvas");
     cv.width = Math.round(img.width * esc); cv.height = Math.round(img.height * esc);
     cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-    imagen = cv.toDataURL("image/jpeg", 0.82);
-    $("miniatura").src = imagen; $("vista").style.display = "block";
-    $("lblCaptura").firstChild.textContent = "📎 Cambiar la captura";
+    imagen = cv.toDataURL("image/jpeg", 0.82); tipoArchivo = "image/jpeg";
+    $("miniatura").src = imagen; archivoListo("");
     URL.revokeObjectURL(url);
   };
+  img.onerror = () => { URL.revokeObjectURL(url); archivoMal("Ese archivo no se pudo abrir. Aquí sirven fotos, capturas de pantalla y PDF."); };
   img.src = url;
 });
-$("btnQuitar").onclick = () => { imagen = null; $("archivo").value = ""; $("vista").style.display = "none"; $("lblCaptura").firstChild.textContent = "📎 Agregar la captura del banco"; };
+$("btnQuitar").onclick = () => archivoMal("");
 
 /* --- Enviar --- */
 function textoResumen(d) {
@@ -357,7 +376,7 @@ function textoResumen(d) {
 async function enviar() {
   const d = leer();
   $("btnEnviar").disabled = true; $("btnEnviar").textContent = "Enviando…";
-  const cuerpo = { clave: CLAVE, depto: depto, meses: mesesElegidos(), ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: "image/jpeg" };
+  const cuerpo = { clave: CLAVE, depto: depto, meses: mesesElegidos(), ...d, nota: $("nota").value.trim(), imagen: imagen || "", tipo: imagen ? tipoArchivo : "image/jpeg" };
   try {
     if (!SCRIPT_URL) throw new Error("sin servicio");
     const r = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(cuerpo), headers: { "Content-Type": "text/plain;charset=utf-8" } });

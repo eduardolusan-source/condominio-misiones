@@ -127,7 +127,11 @@ async function cargarImagenes(lista) {
     try {
       const r = await fetch(SCRIPT_URL + "?accion=imagen&clave=" + encodeURIComponent(clave) + "&folio=" + encodeURIComponent(p.folio));
       const j = await r.json();
-      if (j.ok && j.imagen) caja.innerHTML = '<a href="' + p.comprobante + '" target="_blank" rel="noopener"><img src="' + j.imagen + '" alt="Comprobante"></a>';
+      if (j.ok && /^data:application\/pdf/i.test(j.imagen || "")) {          // el comprobante es un PDF del banco: se abre en otra pestaña
+        const pdf = URL.createObjectURL(await (await fetch(j.imagen)).blob());
+        caja.innerHTML = '<a href="' + pdf + '" target="_blank" rel="noopener" style="display:inline-block;font-weight:700;padding:.7rem 1rem;border:2px solid var(--accent);border-radius:12px;text-decoration:none">📄 Abrir el comprobante (PDF)</a>';
+      }
+      else if (j.ok && j.imagen) caja.innerHTML ='<a href="' + p.comprobante + '" target="_blank" rel="noopener"><img src="' + j.imagen + '" alt="Comprobante"></a>';
       else caja.innerHTML = '<a href="' + p.comprobante + '" target="_blank" rel="noopener">Abrir la captura en Drive</a>';
     } catch (e) { caja.innerHTML = '<a href="' + p.comprobante + '" target="_blank" rel="noopener">Abrir la captura en Drive</a>'; }
   }
