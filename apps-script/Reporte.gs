@@ -7,8 +7,9 @@
    Qué hace el día 10 de cada mes (9 a 10 de la mañana), con el mes anterior:
    1. Arma el reporte en PDF (una hoja) y lo guarda en Drive, carpeta
       "Misiones · Reportes / AAAA-MM".
-   2. Lo envía por correo a los vecinos de la pestaña "Correos" (en copia
-      oculta: nadie ve el correo de los demás). El correo es una carta corta y
+   2. Lo envía por correo a los vecinos de la pestaña "Correos", uno por uno:
+      cada quien lo recibe con el bloque «Tu depto» (lo que debe hoy SU
+      departamento, o «al corriente») y nadie ve el correo de los demás. El correo es una carta corta y
       visual que se lee en un minuto: el edificio de noche con una ventana
       encendida por cada depto que pagó su cuota (se acomodan al azar: no son
       deptos reales), cómo se movió la caja, en qué se fue la cuota, el agua,
@@ -150,17 +151,33 @@ function generarReporte_(opc) {
   /* 1 · A los vecinos. En la prueba llega solo a ti, tal cual lo verán ellos. */
   let destinatarios = [];
   const pausa = /pausa/i.test(String(cfg.reporte_envio || ""));
+  let personal = true;
   if (opc.modo === "prueba") {
-    MailApp.sendEmail(copia, "[Prueba] " + asunto, textoPlano_(k), { name: REP_REMITENTE, htmlBody: correoVecinos_(k), attachments: [pdf] });
+    /* La prueba trae el bloque «Tu depto» del depto con que tu correo está en la pestaña Correos (si está). */
+    const mio = correosConDepto_().filter(x => x.correo === copia.toLowerCase())[0];
+    const dep = mio ? tuDepto_(mio.depto) : null;
+    MailApp.sendEmail(copia, "[Prueba] " + asunto, textoPlano_(k, dep), { name: REP_REMITENTE, htmlBody: correoVecinos_(k, dep), attachments: [pdf] });
   } else if (opc.modo === "vecinos" && !pausa) {
-    destinatarios = correosVecinos_();
+    const lista = correosConDepto_();
+    destinatarios = lista.map(x => x.correo);
     if (destinatarios.length) {
-      const cuerpo = correoVecinos_(k), plano = textoPlano_(k);
-      /* De 40 en 40 en copia oculta: nadie ve el correo de los demás. */
-      for (let i = 0; i < destinatarios.length; i += 40) {
-        MailApp.sendEmail(copia, asunto, plano, {
-          name: REP_REMITENTE, bcc: destinatarios.slice(i, i + 40).join(","), htmlBody: cuerpo, attachments: [pdf]
+      if (MailApp.getRemainingDailyQuota() >= destinatarios.length + 2) {
+        /* Uno por uno: cada quien recibe el reporte con el estado de SU departamento y nadie ve el correo de los demás. */
+        if (typeof MEMO_MD_ !== "undefined") MEMO_MD_.lote = true;
+        const porDepto = {};
+        lista.forEach(x => {
+          const dep = x.depto ? (porDepto[x.depto] || (porDepto[x.depto] = tuDepto_(x.depto))) : null;
+          MailApp.sendEmail(x.correo, asunto, textoPlano_(k, dep), { name: REP_REMITENTE, htmlBody: correoVecinos_(k, dep), attachments: [pdf] });
         });
+      } else {
+        /* Sin cuota de Google para mandarlos uno por uno: sale el reporte general, de 40 en 40 en copia oculta. */
+        personal = false;
+        const cuerpo = correoVecinos_(k), plano = textoPlano_(k);
+        for (let i = 0; i < destinatarios.length; i += 40) {
+          MailApp.sendEmail(copia, asunto, plano, {
+            name: REP_REMITENTE, bcc: destinatarios.slice(i, i + 40).join(","), htmlBody: cuerpo, attachments: [pdf]
+          });
+        }
       }
       props.setProperty("reporteEnviado_" + objetivo, new Date().toISOString());
     }
@@ -169,7 +186,7 @@ function generarReporte_(opc) {
   /* 2 · A ti: copia + kit de WhatsApp */
   const estado = opc.modo === "prueba" ? "PRUEBA: no se envió a los vecinos. Te llegó aparte el correo tal como lo verán."
     : pausa ? "En pausa (Config → reporte_envio): no se envió a los vecinos."
-    : destinatarios.length ? "Enviado a " + destinatarios.length + " correos de vecinos (en copia oculta)."
+    : destinatarios.length ? "Enviado a " + destinatarios.length + " correos de vecinos" + (personal ? ", uno por uno: cada quien con el estado de su departamento." : " (en copia oculta, sin el bloque de su depto: Google no dejó mandarlos uno por uno hoy).")
     : "La pestaña Correos no tiene correos todavía: no se envió a los vecinos.";
   MailApp.sendEmail(copia, (opc.modo === "prueba" ? "[Prueba] " : "") + "Kit de " + nombreMes + " para WhatsApp · Las Misiones", whatsapp, {
     name: REP_REMITENTE, attachments: [pdf],
@@ -303,8 +320,8 @@ function textoWhatsapp_(k) {
   return l.join("\n");
 }
 
-function textoPlano_(k) {
-  return "Las cuentas de " + k.mes + " " + k.anio + " · Las Misiones\n\n" + textoWhatsapp_(k).replace(/\*/g, "").replace(/_/g, "") + "\n\nVa adjunto el reporte en PDF.";
+function textoPlano_(k, dep) {
+  return "Las cuentas de " + k.mes + " " + k.anio + " · Las Misiones\n\n" + (dep ? tuDeptoTexto_(k, dep) + "\n\n" : "") + textoWhatsapp_(k).replace(/\*/g, "").replace(/_/g, "") + "\n\nVa adjunto el reporte en PDF.";
 }
 
 /* ---------- Correo a los vecinos: una carta corta y visual (tablas, sin imágenes: se ve igual en Gmail, Outlook y el celular) ---------- */
@@ -412,15 +429,69 @@ function datoCorreo_(k) {
     '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:#8a5a12">✨ Dato del mes</div>' +
     '<div style="font-family:' + RG + ';font-size:19px;line-height:1.4;color:#3d2a0c;margin-top:6px">' + d.html + "</div></td></tr></table>");
 }
-function botonesCorreo_(k) {
+function botonesCorreo_(k, dep) {
+  const q = dep ? "?depto=" + dep.depto : "";
   return seccion_('<div style="text-align:center">' +
-    '<div style="font-family:' + RG + ";font-size:20px;color:" + RC.tinta + ';margin-bottom:12px">¿Y tu depto, cómo va?</div>' +
-    '<a href="' + url_(k, "mi-depto.html") + '" style="display:inline-block;background:' + RC.marino + ';color:#ffffff;text-decoration:none;font-weight:800;font-size:15px;padding:13px 22px;border-radius:999px;margin:0 4px 8px">Ver mi depto</a>' +
+    '<div style="font-family:' + RG + ";font-size:20px;color:" + RC.tinta + ';margin-bottom:12px">' + (dep ? "Tu depto, mes por mes, y tus recibos" : "¿Y tu depto, cómo va?") + "</div>" +
+    '<a href="' + url_(k, "mi-depto.html" + q) + '" style="display:inline-block;background:' + RC.marino + ';color:#ffffff;text-decoration:none;font-weight:800;font-size:15px;padding:13px 22px;border-radius:999px;margin:0 4px 8px">Ver mi depto</a>' +
     '<a href="' + url_(k, "finanzas.html") + '" style="display:inline-block;border:2px solid ' + RC.marino + ";color:" + RC.marino + ';text-decoration:none;font-weight:800;font-size:15px;padding:11px 20px;border-radius:999px;margin:0 4px 8px">Todas las cuentas</a>' +
-    '<div style="font-size:14px;color:' + RC.gris + ';margin-top:6px">¿Ya pagaste? <a href="' + url_(k, "pago.html") + '" style="color:' + RC.marino + ';font-weight:700">Regístralo aquí</a></div></div>');
+    '<div style="font-size:14px;color:' + RC.gris + ';margin-top:6px">¿Ya pagaste? <a href="' + url_(k, "pago.html" + q) + '" style="color:' + RC.marino + ';font-weight:700">Regístralo aquí</a></div></div>');
 }
+/* ---------- «Tu depto»: lo que debe hoy el departamento de quien recibe el correo ---------- */
+
+/* Resumen de un depto con las mismas cuentas de Mi depto (miDeptoCalc_). null si no se puede calcular:
+   el reporte sale entonces sin ese bloque. */
+function tuDepto_(depto) {
+  try {
+    const md = miDeptoCalc_(depto);
+    if (!md || !md.ok) return null;
+    const lineas = [];
+    const faltan = md.meses.filter(m => !m.futuro && m.diferencia < -0.5);
+    if (md.debeManto > 0.5) lineas.push(["🏢", "Mantenimiento", lista_(faltan.map(m => m.nombre.toLowerCase().replace(/ \d{4}$/, ""))), md.debeManto]);
+    const aguas = md.agua.filter(a => !a.pagado);
+    if (md.aguaPendiente > 0.5) lineas.push(["💧", "Agua", "consumo de " + lista_(aguas.map(a => a.nombre.toLowerCase().replace(/ \d{4}$/, ""))), md.aguaPendiente]);
+    const ex = md.extraordinaria;
+    if (ex && ex.pendiente > 0.5) lineas.push(["⭐", "Cuota extraordinaria", ex.nombre, ex.pendiente]);
+    const revision = (md.pagos || []).filter(p => !/confirm|rechaz/i.test(p.estatus)).reduce((a, p) => a + (Number(p.total) || 0), 0);
+    return { depto: depto, total: md.total, lineas: lineas, revision: Math.round(revision * 100) / 100, adelantado: md.adelantado || 0,
+      corte: Utilities.formatDate(new Date(), "America/Mexico_City", "d") + " de " + REP_MESES[Number(Utilities.formatDate(new Date(), "America/Mexico_City", "M")) - 1] };
+  } catch (e) { Logger.log("Tu depto " + depto + ": " + e.message); return null; }
+}
+function tuDeptoTexto_(k, dep) {
+  const l = ["TU DEPTO · " + dep.depto + " (al " + dep.corte + ")"];
+  if (dep.total > 0.5) { l.push("Debes hoy: " + $_(dep.total)); dep.lineas.forEach(x => l.push("- " + x[1] + (x[2] ? " (" + x[2] + ")" : "") + ": " + $_(x[3]))); }
+  else l.push("Al corriente. ¡Gracias!");
+  if (dep.revision > 0.5) l.push("En revisión: " + $_(dep.revision) + " que ya reportaste; la mesa lo está confirmando con el banco.");
+  l.push("Tu depto y tus recibos: " + url_(k, "mi-depto.html?depto=" + dep.depto));
+  return l.join("\n");
+}
+function tuDeptoCorreo_(k, dep) {
+  const debe = dep.total > 0.5, tono = debe ? ["#fff6f4", "#f3c9c3", "#8c1d18"] : ["#f1f8f2", "#c5e3c9", "#1d5a2a"];
+  const filas = dep.lineas.map(x => "<tr>" +
+    '<td width="30" valign="top" style="width:30px;padding:9px 0;border-top:1px solid ' + tono[1] + ';font-size:18px;line-height:1.2">' + x[0] + "</td>" +
+    '<td style="padding:9px 0;border-top:1px solid ' + tono[1] + ";font-family:" + RF + ";font-size:15px;line-height:1.35;color:" + RC.tinta + '"><b>' + esc_(x[1]) + "</b>" +
+      (x[2] ? '<br><span style="font-size:13px;color:' + RC.gris + '">' + esc_(x[2]) + "</span>" : "") + "</td>" +
+    '<td align="right" valign="top" style="padding:9px 0;border-top:1px solid ' + tono[1] + ";font-family:" + RF + ";font-size:16px;font-weight:800;color:" + RC.tinta + ';white-space:nowrap">' + $_(x[3]) + "</td></tr>").join("");
+  const boton = (href, txt, lleno) => '<a href="' + href + '" style="display:inline-block;' + (lleno ? "background:" + RC.marino + ";color:#ffffff;border:2px solid " + RC.marino : "border:2px solid " + RC.marino + ";color:" + RC.marino) +
+    ';text-decoration:none;font-weight:800;font-size:15px;padding:11px 18px;border-radius:999px;margin:0 6px 8px 0">' + txt + "</a>";
+  return '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:22px 22px 0;font-family:' + RF + '">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;background:' + tono[0] + ";border:1px solid " + tono[1] + ';border-radius:16px"><tr><td style="padding:16px 18px 10px;font-family:' + RF + '">' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>' +
+        '<td style="font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:800;color:' + tono[2] + '">Tu depto · ' + dep.depto + "</td>" +
+        '<td align="right" style="font-size:12px;color:' + RC.gris + '">al ' + esc_(dep.corte) + "</td></tr></table>" +
+      '<div style="font-family:' + RG + ";font-size:28px;line-height:1.2;color:" + tono[2] + ';margin-top:6px">' + (debe ? "Debes hoy " + '<b style="white-space:nowrap">' + $_(dep.total) + "</b>" : "✓ Al corriente") + "</div>" +
+      (debe ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px">' + filas + "</table>"
+        : '<div style="font-size:15px;line-height:1.5;color:' + RC.tinta + ';margin-top:4px">No debes mantenimiento, agua ni cuotas extraordinarias. ¡Gracias!</div>') +
+      (dep.revision > 0.5 ? '<div style="font-size:14px;line-height:1.5;color:#7a5a00;background:#fff3cd;border-radius:10px;padding:8px 12px;margin-top:10px">⏳ En revisión <b>' + $_(dep.revision) + "</b>: ya lo reportaste y la mesa lo está confirmando con el banco." +
+        (debe ? " Si es de lo que aparece arriba, no lo pagues de nuevo." : "") + "</div>" : "") +
+      (dep.adelantado > 0.5 ? '<div style="font-size:14px;color:' + RC.gris + ';margin-top:8px">⏩ Además llevas ' + $_(dep.adelantado) + " pagados por adelantado.</div>" : "") +
+      '<div style="margin-top:14px">' + (debe ? boton(url_(k, "pago.html?depto=" + dep.depto), "Ya pagué: registrarlo", true) : "") +
+        boton(url_(k, "mi-depto.html?depto=" + dep.depto), debe ? "Ver el detalle" : "Ver mis recibos", !debe) + "</div>" +
+    "</td></tr></table></td></tr></table>";
+}
+
 /* Cuerpo del correo a los vecinos. */
-function correoVecinos_(k) {
+function correoVecinos_(k, dep) {
   const h = historia_(k);
   const pre = esc_(h.titulo + ". " + h.bajada + " Entraron " + $_(k.ing) + " y salieron " + $_(k.egr) + ".");
   const pie = "Va adjunto el reporte en PDF. Las cifras salen de la hoja de captura de la mesa directiva.<br>" +
@@ -431,7 +502,7 @@ function correoVecinos_(k) {
     '<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:' + RC.papel + '">' + pre + "&#8199;&#847;".repeat(60) + "</div>" +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center" style="max-width:600px;margin:0 auto;border-collapse:separate">' +
     "<tr><td>" + heroCorreo_(k, h) + "</td></tr>" +
-    '<tr><td style="background:#ffffff;border-left:1px solid ' + RC.linea + ";border-right:1px solid " + RC.linea + '">' + cajaCorreo_(k) + cuotaCorreo_(k) + aguaCorreo_(k) + datoCorreo_(k) + botonesCorreo_(k) + "</td></tr>" +
+    '<tr><td style="background:#ffffff;border-left:1px solid ' + RC.linea + ";border-right:1px solid " + RC.linea + '">' + (dep ? tuDeptoCorreo_(k, dep) : "") + cajaCorreo_(k) + cuotaCorreo_(k) + aguaCorreo_(k) + datoCorreo_(k) + botonesCorreo_(k, dep) + "</td></tr>" +
     '<tr><td style="background:#ffffff;border:1px solid ' + RC.linea + ";border-top:1px solid " + RC.fina + ';border-radius:0 0 20px 20px;padding:18px 22px 22px;font-family:' + RF + ";font-size:12px;line-height:1.6;color:" + RC.suave + ';text-align:center">' + pie + "</td></tr>" +
     "</table></div>";
 }
@@ -573,6 +644,19 @@ function correosVecinos_() {
     .filter(f => !/^no$/i.test(String(f[3]).trim()))
     .map(f => String(f[2]).trim().toLowerCase())
     .filter(c => /^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(c) && !vistos[c] && (vistos[c] = true));
+}
+
+/* Los mismos correos de correosVecinos_, cada uno con su depto (0 si el renglón no lo trae: recibe el reporte sin «Tu depto»). */
+function correosConDepto_() {
+  const h = SpreadsheetApp.getActive().getSheetByName(REP_CORREOS);
+  if (!h || h.getLastRow() < 2) return [];
+  const vistos = {}, out = [];
+  h.getRange(2, 1, h.getLastRow() - 1, 4).getValues().forEach(f => {
+    const c = String(f[2]).trim().toLowerCase(), d = parseInt(String(f[0]).replace(/\D/g, ""), 10);
+    if (/^no$/i.test(String(f[3]).trim()) || !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(c) || vistos[c]) return;
+    vistos[c] = true; out.push({ correo: c, depto: d >= 1 && d <= UNIDADES ? d : 0 });
+  });
+  return out;
 }
 
 function carpetaReporte_(id) {

@@ -25,6 +25,9 @@
   .enviar[disabled] { opacity: .5; cursor: not-allowed; }
   .msg { margin-top: 1rem; padding: .9rem 1rem; border-radius: 12px; font-weight: 600; }
   .msg.ok { background: #d4edda; color: #1d5a2a; } .msg.mal { background: #f8d7da; color: #7a1c24; }
+  .llega { list-style: none; margin: 0 0 1.4rem; padding: 0; display: grid; gap: .5rem; }
+  .llega li { display: flex; gap: .7rem; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: .75rem .9rem; font-size: .95rem; color: var(--ink-2); line-height: 1.4; }
+  .llega li span { font-size: 1.5rem; line-height: 1.1; } .llega li b { display: block; color: var(--ink); }
   .trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
   details.baja { margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem; }
   details.baja summary { cursor: pointer; font-weight: 600; color: var(--ink-2); }
@@ -52,8 +55,12 @@
   </div>
 </header>
 <main class="correo">
-  <h1>📩 Recibe el reporte por correo</h1>
-  <p class="lead">Cada día 10, las cuentas del mes en tu correo. 🔒 Nadie ve tu correo.</p>
+  <h1>📩 Tu correo para el reporte y tus recibos</h1>
+  <p class="lead">Regístralo una sola vez. 🔒 Nadie más ve tu correo.</p>
+  <ul class="llega">
+    <li><span>🧾</span><div><b>Tus recibos de pago</b>Cada vez que la mesa confirme un pago de tu depto, te llega el recibo en PDF.</div></li>
+    <li><span>📊</span><div><b>El reporte de cada día 10</b>Las cuentas del mes y cómo va tu depto: lo que debes o que estás al corriente.</div></li>
+  </ul>
   <form id="f" novalidate>
     <div class="paso"><h2><span>1</span>Tu departamento</h2><div class="deptos" id="deptos"></div></div>
     <div class="paso"><h2><span>2</span>Tus datos</h2>
@@ -62,13 +69,13 @@
       <label class="campo" for="email">Correo electrónico</label>
       <input type="email" id="email" maxlength="120" autocomplete="email" inputmode="email" placeholder="tucorreo@ejemplo.com" required>
       <div class="trampa" aria-hidden="true"><label for="web">No llenar</label><input type="text" id="web" tabindex="-1" autocomplete="off"></div>
-      <label class="acepto"><input type="checkbox" id="acepto"><span>Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>: mi correo solo se usa para enviarme el reporte y puedo darme de baja cuando quiera.</span></label>
+      <label class="acepto"><input type="checkbox" id="acepto"><span>Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>: mi correo solo se usa para enviarme el reporte mensual y los recibos de mi departamento, y puedo darme de baja cuando quiera.</span></label>
     </div>
     <button type="submit" class="enviar" id="enviar" disabled>Registrar mi correo</button>
     <p id="msg" class="msg" hidden role="status"></p>
   </form>
   <p style="color:var(--ink-2);font-size:.92rem;margin-top:1rem">¿Varios en tu depto? Cada quien registra el suyo.</p>
-  <details class="baja"><summary>Ya no quiero recibir el reporte</summary>
+  <details class="baja"><summary>Ya no quiero recibir estos correos</summary>
     <form id="fb" novalidate>
       <label class="campo" for="emailBaja">Tu correo</label>
       <input type="email" id="emailBaja" maxlength="120" autocomplete="email" inputmode="email" placeholder="tucorreo@ejemplo.com">
@@ -86,6 +93,7 @@
   const valido = c => /^[^\s@,;<>"]+@[^\s@,;<>"]+\.[a-z]{2,}$/i.test(c.trim());
   let depto = null;
   try { const g = +localStorage.getItem("misiones_depto"); if (g >= 1 && g <= UNIDADES) depto = g; } catch (e) {}
+  { const q = +new URLSearchParams(location.search).get("depto"); if (q >= 1 && q <= UNIDADES) depto = q; }
   for (let i = 1; i <= UNIDADES; i++) {
     const b = document.createElement("button"); b.type = "button"; b.textContent = i; b.dataset.n = i; b.setAttribute("aria-label", "Departamento " + i);
     b.onclick = () => { depto = i; pintar(); try { localStorage.setItem("misiones_depto", i); } catch (e) {} };
@@ -120,7 +128,7 @@
     if (!valido(c)) { aviso($("msgBaja"), false, ERR.correo); return; }
     try {
       const j = await mandar({ accion: "correo", baja: true, correo: c });
-      if (j.ok) aviso($("msgBaja"), true, "✓ Listo. Si tu correo estaba registrado, ya no recibirás el reporte y te llegará una confirmación.");
+      if (j.ok) aviso($("msgBaja"), true, "✓ Listo. Si tu correo estaba registrado, ya no recibirás el reporte ni los recibos y te llegará una confirmación.");
       else aviso($("msgBaja"), false, ERR[j.error] || "No se pudo (" + j.error + ").");
     } catch (err) { aviso($("msgBaja"), false, "No hubo conexión con la hoja de la mesa. Intenta en unos minutos."); }
   });

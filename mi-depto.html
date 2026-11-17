@@ -62,6 +62,8 @@
   .fila-b b small { font-weight: 500; }
   .est.gris { background: color-mix(in srgb, var(--muted) 16%, var(--surface)); color: var(--ink-2); }
   .aviso-rc { display: flex; gap: .6rem; align-items: center; background: color-mix(in srgb, var(--good-text) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--good-text) 28%, var(--border)); border-radius: 14px; padding: .7rem .9rem; margin: 1rem 0 0; font-size: .92rem; color: var(--ink); }
+  .correo-rc { display: flex; gap: .7rem; align-items: center; text-decoration: none; color: var(--ink-2); background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: .85rem 1rem; margin: 1.2rem 0 0; font-size: .9rem; line-height: 1.4; }
+  .correo-rc span { font-size: 1.6rem; } .correo-rc em { font-style: normal; flex: 1; } .correo-rc b { display: block; color: var(--ink); font-size: 1rem; } .correo-rc i { font-style: normal; color: var(--muted); font-size: 1.3rem; }
   .aviso-rc span { font-size: 1.4rem; } .aviso-rc em { font-style: normal; }
   @media (max-width: 380px) { .fila-b { padding-left: .8rem; padding-right: .8rem; gap: .4rem; } }
 </style>
@@ -169,6 +171,7 @@
       return '<button class="fila-b" data-pago="' + i + '"><b>' + (p.mes ? esc(mesDe(p.mes)) : esc(p.fecha)) + " · " + $0(p.total) + "<small>" + esc(queEs(p)) + " · avisaste el " + esc(p.fecha) + "</small></b>" +
         (c ? '<span class="est ok">✓</span>' + RCB : '<span class="est ' + (cub ? "gris" : estCls(p.estatus)) + '">' + (cub ? "no se usó" : estTxt(p.estatus)) + "</span><i>›</i>") + "</button>"; }).join("") + "</div>";
     h += '<div class="lista" style="margin-top:1rem"><button class="fila-b" data-info="previo"><b>Antes de octubre 2026</b><span class="est ok">no se cobra</span><i>›</i></button></div>';
+    h += '<a class="correo-rc" href="correo.html?depto=' + j.depto + '"><span>📩</span><em><b>Recibe tus recibos por correo</b>Registra tu correo una vez: te llega el PDF de cada pago confirmado y el reporte del mes con el estado de tu depto.</em><i>›</i></a>';
     h += '<a class="wa" href="' + wa("Hola, mesa directiva. Soy del depto " + j.depto + " y no me cuadra: ") + '" target="_blank" rel="noopener">🤔 ¿No te cuadra? Escribe a la mesa</a>';
     return h;
   }

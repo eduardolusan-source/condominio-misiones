@@ -267,9 +267,9 @@ function registrarCorreo_(d) {
   } else {
     h.getRange(h.getLastRow() + 1, 1, 1, 6).setValues([[depto, nombre, correo, "sí", ahora, "formulario del sitio"]]);
   }
-  MailApp.sendEmail(correo, "Quedaste registrado · reporte mensual de Las Misiones",
-    "Hola" + (nombre ? " " + nombre : "") + ":\n\nTu correo quedó registrado para recibir cada día 10 el reporte de cuentas de Las Misiones (departamento " + depto + "). " +
-    "Se envía con copia oculta: nadie más ve tu correo.\n\nSi no fuiste tú o quieres dejar de recibirlo, responde a este correo o date de baja en la página «Recibe el reporte» del sitio.",
+  MailApp.sendEmail(correo, "Quedaste registrado · recibos y reporte de Las Misiones",
+    "Hola" + (nombre ? " " + nombre : "") + ":\n\nTu correo quedó registrado en el departamento " + depto + " de Las Misiones. Te llegarán dos cosas: el recibo en PDF cada vez que la mesa confirme un pago de tu departamento, y cada día 10 el reporte de cuentas del mes, con el estado de pagos de tu departamento. " +
+    "Se envían uno por uno: nadie más ve tu correo.\n\nSi no fuiste tú o quieres dejar de recibirlo, responde a este correo o date de baja en la página «Recibe el reporte» del sitio.",
     { name: REP_REMITENTE });
   return { ok: true };
 }
