@@ -260,8 +260,11 @@ function enviarCobranza_(soloA) {
   const pre = soloA ? "[Prueba] " : "";
   mesa.forEach(a => MailApp.sendEmail(a, pre + "Adeudos al " + fecha + " · " + (deben.length ? deben.length + " deptos · " + pesos_(total) : "nadie debe 🎉") + " · Las Misiones (privado)",
     "Adeudos de Las Misiones al " + fecha + "\n\n" + textoAgenda_(deben), { name: REP_REMITENTE, htmlBody: htmlReporteCobranza_(L, hoy, !textos.length) }));
-  if (deben.length) textos.forEach(a => MailApp.sendEmail(a, pre + "📞 Agenda de cobranza · " + fecha + " · " + grupos_(deben).length + " contactos · " + pesos_(total),
-    "Agenda de cobranza de Las Misiones · " + fecha + "\n\n" + textoAgenda_(deben), { name: REP_REMITENTE, htmlBody: htmlAgenda_(deben, hoy) }));
+  // Asunto llano (sin emoji ni signo de pesos: Hotmail lo mandaba a no deseado) y copia oculta a quien corre el script, para que vea lo mismo y pueda reenviarlo.
+  const yo = soloA ? "" : String(Session.getEffectiveUser().getEmail() || "");
+  if (deben.length) textos.forEach(a => MailApp.sendEmail(a, pre + "Agenda de cobranza del " + fecha + " · " + grupos_(deben).length + " contactos · Las Misiones",
+    "Agenda de cobranza de Las Misiones · " + fecha + "\n\n" + textoAgenda_(deben),
+    Object.assign({ name: REP_REMITENTE, htmlBody: htmlAgenda_(deben, hoy) }, yo && yo.toLowerCase() !== a.toLowerCase() ? { bcc: yo } : {})));
   return { deben: deben.length, mesa: mesa, textos: textos };
 }
 /* Corre todos los días a las 8 h; solo envía el 15 y el último día del mes (el 30, o el 28/29 en febrero). */
